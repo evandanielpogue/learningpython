@@ -1906,21 +1906,30 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   'use strict';
 
   var esc = UI.esc;
+  /* `hint` is what the tooltip adds past the label. It earns its keep on the
+     collapsed rail, where the label is hidden and an icon alone is a guess. */
   var NAV = [
     { group: 'Workspace', items: [
-      { key: 'home', icon: '◉', label: 'Overview', href: '/' }
+      { key: 'home', icon: '◉', label: 'Overview', href: '/', hint: 'where the campaign stands today', sc: 'G then O' }
     ] },
     { group: 'Campaign', needsCampaign: true, items: [
-      { key: 'people',   icon: '◎', label: 'Contacts', href: '/c/:id/people',   count: 'contacts' },
-      { key: 'research', icon: '◈', label: 'Research', href: '/c/:id/research' },
-      { key: 'sequence', icon: '≡', label: 'Sequence', href: '/c/:id/sequence', count: 'steps' },
-      { key: 'page',     icon: '▤', label: 'Page',     href: '/c/:id/page' }
+      { key: 'people',   icon: '◎', label: 'Contacts', href: '/c/:id/people',   count: 'contacts', hint: 'the people you are working, ranked', sc: 'G then P' },
+      { key: 'research', icon: '◈', label: 'Research', href: '/c/:id/research', hint: 'what they said recently, in public', sc: 'G then R' },
+      { key: 'sequence', icon: '≡', label: 'Sequence', href: '/c/:id/sequence', count: 'steps', hint: 'the touches and the days between them', sc: 'G then S' },
+      { key: 'page',     icon: '▤', label: 'Page',     href: '/c/:id/page', hint: 'the public page you send them to' }
     ] },
     { group: 'Library', items: [
-      { key: 'templates', icon: '❏', label: 'Templates', href: '/templates' },
-      { key: 'settings',  icon: '⚙', label: 'Settings',  href: '/settings' }
+      { key: 'templates', icon: '❏', label: 'Templates', href: '/templates', hint: 'messages you reuse across steps', sc: 'G then T' },
+      { key: 'settings',  icon: '⚙', label: 'Settings',  href: '/settings', hint: 'your name, role and wins' }
     ] }
   ];
+
+  function tip(n) {
+    var t = n.label;
+    if (n.hint) t += ' — ' + n.hint;
+    if (n.sc) t += '  (' + n.sc + ')';
+    return t;
+  }
 
   function activeCampaignId() {
     var cs = Store.campaigns();
@@ -1936,11 +1945,11 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     root.innerHTML =
       '<div class="shell">' +
         '<aside class="sidebar">' +
-          '<a class="brand" href="#/"><span class="glyph"></span><b>Frontdoor</b></a>' +
-          '<button class="side-search" id="side-search"><span>⌕</span><span>Search</span><kbd>⌘K</kbd></button>' +
+          '<a class="brand" href="#/" title="Frontdoor — back to the overview"><span class="glyph"></span><b>Frontdoor</b></a>' +
+          '<button class="side-search" id="side-search" title="Search and jump anywhere  (\u2318K)"><span>⌕</span><span>Search</span><kbd>⌘K</kbd></button>' +
           '<nav class="side-nav" id="side-nav" aria-label="Sections"></nav>' +
           '<div class="side-foot">' +
-            '<button class="user-btn" id="user-btn">' +
+            '<button class="user-btn" id="user-btn" title="' + esc(u.name) + ' — account, settings and sign out">' +
               '<span class="avatar avatar-sm" style="background:var(--p-recruiter)">' + esc(u.initials) + '</span>' +
               '<span class="grow"><span class="un">' + esc(u.name) + '</span>' +
               '<span class="ue">' + esc(u.email) + '</span></span>' +
@@ -1980,6 +1989,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         if (c && n.count === 'contacts') count = String(c.contacts.length);
         if (c && n.count === 'steps') count = String(c.steps.length);
         return '<a class="nav-item" href="#' + href + '" data-key="' + n.key + '"' +
+          ' title="' + esc(tip(n)) + '"' +
           (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
           '<span class="nav-ico">' + n.icon + '</span>' +
           '<span class="nav-label">' + esc(n.label) + '</span>' +

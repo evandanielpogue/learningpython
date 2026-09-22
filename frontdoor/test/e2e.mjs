@@ -352,6 +352,23 @@ await group('Mobile, 390px', async (page) => {
       if (over > 1) throw new Error(r + ' overflows by ' + over + 'px');
     }
   });
+  await step('the collapsed rail stays left and every icon is labelled', async () => {
+    await page.goto(BASE + '#/c/c_acme/sequence', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.nav-item', { timeout: 4000 });
+    const m = await page.evaluate(() => {
+      const s = document.querySelector('.sidebar').getBoundingClientRect();
+      return { x: s.x, w: s.width, h: s.height,
+               labelled: [...document.querySelectorAll('.nav-item')].every((a) => (a.title || '').length > 6),
+               n: document.querySelectorAll('.nav-item').length,
+               hidden: getComputedStyle(document.querySelector('.nav-label')).display };
+    });
+    if (m.x !== 0) throw new Error('rail is not flush left (x=' + m.x + ')');
+    if (m.w > 70) throw new Error('rail did not collapse (w=' + m.w + ')');
+    if (m.h < 600) throw new Error('rail is not full height (h=' + m.h + ')');
+    if (m.hidden !== 'none') throw new Error('labels still showing on the rail');
+    if (m.n < 7) throw new Error('only ' + m.n + ' nav items');
+    if (!m.labelled) throw new Error('a rail icon has no tooltip');
+  });
   await step('the builder is usable narrow', async () => {
     await page.goto(BASE + '#/c/c_acme/sequence', { waitUntil: 'networkidle' });
     await page.waitForSelector('.stepcard', { timeout: 4000 });
