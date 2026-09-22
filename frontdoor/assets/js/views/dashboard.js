@@ -23,17 +23,17 @@
     }).join('');
   }
 
-  function touchRow(t, i) {
-    var cls = 'touch' + (t.status === 'sent' || t.status === 'replied' ? ' sent' : '');
-    var badge = t.status === 'replied' ? '<span class="chip chip-pos">Replied</span>'
-              : t.status === 'due'     ? '<span class="chip chip-accent">Due today</span>'
-              : t.status === 'sent'    ? '<span class="chip">Sent</span>'
+  function stepRow(c, s) {
+    var p = c.contacts.filter(function (x) { return x.id === s.contact; })[0];
+    var cls = 'touch' + (s.status === 'sent' || s.status === 'replied' ? ' sent' : '');
+    var badge = s.status === 'replied' ? '<span class="chip chip-pos">Replied</span>'
+              : s.status === 'due'     ? '<span class="chip chip-accent">Due today</span>'
+              : s.status === 'sent'    ? '<span class="chip">Sent</span>'
               : '<span class="chip">Queued</span>';
-    return '<button class="' + cls + '" data-touch="' + i + '" style="--pc:var(' + t.colour + ')">' +
-      '<span class="td">Day ' + t.day + '</span>' +
-      '<span class="tw">' + esc(t.who) + '<em>' + esc(t.note) + '</em></span>' +
-      badge +
-      '<span class="tc">' + esc(t.channel) + '</span></button>';
+    return '<button class="' + cls + '" data-step="' + s.id + '" style="--pc:var(' + (p ? p.colour : '--line-3') + ')">' +
+      '<span class="td">Day ' + s.day + '</span>' +
+      '<span class="tw">' + esc(p ? p.name : 'No contact') + '<em>' + esc(s.note) + '</em></span>' +
+      badge + '<span class="tc">' + esc(s.channel) + '</span></button>';
   }
 
   /* ---- empty state ---------------------------------------------------- */
@@ -67,8 +67,7 @@
     var hour = new Date().getHours();
     var greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
     var name = (Store.state.user && Store.state.user.name || 'there').split(' ')[0];
-    var upNext = c.touches.map(function (t, i) { return { t: t, i: i }; })
-      .filter(function (x) { return x.t.status === 'due' || x.t.status === 'queued'; }).slice(0, 3);
+    var upNext = c.steps.filter(function (s) { return s.status === 'due' || s.status === 'queued'; }).slice(0, 3);
 
     var html =
       '<div class="page-head">' +
@@ -89,7 +88,7 @@
       '</div>' +
 
       '<div class="grid cols-3 mb4">' +
-        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><h2 class="mono">3</h2><p class="dimmer" style="font-size:var(--fs-sm)">of 10 planned</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><h2 class="mono">3</h2><p class="dimmer" style="font-size:var(--fs-sm)">of ' + c.steps.length + ' planned</p></div>' +
         '<div class="card hover p5"><p class="cap mb3">Replies</p><h2 class="mono">1</h2><p class="dimmer" style="font-size:var(--fs-sm)">Dana, on day 1</p></div>' +
         '<div class="card hover p5"><p class="cap mb3">Page opens</p><h2 class="mono">' + c.views + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div>' +
       '</div>' +
@@ -97,7 +96,7 @@
       '<div class="card p5">' +
         '<div class="row between mb4"><h3>Up next</h3>' +
         '<a class="btn btn-ghost btn-sm" href="#/c/' + c.id + '/sequence">See all <span class="arr">→</span></a></div>' +
-        '<div class="seq">' + upNext.map(function (x) { return touchRow(x.t, x.i); }).join('') + '</div>' +
+        '<div class="seq">' + upNext.map(function (s) { return stepRow(c, s); }).join('') + '</div>' +
       '</div>';
 
     var v = Shell.mount({
@@ -118,7 +117,10 @@
       v.querySelector('#ring-label').textContent = pr.done + ' of ' + pr.total + ' done';
       if (t.on) UI.toast(pr.done === pr.total ? 'That is all of them. Go send the first message.' : 'Nice. ' + pr.done + ' of ' + pr.total + '.');
     });
-    UI.on(v, 'click', '[data-touch]', function () { Router.go('/c/' + c.id + '/messages'); });
+    UI.on(v, 'click', '[data-step]', function (e, el) {
+      c.activeStep = el.dataset.step; Store.save();
+      Router.go('/c/' + c.id + '/messages');
+    });
   };
 
   /* ---- settings ------------------------------------------------------- */

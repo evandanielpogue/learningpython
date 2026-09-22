@@ -14,7 +14,9 @@
     .add('/',        Views.home)
     .add('/import',  Views.importer)
     .add('/settings', Views.settings)
+    .add('/templates', Views.templates)
     .add('/c/:id/people',   Views.people)
+    .add('/c/:id/research', Views.research)
     .add('/c/:id/sequence', Views.sequence)
     .add('/c/:id/messages', Views.messages)
     .add('/c/:id/page',     Views.page)
@@ -28,13 +30,15 @@
     ];
     if (cid) {
       items.push(
-        { group: 'Go to', icon: '◎', label: 'People at Acme', hint: 'G P', run: function () { Router.go('/c/' + cid + '/people'); } },
+        { group: 'Go to', icon: '◎', label: 'Contacts', hint: 'G P', run: function () { Router.go('/c/' + cid + '/people'); } },
+        { group: 'Go to', icon: '◈', label: 'Research on the company and the people', hint: 'G R', run: function () { Router.go('/c/' + cid + '/research'); } },
         { group: 'Go to', icon: '≡', label: 'The fourteen day sequence', hint: 'G S', run: function () { Router.go('/c/' + cid + '/sequence'); } },
         { group: 'Go to', icon: '✎', label: 'Write day 3 to Marcus', hint: 'G M', run: function () { Router.go('/c/' + cid + '/messages'); } },
         { group: 'Go to', icon: '▤', label: 'Your public page', run: function () { Router.go('/c/' + cid + '/page'); } }
       );
     }
     items.push(
+      { group: 'Go to', icon: '❏', label: 'Message templates', run: function () { Router.go('/templates'); } },
       { group: 'Go to', icon: '⚙', label: 'Settings', run: function () { Router.go('/settings'); } },
       { group: 'Do', icon: '↑', label: 'Import a résumé or LinkedIn profile', run: function () { Router.go('/import'); } }
     );
@@ -71,6 +75,8 @@
       else if (k === 'p' && cid) Router.go('/c/' + cid + '/people');
       else if (k === 's' && cid) Router.go('/c/' + cid + '/sequence');
       else if (k === 'm' && cid) Router.go('/c/' + cid + '/messages');
+      else if (k === 'r' && cid) Router.go('/c/' + cid + '/research');
+      else if (k === 't') Router.go('/templates');
       return;
     }
     if (k === 'g') {

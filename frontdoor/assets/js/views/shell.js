@@ -7,12 +7,14 @@
 
   var esc = UI.esc;
   var NAV = [
-    { key: 'home',     icon: '◉', label: 'Overview',  href: '/' },
-    { key: 'people',   icon: '◎', label: 'People',    href: '/c/:id/people',   needsCampaign: true, count: '5' },
-    { key: 'sequence', icon: '≡', label: 'Sequence',  href: '/c/:id/sequence', needsCampaign: true, count: '10' },
-    { key: 'messages', icon: '✎', label: 'Messages',  href: '/c/:id/messages', needsCampaign: true },
-    { key: 'page',     icon: '▤', label: 'Page',      href: '/c/:id/page',     needsCampaign: true },
-    { key: 'settings', icon: '⚙', label: 'Settings',  href: '/settings' }
+    { key: 'home',      icon: '◉', label: 'Overview',  href: '/' },
+    { key: 'people',    icon: '◎', label: 'Contacts',  href: '/c/:id/people',   needsCampaign: true, count: 'contacts' },
+    { key: 'research',  icon: '◈', label: 'Research',  href: '/c/:id/research', needsCampaign: true },
+    { key: 'sequence',  icon: '≡', label: 'Sequence',  href: '/c/:id/sequence', needsCampaign: true, count: 'steps' },
+    { key: 'messages',  icon: '✎', label: 'Messages',  href: '/c/:id/messages', needsCampaign: true },
+    { key: 'page',      icon: '▤', label: 'Page',      href: '/c/:id/page',     needsCampaign: true },
+    { key: 'templates', icon: '❏', label: 'Templates', href: '/templates' },
+    { key: 'settings',  icon: '⚙', label: 'Settings',  href: '/settings' }
   ];
 
   function activeCampaignId() {
@@ -32,7 +34,7 @@
           '<a class="brand" href="#/"><span class="glyph"></span><b>Frontdoor</b></a>' +
           '<button class="side-search" id="side-search"><span>⌕</span><span>Search</span><kbd>⌘K</kbd></button>' +
           '<div>' +
-            '<p class="cap side-label">Acme campaign</p>' +
+            '<p class="cap side-label">Campaign</p>' +
             '<nav class="side-nav" id="side-nav" aria-label="Sections"></nav>' +
           '</div>' +
           '<div class="side-foot">' +
@@ -67,14 +69,18 @@
 
   function paintNav(activeKey) {
     var cid = activeCampaignId();
+    var c = cid ? Store.campaign(cid) : null;
     document.getElementById('side-nav').innerHTML = NAV.map(function (n) {
       if (n.needsCampaign && !cid) return '';
       var href = n.href.replace(':id', cid || '');
+      var count = '';
+      if (c && n.count === 'contacts') count = String(c.contacts.length);
+      if (c && n.count === 'steps') count = String(c.steps.length);
       return '<a class="nav-item" href="#' + href + '" data-key="' + n.key + '"' +
         (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
         '<span class="nav-ico">' + n.icon + '</span>' +
         '<span class="nav-label">' + esc(n.label) + '</span>' +
-        (n.count ? '<span class="nav-count">' + n.count + '</span>' : '') + '</a>';
+        (count ? '<span class="nav-count">' + count + '</span>' : '') + '</a>';
     }).join('');
   }
 
