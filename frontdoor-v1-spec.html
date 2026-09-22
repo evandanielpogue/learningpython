@@ -1,0 +1,634 @@
+<title>Frontdoor Platform Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#F5F6F9;
+    --surface:#FFFFFF;
+    --surface-2:#EDEFF4;
+    --ink:#0E1116;
+    --ink-2:#4A5260;
+    --ink-3:#7A8394;
+    --line:#DCE0E8;
+    --line-2:#C6CCD8;
+    --accent:#2F5BEA;
+    --accent-tint:#E4EAFD;
+    --do:#0E9F6E;
+    --do-tint:#DCF5EC;
+    --dont:#D93A3F;
+    --dont-tint:#FBE4E5;
+    --warn:#B07300;
+    --warn-tint:#FBF0D9;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(14,17,22,.05), 0 8px 20px -12px rgba(14,17,22,.2);
+    --shadow-lg:0 2px 4px rgba(14,17,22,.05), 0 24px 48px -24px rgba(14,17,22,.32);
+    --display:'Sora',system-ui,sans-serif;
+    --body:'IBM Plex Sans',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#0A0C10; --surface:#12161D; --surface-2:#1A1F28;
+      --ink:#E8ECF3; --ink-2:#A3ACBC; --ink-3:#77808F;
+      --line:#242B36; --line-2:#333C4A;
+      --accent:#7B96FF; --accent-tint:#18203A;
+      --do:#3ED9A3; --do-tint:#0F2C24; --dont:#FF7376; --dont-tint:#2E1517;
+      --warn:#FFC55C; --warn-tint:#2C2210;
+      --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 20px -12px rgba(0,0,0,.7);
+      --shadow-lg:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -24px rgba(0,0,0,.9);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0A0C10; --surface:#12161D; --surface-2:#1A1F28;
+    --ink:#E8ECF3; --ink-2:#A3ACBC; --ink-3:#77808F;
+    --line:#242B36; --line-2:#333C4A;
+    --accent:#7B96FF; --accent-tint:#18203A;
+    --do:#3ED9A3; --do-tint:#0F2C24; --dont:#FF7376; --dont-tint:#2E1517;
+    --warn:#FFC55C; --warn-tint:#2C2210;
+    --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 20px -12px rgba(0,0,0,.7);
+    --shadow-lg:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -24px rgba(0,0,0,.9);
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--ground); color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.62; -webkit-font-smoothing:antialiased}
+  h1,h2,h3,h4{font-family:var(--display); margin:0; line-height:1.14; letter-spacing:-.025em; text-wrap:balance}
+  h1{font-size:clamp(2.1rem,5vw,3.1rem); font-weight:800}
+  h2{font-size:clamp(1.45rem,3vw,1.95rem); font-weight:700}
+  h3{font-size:1.1rem; font-weight:700; letter-spacing:-.015em}
+  h4{font-size:.79rem; font-weight:700; text-transform:uppercase; letter-spacing:.09em}
+  p{margin:0}
+  a{color:var(--accent)}
+  .wrap{max-width:1000px; margin-inline:auto; padding-inline:20px}
+  .mono{font-family:var(--mono)}
+  .eyebrow{font-family:var(--mono); font-size:.73rem; text-transform:uppercase; letter-spacing:.13em; color:var(--accent)}
+  .lede{font-size:clamp(1.03rem,2vw,1.17rem); color:var(--ink-2); max-width:66ch; line-height:1.6}
+
+  /* header */
+  .top{position:sticky; top:env(safe-area-inset-top,0px); z-index:30; background:color-mix(in srgb,var(--ground) 90%,transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--line)}
+  .top .wrap{display:flex; align-items:center; gap:12px 20px; flex-wrap:wrap; padding-block:12px}
+  .logo{font-family:var(--display); font-weight:800; font-size:1.02rem; letter-spacing:-.03em; margin-right:auto; display:flex; align-items:center; gap:9px}
+  .dot{width:11px; height:11px; border-radius:3px; background:var(--accent); flex:none}
+  .jump{display:flex; gap:2px; flex-wrap:wrap}
+  .jump a{font-family:var(--display); font-weight:600; font-size:.88rem; color:var(--ink-2); text-decoration:none; padding:7px 12px; border-radius:8px}
+  .jump a:hover{background:var(--surface-2); color:var(--ink)}
+
+  section{padding-block:clamp(38px,5vw,62px); scroll-margin-top:72px}
+  .sec-head{display:flex; flex-direction:column; gap:11px; margin-bottom:26px; max-width:70ch}
+  hr{border:none; border-top:1px solid var(--line); margin:0}
+
+  .grid{display:grid; gap:15px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(285px,1fr))}
+  .g4{grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:22px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:9px}
+  .card p{font-size:.95rem; color:var(--ink-2)}
+  .num{font-family:var(--mono); font-size:.75rem; color:var(--accent); background:var(--accent-tint); padding:4px 9px; border-radius:6px; width:fit-content}
+
+  pre{background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:18px 20px; overflow-x:auto; margin:0}
+  pre code{font-family:var(--mono); font-size:.83rem; line-height:1.66; color:var(--ink-2); white-space:pre}
+  .k{color:var(--accent)}
+  .c{color:var(--ink-3)}
+
+  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow)}
+  table{border-collapse:collapse; width:100%; min-width:600px; font-size:.93rem}
+  th,td{text-align:left; padding:13px 17px; border-bottom:1px solid var(--line); vertical-align:top}
+  thead th{font-family:var(--mono); font-size:.71rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); font-weight:500; background:var(--surface-2)}
+  td{color:var(--ink-2)}
+  td:first-child{color:var(--ink); font-weight:600}
+  tbody tr:last-child td{border-bottom:none}
+  td .day{font-family:var(--mono); color:var(--accent)}
+
+  .callout{background:var(--accent-tint); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:var(--radius); padding:20px 22px; display:grid; gap:8px}
+  .callout h3{color:var(--accent)}
+  .callout p{font-size:.96rem; color:var(--ink-2)}
+  .callout.warn{background:var(--warn-tint); border-left-color:var(--warn)}
+  .callout.warn h3{color:var(--warn)}
+
+  /* skill filter */
+  .filters{display:flex; gap:7px; flex-wrap:wrap; margin-bottom:20px; position:sticky; top:60px; z-index:20; background:color-mix(in srgb,var(--ground) 92%,transparent); backdrop-filter:blur(8px); padding-block:10px}
+  .fchip{font-family:var(--display); font-weight:600; font-size:.86rem; padding:8px 15px; border-radius:99px; border:1.5px solid var(--line-2); background:var(--surface); color:var(--ink-2); cursor:pointer; transition:all .15s ease}
+  .fchip:hover{border-color:var(--accent); color:var(--accent)}
+  .fchip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--ground); font-weight:700}
+  .fchip:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+
+  /* skill card */
+  .skill{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:15px; overflow:hidden}
+  .skill-head{display:flex; align-items:flex-start; gap:14px; padding:20px 22px; flex-wrap:wrap}
+  .skill-id{font-family:var(--mono); font-size:.78rem; color:var(--ink-3); padding-top:3px; flex:none}
+  .skill-title{flex:1; min-width:180px; display:flex; flex-direction:column; gap:7px}
+  .tags{display:flex; gap:6px; flex-wrap:wrap}
+  .tag{font-family:var(--mono); font-size:.69rem; text-transform:uppercase; letter-spacing:.06em; padding:3px 8px; border-radius:5px; background:var(--surface-2); color:var(--ink-2); border:1px solid var(--line)}
+  .tag.day{background:var(--accent-tint); color:var(--accent); border-color:transparent}
+  .copy{font-family:var(--display); font-weight:600; font-size:.82rem; padding:8px 14px; border-radius:8px; border:1.5px solid var(--line-2); background:var(--surface); color:var(--ink-2); cursor:pointer; flex:none}
+  .copy:hover{border-color:var(--accent); color:var(--accent)}
+  .copy:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+  .skill-body{padding:0 22px 22px; display:grid; gap:18px}
+  .obj{font-size:1rem; color:var(--ink); font-weight:500; padding:14px 16px; background:var(--surface-2); border-radius:10px}
+  .obj b{font-family:var(--mono); font-size:.7rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); display:block; margin-bottom:3px; font-weight:500}
+  .cols{display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .block{display:flex; flex-direction:column; gap:8px}
+  .block h4{color:var(--ink-3)}
+  .block ul{margin:0; padding-left:18px; display:grid; gap:6px; font-size:.93rem; color:var(--ink-2)}
+  .struct{display:grid; gap:7px}
+  .struct div{display:grid; grid-template-columns:78px 1fr; gap:11px; font-size:.93rem; color:var(--ink-2); align-items:start}
+  .struct span{font-family:var(--mono); font-size:.71rem; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); padding-top:3px}
+  .ex{border-radius:11px; padding:16px 18px; font-size:.94rem; line-height:1.6; display:grid; gap:9px}
+  .ex.good{background:var(--do-tint); border:1px solid var(--line)}
+  .ex.bad{background:var(--dont-tint); border:1px solid var(--line)}
+  .ex h4{font-size:.71rem}
+  .ex.good h4{color:var(--do)}
+  .ex.bad h4{color:var(--dont)}
+  .ex .msg{font-family:var(--mono); font-size:.86rem; line-height:1.68; color:var(--ink); white-space:pre-wrap}
+  .ex .why{font-size:.87rem; color:var(--ink-2); border-top:1px solid var(--line); padding-top:9px}
+  .hidden{display:none}
+
+  footer{border-top:1px solid var(--line); padding-block:30px 46px; margin-top:30px}
+  footer p{font-size:.87rem; color:var(--ink-3)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <span class="logo"><span class="dot"></span>Frontdoor</span>
+    <nav class="jump">
+      <a href="#platform">Platform</a>
+      <a href="#loop">Data loop</a>
+      <a href="#model">Model</a>
+      <a href="#sequence">Sequence</a>
+      <a href="#skills">Skills</a>
+      <a href="#build">Build order</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section id="intro" style="padding-bottom:12px">
+  <p class="eyebrow" style="margin-bottom:14px">V1 Specification · Platform</p>
+  <h1>Run your job search like a named account.</h1>
+  <p class="lede" style="margin-top:18px">A self-serve platform that turns one job listing into a five-person org map, a fourteen-day multithreaded sequence, and a public account plan addressed to that company. Built first for SaaS account executives, who already speak the language.</p>
+  <div class="grid g4" style="margin-top:26px">
+    <div class="card"><span class="num">8×</span><p>Outbound-sourced candidates are 8× more likely to be hired than inbound applicants.</p></div>
+    <div class="card"><span class="num">11% / 2.6%</span><p>Direct sourcing produces 11% of all hires from 2.6% of applications.</p></div>
+    <div class="card"><span class="num">242–300+</span><p>Applications per open role in 2026 — roughly triple the 2021 baseline.</p></div>
+    <div class="card"><span class="num">67%</span><p>Of US HR leaders say AI-generated applications have slowed their hiring.</p></div>
+  </div>
+  <p class="lede" style="margin-top:20px">AI made applying free, so volume became noise. Signal moved to the people who arrive through a human path. This platform manufactures that path, at a deliberate cap of five people per company.</p>
+</section>
+
+<hr>
+
+<section id="platform">
+  <div class="sec-head">
+    <p class="eyebrow">What makes it a platform</p>
+    <h2>Four things separate this from a template library with AI bolted on</h2>
+    <p class="lede">Contact lookup is already commoditized — DearHiringManager, FindHR, ContactHire and Jobifer all sell "paste a job URL, get the hiring manager." None of them have any of the following.</p>
+  </div>
+
+  <div class="grid g2">
+    <article class="card">
+      <span class="num">01</span>
+      <h3>An outcome feedback loop</h3>
+      <p>Every touch has a logged outcome: no reply, reply, meeting, referral. That data attaches to the skill, persona, channel, seniority and company type that produced it. Within a few thousand campaigns you know which opener works on a VP Sales at a Series B, and nobody else does. This is the only genuinely defensible asset in the product.</p>
+    </article>
+    <article class="card">
+      <span class="num">02</span>
+      <h3>User-owned, forkable skills</h3>
+      <p>Skills are visible, editable instruction packs, not hidden prompts. A user's edits persist across campaigns and compound into a personal playbook. Eight tuned skills is a switching cost. Publishing them is a marketplace.</p>
+    </article>
+    <article class="card">
+      <span class="num">03</span>
+      <h3>A public artifact that markets itself</h3>
+      <p>The account-plan page is the only surface a hiring manager sees. Every VP Sales who opens one is a future customer or referrer. That is why the page ships free and unbranded upsells are the paywall, not the page itself.</p>
+    </article>
+    <article class="card">
+      <span class="num">04</span>
+      <h3>A second side of the market</h3>
+      <p>Career coaches, outplacement firms and sales bootcamps buy seats, and — unlike the job seeker — they do not churn when the candidate gets hired. That is the answer to a customer base whose success condition is cancelling.</p>
+    </article>
+  </div>
+
+  <div class="callout" style="margin-top:22px">
+    <h3>Seed data is the bootstrap problem</h3>
+    <p>The feedback loop is worthless at zero campaigns, and it is the thing that makes this defensible. So the first ten campaigns run <em>through the real platform</em>, with the founder doing research and review behind the seams — concierge onboarding on top of working software, not an agency. Those ten produce the first outcome rows, the first reply-rate benchmark, and the marketing number everything else is sold on.</p>
+  </div>
+</section>
+
+<hr>
+
+<section id="loop">
+  <div class="sec-head">
+    <p class="eyebrow">The engine</p>
+    <h2>Outcome capture is the product's spine</h2>
+    <p class="lede">Most job tools end at "here's your message." The value compounds only if the platform learns what happened next — which means capturing outcomes has to be nearly free for the user.</p>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>How outcomes get captured</h3>
+      <ul style="margin:4px 0 0; padding-left:18px; display:grid; gap:7px; font-size:.95rem; color:var(--ink-2)">
+        <li><b>Page views</b> — the page fires an event when opened. Zero user effort, and the strongest signal in the system.</li>
+        <li><b>One-tap logging</b> — each scheduled touch shows three buttons: no reply / replied / meeting booked.</li>
+        <li><b>Day-14 debrief</b> — one screen at campaign close: what happened, which message got the reply, paste it back.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>What it feeds</h3>
+      <ul style="margin:4px 0 0; padding-left:18px; display:grid; gap:7px; font-size:.95rem; color:var(--ink-2)">
+        <li>Per-skill reply rates, sliced by persona, seniority, channel and company stage</li>
+        <li>Automatic reordering of the sequence when a variant beats the default</li>
+        <li>The public benchmark — "campaigns on Frontdoor get a 34% reply rate" — which is the entire marketing engine</li>
+        <li>Skill marketplace ranking, so the best published packs surface on merit</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout warn" style="margin-top:22px">
+    <h3>Store queries, not people</h3>
+    <p>Contacts are resolved at query time through a licensed provider, rendered to the user, and discarded. Do not warehouse names, employers and titles. LinkedIn's anti-scraping terms are enforceable as contract claims — hiQ Labs ended with a $500,000 judgment, a permanent injunction, and an order to delete all code and data. Separately, a California company holding a database of personal information it did not collect first-party may qualify as a data broker under the Delete Act: $6,000 annual registration, DROP checks every 45 days, and $200 per day per consumer in penalties. Outcome rows reference a hashed contact key and a role, never a person.</p>
+  </div>
+</section>
+
+<hr>
+
+<section id="model">
+  <div class="sec-head">
+    <p class="eyebrow">Architecture</p>
+    <h2>Object model</h2>
+    <p class="lede">Campaign is the unit of everything — pricing, UI, and measurement. One campaign is one user, one company, one role. That constraint is the product.</p>
+  </div>
+
+<pre><code>User
+ ├─ VoiceProfile      <span class="c">// from conversational onboarding; user-visible and editable</span>
+ ├─ Resume            <span class="c">// parsed to structured claims, not just a stored PDF</span>
+ ├─ SkillOverride[]   <span class="c">// the user's edits; persist across every campaign</span>
+ └─ Campaign
+     ├─ Company       <span class="c">// research brief + a point of view to react to</span>
+     ├─ Role          <span class="c">// pasted JD, parsed to requirements</span>
+     ├─ Contact[]     <span class="c">// max 5, one per persona, resolved at query time</span>
+     ├─ Play[]        <span class="c">// skill instance = Skill + VoiceProfile + Contact + Company</span>
+     ├─ Touch[]       <span class="c">// scheduled send, channel, status, </span><span class="k">outcome</span>
+     └─ Page          <span class="c">// public account plan, one per campaign</span>
+
+<span class="k">Skill</span> {
+  id, name, persona, stage, channel, default_day
+  objective       <span class="c">// the single job this message does</span>
+  principles[]    <span class="c">// rules the play obeys — shown to the user</span>
+  structure       <span class="c">// opening / middle / ask</span>
+  constraints     <span class="c">// word cap, one ask, banned phrases</span>
+  examples[]      <span class="c">// good + bad, annotated</span>
+  stats           <span class="c">// reply rate, meeting rate, n — from the loop</span>
+}</code></pre>
+
+  <div class="grid g2" style="margin-top:20px">
+    <article class="card">
+      <h3>Conversational onboarding</h3>
+      <p>Six questions in a chat interface, about four minutes. This is a discovery call, not a form — it produces the raw material every downstream message depends on. Intent-adaptive conversational onboarding shows roughly 3.2× median activation improvement over fixed tours, but input quality is the real reason here.</p>
+      <ol style="margin:6px 0 0; padding-left:18px; display:grid; gap:6px; font-size:.93rem; color:var(--ink-2)">
+        <li>What role are you going after?</li>
+        <li>Walk me through the win you're proudest of.</li>
+        <li>What do you do that most people in your role don't?</li>
+        <li>Paste a message you've sent that you were proud of.</li>
+        <li>Peer, expert, or eager — how do you want to come across?</li>
+        <li>Anything you don't want said about you?</li>
+      </ol>
+      <p style="margin-top:8px"><b>Question 4 is the highest-value input in the product.</b> Show the resulting VoiceProfile back to the user — "here's how I'll write as you" is the activation moment.</p>
+    </article>
+    <article class="card">
+      <h3>The page</h3>
+      <p>Not a portfolio. A one-page account plan addressed to one company — the job-search equivalent of a mutual action plan.</p>
+      <ul style="margin:4px 0 0; padding-left:18px; display:grid; gap:6px; font-size:.93rem; color:var(--ink-2)">
+        <li>Name, target role, one-line thesis</li>
+        <li><b>Why [Company]</b> — the point of view</li>
+        <li>Three proof points with numbers</li>
+        <li>A 30-60-90 for <em>this</em> role (a generic one defeats the purpose)</li>
+        <li>60–90 second video — embed Loom or YouTube, don't host</li>
+        <li>Resume download and contact</li>
+      </ul>
+      <p style="margin-top:8px">Render from a DB row on a dynamic route, never statically generated per user. On Cloudflare, static egress is free and unmetered and Workers Paid is $5/month; at ten thousand users this is tens of dollars, not a cost center.</p>
+    </article>
+  </div>
+</section>
+
+<hr>
+
+<section id="sequence">
+  <div class="sec-head">
+    <p class="eyebrow">The play</p>
+    <h2>Five people, two touches each, fourteen days</h2>
+    <p class="lede">The cap is a feature. It is what keeps this from becoming the flood it exists to escape, and it is the honest answer to "what happens when everyone has this tool."</p>
+  </div>
+
+  <div class="tablewrap" style="margin-bottom:20px">
+    <table>
+      <thead><tr><th>Persona</th><th>Sales equivalent</th><th>Why they matter</th><th>The ask</th></tr></thead>
+      <tbody>
+        <tr><td>Hiring manager</td><td>Economic buyer</td><td>Actually decides</td><td>A conversation</td></tr>
+        <tr><td>Recruiter / TA</td><td>Gatekeeper</td><td>Owns the process</td><td>Process clarity</td></tr>
+        <tr><td>Future peer</td><td>Coach</td><td>Lowest-risk ask, best intel</td><td>Information</td></tr>
+        <tr><td>Skip-level / VP</td><td>Executive sponsor</td><td>Can create or push a req</td><td>A point of view</td></tr>
+        <tr><td>Connector</td><td>Warm path</td><td>Alum, ex-employee, shared tie</td><td>An introduction</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Day</th><th>Who</th><th>Channel</th><th>Skill</th></tr></thead>
+      <tbody>
+        <tr><td class="day">0</td><td>—</td><td>ATS</td><td>Apply anyway. You need to exist in the system.</td></tr>
+        <tr><td class="day">0</td><td>Peer</td><td>LinkedIn / email</td><td>S01 · Peer Intel Request</td></tr>
+        <tr><td class="day">2</td><td>Recruiter</td><td>Email</td><td>S02 · Recruiter Intro</td></tr>
+        <tr><td class="day">3</td><td>Hiring manager</td><td>Email</td><td>S03 · HM Cold Open</td></tr>
+        <tr><td class="day">5</td><td>Connector</td><td>LinkedIn</td><td>S04 · Connector Warm Ask</td></tr>
+        <tr><td class="day">7</td><td>Peer</td><td>Reply</td><td>S05 · Peer Referral Ask</td></tr>
+        <tr><td class="day">8</td><td>Hiring manager</td><td>Email</td><td>S06 · HM POV Follow-up</td></tr>
+        <tr><td class="day">10</td><td>Skip-level</td><td>Email</td><td>S07 · Skip-Level POV</td></tr>
+        <tr><td class="day">12</td><td>Recruiter</td><td>Phone</td><td>S08 · Recruiter Call · S09 · Voicemail</td></tr>
+        <tr><td class="day">14</td><td>Anyone silent</td><td>Email</td><td>S12 · Breakup</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout" style="margin-top:22px">
+    <h3>Peer first, hiring manager third</h3>
+    <p>No good account executive opens an account by calling the CEO. You develop a coach, gather intel, then go up with something to say. This ordering is the clearest signal in the product that it was built by someone who has actually run a territory — and teaching users <em>why</em> the order is the order is the education layer doing real work.</p>
+  </div>
+</section>
+
+<hr>
+
+<section id="skills">
+  <div class="sec-head">
+    <p class="eyebrow">The IP</p>
+    <h2>The twelve stock skills</h2>
+    <p class="lede">Every one is visible and editable in the product. Showing the instructions rather than hiding a prompt is both the teaching mechanism and the switching cost.</p>
+  </div>
+
+  <div class="filters" role="group" aria-label="Filter skills by persona">
+    <button class="fchip" data-f="all" aria-pressed="true">All 12</button>
+    <button class="fchip" data-f="peer" aria-pressed="false">Peer</button>
+    <button class="fchip" data-f="recruiter" aria-pressed="false">Recruiter</button>
+    <button class="fchip" data-f="hm" aria-pressed="false">Hiring manager</button>
+    <button class="fchip" data-f="exec" aria-pressed="false">Skip-level</button>
+    <button class="fchip" data-f="connector" aria-pressed="false">Connector</button>
+    <button class="fchip" data-f="any" aria-pressed="false">Any stage</button>
+  </div>
+
+  <div id="skills-host"></div>
+</section>
+
+<hr>
+
+<section id="build">
+  <div class="sec-head">
+    <p class="eyebrow">Sequencing</p>
+    <h2>Build order</h2>
+  </div>
+
+  <div class="grid g2">
+    <article class="card">
+      <span class="num">Weeks 1–3</span>
+      <h3>The spine</h3>
+      <p>Auth, onboarding chat → VoiceProfile, resume parse, JD parse, campaign creation, the page renderer with view events. No contact lookup yet — the user enters contacts manually. Ship this and it is already usable.</p>
+    </article>
+    <article class="card">
+      <span class="num">Weeks 4–5</span>
+      <h3>Skills engine</h3>
+      <p>The twelve skills as data, the composer (Skill + VoiceProfile + Contact + Company), the editable skill view, the two sliders, and the annotation layer. Generation is the easy part; the schema is the product.</p>
+    </article>
+    <article class="card">
+      <span class="num">Week 6</span>
+      <h3>Sequence and outcomes</h3>
+      <p>The fourteen-day scheduler, one-tap outcome logging, the day-14 debrief, and the stats pipeline. Nothing auto-sends — the user sends from their own email and LinkedIn, which dodges deliverability, platform terms and spam liability, and produces better outreach anyway.</p>
+    </article>
+    <article class="card">
+      <span class="num">Weeks 7–8</span>
+      <h3>Contact resolution and the first ten</h3>
+      <p>Licensed provider integration, query-time only. Then run ten real campaigns through the platform with concierge support behind the seams to seed the outcome data.</p>
+    </article>
+  </div>
+
+  <div class="grid g2" style="margin-top:18px">
+    <article class="card">
+      <h3>Pricing</h3>
+      <ul style="margin:4px 0 0; padding-left:18px; display:grid; gap:7px; font-size:.94rem; color:var(--ink-2)">
+        <li><b>Free</b> — 1 campaign, 3 contacts, branded page. The distribution loop.</li>
+        <li><b>$99 per campaign</b> — 5 contacts, full sequence, all skills, unbranded page, 30 days.</li>
+        <li><b>$199 for three</b> — the real product. Nobody targets one company.</li>
+        <li><b>$29/mo</b> — custom domain, pages stay live, skill library persists.</li>
+      </ul>
+      <p style="margin-top:8px">Priced against a $150k role, not against Teal's $29/month. Freemium conversion runs about 4% in normal SaaS and worse in job tools, and the customer's success condition is cancelling — so campaign pricing, not subscription, carries the business.</p>
+    </article>
+    <article class="card">
+      <h3>Cut from V1</h3>
+      <ul style="margin:4px 0 0; padding-left:18px; display:grid; gap:7px; font-size:.94rem; color:var(--ink-2)">
+        <li>Auto-send of any kind</li>
+        <li>LinkedIn integration</li>
+        <li>Video hosting</li>
+        <li>Job board scraping — the user pastes the JD</li>
+        <li>Mobile app</li>
+        <li>Coach and team dashboards (that is V2, and it is the business)</li>
+        <li>Resume rewriting — Teal's game, a race to zero</li>
+      </ul>
+    </article>
+  </div>
+
+  <div class="callout" style="margin-top:22px">
+    <h3>Kill criteria</h3>
+    <p>Ten campaigns. If reply rate across touches is under 15% and fewer than three campaigns produce a first conversation, the thesis is wrong and you found out for the price of two weekends. If reply rate clears 30% and one in three campaigns produces an interview, you have a product and its entire marketing message in the same number.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="wrap">
+  <p>Frontdoor · V1 platform specification · Draft for build</p>
+</footer>
+
+<script>
+var SKILLS = [
+{id:'S01',f:'peer',name:'Peer Intel Request',persona:'Future peer',stage:'First touch',channel:'LinkedIn / email',day:'Day 0',
+ obj:'Start a human conversation with a future teammate and learn something you could not learn from the job description. Not to get a referral. Not yet.',
+ pr:['Ask for information, not a job — it is the lowest-risk thing a stranger can give you.','Be honest that you applied. Pretending otherwise is transparent and costs you the relationship.','One specific question they can answer in two sentences.','Pick someone one level at or below the role, not above it. They have time and no stake in gatekeeping.'],
+ st:[['Opening','Who you are in six words, and the honest reason you are writing.'],['Middle','One line showing you read something real about the team or the product.'],['Ask','A single question about what the work is actually like.']],
+ co:['Under 90 words','One question mark in the whole message','No resume, no attachment, no link','Never the words "pick your brain" or "quick chat"'],
+ good:{msg:"Hi Dana — I applied for the Mid-Market AE role and figured I'd go to the source rather than the portal.\n\nI saw the team moved upmarket after the Series B. Curious what changed day to day when that happened — did cycles get longer, or just more people in the room?\n\nEither way, appreciate you reading this.",
+ why:'Honest about the application, shows specific research, asks one question a person can answer from experience, and makes replying feel low-stakes. No ask for a referral, a call, or a favour.'},
+ bad:{msg:"Hi Dana! I hope this message finds you well. I'm extremely passionate about SaaS sales and I noticed you work at Acme, which is an amazing company. I recently applied for the AE role and would love to pick your brain about the culture and get any tips you might have. Would you be open to a quick 15-minute chat this week? My resume is attached!",
+ why:'Four asks, zero specifics, an attachment, and every banned phrase in one paragraph. "Passionate" and "amazing company" are words that survive deletion — nothing is lost if you cut them, which means they were never carrying anything.'}},
+
+{id:'S02',f:'recruiter',name:'Recruiter Intro',persona:'Recruiter / TA',stage:'First touch',channel:'Email',day:'Day 2',
+ obj:'Get named in the recruiter\'s memory and confirm where the process actually stands, without adding to their workload.',
+ pr:['A recruiter\'s scarce resource is time, not candidates. Make the message cost them fifteen seconds.','Name the req exactly — title, location, ID if you have it.','One line of fit, quantified. Not a paragraph of narrative.','Ask a process question, not a favour. Process questions are their job to answer.'],
+ st:[['Opening','Req name and that you applied, in one line.'],['Middle','One sentence of relevance with a number in it.'],['Ask','A single question about timeline or process.']],
+ co:['Under 80 words','No attachment — they have your resume in the ATS','Do not ask them to "flag" you to anyone','Subject line names the role'],
+ good:{msg:"Subject: Mid-Market AE (Chicago) — applied Tuesday\n\nHi Priya — applied for the Mid-Market AE role on Tuesday. Quick context: I carried a $1.2M quota at a Series B selling into ops leaders, finished at 118% last year.\n\nIs the team still interviewing for this one, or is it further along than the posting suggests?\n\nThanks —\nEvan",
+ why:'Scannable in ten seconds. One number that qualifies him. The question is genuinely useful to ask and trivially cheap to answer, which is why it gets answered.'},
+ bad:{msg:"Hi Priya, I applied to a role at your company last week and haven't heard back. I'm a strong candidate with over 8 years of experience in sales and I've attached my resume for your convenience. Could you please let me know the status of my application and pass my information along to the hiring manager? I'm very interested in this opportunity.",
+ why:'Does not name the role, so it cannot be actioned. Contains a complaint, an attachment they already have, and an ask to do work on his behalf. "Strong candidate" is a claim with no evidence attached.'}},
+
+{id:'S03',f:'hm',name:'HM Cold Open',persona:'Hiring manager',stage:'First touch',channel:'Email',day:'Day 3',
+ obj:'Earn fifteen minutes by showing you already understand their business problem — the message that does the most work in the whole sequence.',
+ pr:['Lead with a view on their business. Never with your need.','You have three lines to earn the ask. Spend them on them, not you.','The page link replaces the resume. It is doing the credentialing.','One ask, and make it small enough to say yes to on a phone.'],
+ st:[['Opening','The observation — something specific and verifiable about their go-to-market.'],['Middle','The implication, and one line of why you are relevant to it.'],['Ask','Fifteen minutes, with an easy out.']],
+ co:['Under 120 words','No attachment','Never open with "I"','Subject line is the observation, not the role'],
+ good:{msg:"Subject: your SMB motion and the new pricing page\n\nMarcus — you moved to seat-based pricing in the spring and the SMB tier now starts at 5 seats. That usually means SMB reps stop selling and start qualifying, and the ones who can't run a two-call close get exposed fast.\n\nI ran that exact transition at Brightline last year — 40% of the team washed out, we rebuilt the discovery script, and landed at 112% for the year.\n\nI applied for the Mid-Market role. Put a 30-60-90 for it here: frontdoor.app/p/evan-acme\n\nWorth fifteen minutes, or should I stay in the queue?",
+ why:'The first paragraph is entirely about their business and shows he looked at the pricing page. The proof point maps directly to the problem he named. The ask gives a graceful no, which is exactly why it gets a yes.'},
+ bad:{msg:"Hi Marcus, I am reaching out because I am very interested in the Mid-Market AE position at Acme. I have 8 years of experience in SaaS sales and a proven track record of exceeding quota. I am a self-starter and a team player who thrives in fast-paced environments. I would love the opportunity to discuss how my skills and experience align with your team's needs. Please find my resume attached. Looking forward to hearing from you!",
+ why:'Every sentence is about the sender. "Proven track record," "self-starter," "team player," "fast-paced" are phrases that appear in every rejected application, which is what makes them expensive. Nothing here could not have been sent to any company.'}},
+
+{id:'S04',f:'connector',name:'Connector Warm Ask',persona:'Connector',stage:'First touch',channel:'LinkedIn',day:'Day 5',
+ obj:'Get a forwardable introduction from someone with a shared tie — former colleague, alum, ex-employee of the target company.',
+ pr:['Make the intro forwardable. Write the blurb so they have to do nothing but hit forward.','Name the exact person you want to meet. "Anyone at Acme" is not an ask, it is homework.','Give an explicit out in the message. It raises the yes rate, it does not lower it.','Ex-employees are underrated — they have context, no politics, and no downside to helping you.'],
+ st:[['Opening','The shared tie, named specifically.'],['Middle','What you are going after, in one line.'],['Ask','The named person, plus a two-line blurb they can forward as-is.']],
+ co:['Under 110 words','Blurb is separate and clearly marked so it can be copied','Never ask them to "put in a good word"','One named person per message'],
+ good:{msg:"Hey Sam — we overlapped at Brightline in 2022, you were on Dev's team.\n\nI'm going after the Mid-Market AE role at Acme and saw you spent two years there. If you're still in touch with Marcus Reed, would you be up for forwarding me along? Totally fine if that bridge isn't one you want to cross.\n\nSomething you could paste:\n\n\"Marcus — Evan ran our SMB-to-mid-market transition at Brightline and finished at 112% through it. He's applied for the Mid-Market role. Worth a look.\"",
+ why:'Names the tie, names the target, and hands over copy that requires zero thought. The explicit out removes the social cost of saying no, which is the thing that actually stops people replying.'},
+ bad:{msg:"Hey Sam! Long time no talk. Hope you're doing great. I saw you used to work at Acme — I'm job hunting right now and would love any connections you might have there. Do you know anyone who could help? Any intros would be hugely appreciated. Also if you hear of anything else in the market let me know, I'm open to a lot of different roles!",
+ why:'Delegates all the work. No named person, no named role, and "open to a lot of different roles" tells the reader there is no thesis to advocate for. A vague ask is harder to fulfil than a specific one, so it gets ignored.'}},
+
+{id:'S05',f:'peer',name:'Peer Referral Ask',persona:'Future peer',stage:'Follow-up',channel:'Reply',day:'Day 7',
+ obj:'Convert a peer who already replied into an internal referral. Only fires after a real exchange — never as a first touch.',
+ pr:['Earn it first. This skill is locked until the peer has replied at least once.','Name the mechanism — most companies have an internal referral portal and a bonus attached to it.','Hand them the blurb, same as the connector play.','Give the out, and mean it. A reluctant referral is worse than none.'],
+ st:[['Opening','Reference something specific they told you.'],['Middle','What you did with that information — proof you listened.'],['Ask','The referral, the mechanism, the blurb, the out.']],
+ co:['Under 120 words','Locked until a reply is logged','Never imply obligation','Acknowledge the referral bonus exists — pretending it does not is odd'],
+ good:{msg:"Dana — that detail about cycles going from 30 to 70 days was the most useful thing anyone's told me about this role. I rebuilt my 30-60-90 around a longer discovery motion because of it.\n\nIf it feels right after one conversation, would you be open to dropping me in the referral portal? No pressure at all — you've already been more helpful than you had to be.\n\nBlurb if it's useful: \"Evan ran the SMB-to-mid-market transition at Brightline, finished 112% through it. Applied for Mid-Market AE.\"",
+ why:'Proves he listened by showing what changed because of her answer. Names the portal. Provides the copy. The out is genuine, which is what makes the yes genuine.'},
+ bad:{msg:"Hey Dana, thanks so much for the reply! Since you've seen my background now, would you mind referring me for the role? I know you guys have a referral bonus so it'd be a win-win for both of us. I've attached my resume so you have everything you need. Really appreciate it, I know I'd be a great fit for the team!",
+ why:'One reply is not a relationship. "Win-win" frames a favour as a transaction and prices it insultingly low. "I know I\'d be a great fit" asks her to stake her credibility on his self-assessment.'}},
+
+{id:'S06',f:'hm',name:'HM POV Follow-up',persona:'Hiring manager',stage:'Follow-up',channel:'Email',day:'Day 8',
+ obj:'Re-open a silent thread by adding value, not pressure. The artifact does the asking.',
+ pr:['Never say "just following up" or "bumping this." Silence is information, not rudeness.','Bring something new every time — a teardown, a plan, a relevant observation.','If the page was viewed, that is your opening. Do not mention the tracking; mention the topic.','Shorter than the first message, not longer.'],
+ st:[['Opening','The new thing, stated in one line.'],['Middle','Why it matters to them.'],['Ask','Same small ask, restated once.']],
+ co:['Under 90 words','Must contain something not in the first message','No guilt, no "I know you\'re busy"','Never re-attach or re-link the same thing without a reason'],
+ good:{msg:"Marcus — spent an hour in your product trial and wrote up the three places I'd expect a mid-market buyer to stall in discovery. Added it to the same page: frontdoor.app/p/evan-acme\n\nThe second one is the interesting one — the integrations question comes up before security, which is backwards from what I'd expect at your ACV.\n\nStill happy to trade fifteen minutes if useful.",
+ why:'He did unpaid work and gave it away. The observation is specific enough to be arguable, which is what makes it worth replying to. The ask is restated once and does not escalate.'},
+ bad:{msg:"Hi Marcus, just bumping this to the top of your inbox in case it got buried! I know you're incredibly busy. I'm still very interested in the Mid-Market AE role and would love to connect whenever you have a moment. Let me know if there's a better time to reach out. Thanks again for your consideration!",
+ why:'Adds nothing. "Just bumping" announces that the message has no content. "I know you\'re busy" is an apology for existing, and it invites the reader to agree that they are too busy.'}},
+
+{id:'S07',f:'exec',name:'Skip-Level POV',persona:'Skip-level / VP',stage:'Escalation',channel:'Email',day:'Day 10',
+ obj:'Create top-down interest when the hiring manager has gone silent. Executives respond to business framing and brevity, and to nothing else.',
+ pr:['Under 80 words. An executive email that scrolls is an executive email that is archived.','Frame as business outcome, never as career need.','Never complain about the process or mention being ignored — it makes you the problem.','Give them a one-word decision.'],
+ st:[['Opening','The outcome you would own, in one line.'],['Middle','The single piece of evidence that you have done it.'],['Ask','Forward it down, or tell me to stay in the queue.']],
+ co:['Under 80 words','No pleasantries, no sign-off paragraph','Never mention the silent hiring manager','One link maximum'],
+ good:{msg:"Subject: mid-market ramp\n\nDiane — your mid-market segment is the one that has to carry next year's number, and new AE ramp is usually where that plan breaks.\n\nI took a mid-market team from 30-day to 70-day cycles at Brightline without losing the year. 112%.\n\nApplied for the AE role. Plan is here: frontdoor.app/p/evan-acme\n\nWorth passing down, or should I sit tight?",
+ why:'Sixty words. Opens on her problem, not his. One number. The ask is a binary an executive can answer in four words, which is the only kind of ask that gets answered at that level.'},
+ bad:{msg:"Dear Diane, I hope you don't mind me reaching out directly. I applied for the Mid-Market AE role three weeks ago and interviewed with your recruiter, but I haven't heard anything back from Marcus despite following up twice. I'm a highly motivated sales professional and I really believe I'd add value to your organization. I'd be grateful for any guidance you could offer on the process.",
+ why:'Escalating as a complaint makes the sender a management problem before they are an employee. "I hope you don\'t mind" signals he knows it is inappropriate and is doing it anyway. Asking a VP for "guidance on the process" is asking her to do HR\'s job.'}},
+
+{id:'S08',f:'recruiter',name:'Recruiter Call',persona:'Recruiter / TA',stage:'Follow-up',channel:'Phone',day:'Day 12',
+ obj:'Use the channel nobody uses. A live thirty-second conversation outperforms a fourth email, and most candidates will never try it.',
+ pr:['State who you are and why you are calling inside ten seconds.','Ask permission to continue. It is the difference between a call and an intrusion.','Have one question ready, not a pitch.','If they are busy, book a time and get off the phone immediately.'],
+ st:[['Open','Name, the req, and that you applied — one breath.'],['Permission','"Is now a bad time?"'],['Question','One process question, then stop talking.']],
+ co:['Under 90 seconds total','Never read a script aloud — it is an outline','One question','Do not ask to be passed to the hiring manager'],
+ good:{msg:"\"Hi Priya, it's Evan Pogue — I applied for the Mid-Market AE role in Chicago a couple weeks back. Is now a bad time?\n\n[pause — actually wait]\n\nQuick one: I wanted to check whether that req is still moving, or whether it's on hold. I'd rather know than keep guessing.\"",
+ why:'Identifies himself and the req immediately. The permission question is real and he waits for the answer. One question, phrased so either answer is useful to him, and he has given her a reason to be candid.'},
+ bad:{msg:"\"Hi, is this Priya? Great! So I've applied to a few roles at Acme and I really think I'd be a great addition to the team. I have eight years of SaaS sales experience and I've consistently exceeded quota. I was hoping you could tell me more about the roles you have open and maybe connect me with the hiring manager? I'm available any time this week for a call...\"",
+ why:'No permission asked, no specific req, and a monologue before she has agreed to the conversation. "A few roles" tells her he has no particular interest in any of them.'}},
+
+{id:'S09',f:'recruiter',name:'Voicemail',persona:'Recruiter / TA',stage:'Follow-up',channel:'Phone',day:'Day 12',
+ obj:'Leave something that gets a callback, in a channel where the bar is on the floor.',
+ pr:['Twenty seconds. Anything longer gets deleted at second twelve.','Number twice — once at the start, once at the end. People write it down on the second pass.','One hook, no pitch.','Say you will follow up by email, then do it, so the voicemail and the inbox reinforce each other.'],
+ st:[['Open','Name, number, the req.'],['Hook','One line of why they should care.'],['Close','Number again, and what you will do next.']],
+ co:['Under 20 seconds','Number stated twice, slowly','No callback request as the only ask','Speak 20% slower than feels natural'],
+ good:{msg:"\"Priya, Evan Pogue, 312-555-0148. Calling about the Mid-Market AE role in Chicago — I applied two weeks ago and I ran the same upmarket transition Acme's going through now.\n\nJust trying to find out if that req's still live. 312-555-0148. I'll follow up by email too.\"",
+ why:'Nineteen seconds. Number twice. One line of relevance. The email follow-up means the voicemail does not have to carry the whole job, so it can stay short.'},
+ bad:{msg:"\"Hi Priya, my name is Evan and I'm calling regarding a position I saw posted on your website — I believe it was the Mid-Market Account Executive role, although I've applied to a couple of things so I want to make sure I have the right one. I have extensive experience in SaaS sales and I'd really love to discuss the opportunity further. If you could give me a call back at your earliest convenience that would be great. Thanks so much, looking forward to hearing from you!\"",
+ why:'Forty-five seconds, number never given, and he is unsure which role he applied to. "At your earliest convenience" is filler that signals no real urgency and no real reason to call back.'}},
+
+{id:'S10',f:'any',name:'Video Script',persona:'Any',stage:'Asset',channel:'Video',day:'Embedded on page',
+ obj:'A 60–90 second video that proves you are a real person with a point of view. Embedded on the page, never attached to an email.',
+ pr:['Shot on a phone is fine. Over-produced reads as a marketing asset and lowers trust.','Eye contact with the lens, not the screen. This is the single biggest quality lever.','No slides, no screen share, no intro music.','Say their company name in the first ten seconds so it cannot be reused — and so it obviously was not.'],
+ st:[['0–10s','Who you are and why this company specifically.'],['10–40s','The point of view — the same observation as the HM email, spoken.'],['40–60s','One proof point with a number.'],['60–75s','The ask, spoken plainly to camera.']],
+ co:['Under 90 seconds — hard stop','Company named in the first ten seconds','One take is fine; over-editing reads as evasive','Never mention that you are between roles'],
+ good:{msg:"\"Hey Marcus — Evan Pogue. Made this just for the Acme mid-market role, so it'll be short.\n\nWhen you moved to seat-based pricing in the spring, your SMB reps stopped selling and started qualifying. I've watched that happen — at Brightline it washed out 40% of the team in two quarters, because a two-call close is a different job than a one-call close.\n\nWe rebuilt discovery around it and finished the year at 112%.\n\nThat's the thing I'd want to work on. If it's worth fifteen minutes, I'm easy to reach. Thanks for watching.\"",
+ why:'Names the company in the first eight seconds. The content is a business argument, not a biography. Ends with the same small ask as the email, so the whole campaign says one thing.'},
+ bad:{msg:"\"Hi there! My name is Evan and I'm so excited to be applying for this opportunity. A little bit about me — I've been in SaaS sales for eight years, starting my career at... [continues for two minutes] ...and in my free time I love hiking and spending time with my family. I'm a real people person and I think I'd be a fantastic culture fit. Thanks for considering my application!\"",
+ why:'"Hi there" means it was made once and sent everywhere. It is a spoken resume, which is strictly worse than a written one because it cannot be skimmed. Culture fit is a claim the viewer makes, not one the candidate can assert.'}},
+
+{id:'S11',f:'any',name:'Post-Conversation Thank You',persona:'Any',stage:'Advance',channel:'Email',day:'Within 12 hours',
+ obj:'Advance the deal. Gratitude is the wrapper, not the content.',
+ pr:['Restate what you heard, in their words. It proves you listened and it corrects you if you misheard.','Add one thing you did not say in the room.','Propose the next step rather than waiting to be told it.','Send within twelve hours or it reads as an afterthought.'],
+ st:[['Opening','The one thing from the conversation that landed hardest.'],['Middle','The new contribution — a thought, a resource, an answer you owed them.'],['Ask','The specific next step, with a date.']],
+ co:['Under 130 words','Must contain something not said in the conversation','Never "thank you for your time" as the opening line','Name a date, not "next steps"'],
+ good:{msg:"Marcus — the thing that stuck was that your churn is concentrated in accounts that never used the integrations, not in accounts that were sold badly. That reframes the AE job from closing to first-90-days design.\n\nOne thing I didn't mention: at Brightline we tied 20% of AE comp to 90-day activation. Painful quarter, then it fixed the problem permanently.\n\nYou mentioned a panel round — happy to do that any afternoon next week. Should I work with Priya on timing, or come back to you?",
+ why:'Opens on their insight, not his gratitude. Adds a concrete tactic he held back. Proposes the next step and names who should own scheduling, which makes saying yes trivial.'},
+ bad:{msg:"Hi Marcus, Thank you so much for taking the time to speak with me today. I really enjoyed our conversation and learning more about the role and the team. It only confirmed my excitement about the opportunity and I believe my skills would be a great match for what you're looking for. Please don't hesitate to reach out if you need anything else from me. I look forward to hearing about next steps!",
+ why:'Contains no information. Every sentence would survive being sent to any interviewer at any company. "I look forward to hearing about next steps" hands control of the process back and then waits.'}},
+
+{id:'S12',f:'any',name:'Breakup',persona:'Any',stage:'Close',channel:'Email',day:'Day 14',
+ obj:'Close the loop with dignity, leave the door open, and — often enough to matter — trigger the reply the previous five messages did not.',
+ pr:['No guilt, no passive aggression, no "I guess you\'re not interested."','Give something on the way out. It is the last impression and it costs nothing.','State plainly that you are stopping. That is what makes it work.','Leave a door that is genuinely open, because you may be back in eighteen months.'],
+ st:[['Opening','You are closing the loop. Say it directly.'],['Middle','The parting gift — a thought, an intro, a resource.'],['Ask','None, or the smallest possible one.']],
+ co:['Under 80 words','Zero guilt language','Must give something','Never send more than one'],
+ good:{msg:"Marcus — closing the loop on this one so I'm not cluttering your inbox.\n\nUnrelated to the role: the integrations-before-security thing I mentioned is worth handing to whoever owns your discovery script. It's a cheap fix.\n\nIf the mid-market seat opens up again, I'd still want the conversation. Good luck with the quarter.",
+ why:'Says he is stopping, which removes the pressure that was suppressing the reply. Gives something away on the exit. The door is open without being needy, and it is the message most likely in the whole sequence to get a response.'},
+ bad:{msg:"Hi Marcus, I've reached out several times over the past two weeks and haven't heard back, so I'm assuming you're not interested. I understand you're busy but a quick response would have been appreciated — I put a lot of effort into my application. If you change your mind, you know where to find me. Best of luck.",
+ why:'Scorekeeping. "A quick response would have been appreciated" converts two weeks of good work into a permanent negative impression, and hiring managers move between companies.'}}
+];
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function skillHTML(s){
+  return '<article class="skill" data-f="' + s.f + '">' +
+    '<div class="skill-head">' +
+      '<span class="skill-id">' + s.id + '</span>' +
+      '<div class="skill-title"><h3>' + esc(s.name) + '</h3><div class="tags">' +
+        '<span class="tag">' + esc(s.persona) + '</span>' +
+        '<span class="tag">' + esc(s.stage) + '</span>' +
+        '<span class="tag">' + esc(s.channel) + '</span>' +
+        '<span class="tag day">' + esc(s.day) + '</span>' +
+      '</div></div>' +
+      '<button class="copy" data-id="' + s.id + '">Copy pack</button>' +
+    '</div>' +
+    '<div class="skill-body">' +
+      '<p class="obj"><b>Objective</b>' + esc(s.obj) + '</p>' +
+      '<div class="cols">' +
+        '<div class="block"><h4>Principles</h4><ul>' + s.pr.map(function(p){return '<li>' + esc(p) + '</li>';}).join('') + '</ul></div>' +
+        '<div class="block"><h4>Structure</h4><div class="struct">' +
+          s.st.map(function(r){return '<div><span>' + esc(r[0]) + '</span>' + esc(r[1]) + '</div>';}).join('') +
+        '</div><h4 style="margin-top:6px">Constraints</h4><ul>' + s.co.map(function(c){return '<li>' + esc(c) + '</li>';}).join('') + '</ul></div>' +
+      '</div>' +
+      '<div class="cols">' +
+        '<div class="ex good"><h4>Works</h4><div class="msg">' + esc(s.good.msg) + '</div><p class="why">' + esc(s.good.why) + '</p></div>' +
+        '<div class="ex bad"><h4>Doesn\'t</h4><div class="msg">' + esc(s.bad.msg) + '</div><p class="why">' + esc(s.bad.why) + '</p></div>' +
+      '</div>' +
+    '</div></article>';
+}
+
+document.getElementById('skills-host').innerHTML = SKILLS.map(skillHTML).join('');
+
+document.querySelectorAll('.fchip').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    var f = chip.dataset.f;
+    document.querySelectorAll('.fchip').forEach(function(c){ c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'); });
+    document.querySelectorAll('.skill').forEach(function(card){
+      card.classList.toggle('hidden', !(f === 'all' || card.dataset.f === f));
+    });
+  });
+});
+
+document.getElementById('skills-host').addEventListener('click', function(e){
+  var btn = e.target.closest('.copy');
+  if (!btn) return;
+  var s = SKILLS.filter(function(x){ return x.id === btn.dataset.id; })[0];
+  if (!s) return;
+  var txt = s.id + ' — ' + s.name + '\n' +
+    'Persona: ' + s.persona + ' | Stage: ' + s.stage + ' | Channel: ' + s.channel + ' | ' + s.day + '\n\n' +
+    'OBJECTIVE\n' + s.obj + '\n\nPRINCIPLES\n' + s.pr.map(function(p){return '- ' + p;}).join('\n') +
+    '\n\nSTRUCTURE\n' + s.st.map(function(r){return r[0] + ': ' + r[1];}).join('\n') +
+    '\n\nCONSTRAINTS\n' + s.co.map(function(c){return '- ' + c;}).join('\n') +
+    '\n\nWORKS\n' + s.good.msg + '\n\nWhy: ' + s.good.why +
+    '\n\nDOESN\'T\n' + s.bad.msg + '\n\nWhy: ' + s.bad.why + '\n';
+  try {
+    navigator.clipboard.writeText(txt).then(function(){
+      btn.textContent = 'Copied';
+      setTimeout(function(){ btn.textContent = 'Copy pack'; }, 1600);
+    });
+  } catch (err) {
+    btn.textContent = 'Select & copy';
+  }
+});
+</script>
