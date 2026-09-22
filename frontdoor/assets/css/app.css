@@ -222,7 +222,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   .nav-item .nav-label, .nav-item .nav-count { display: none; }
   .nav-item .nav-ico { font-size: 15px; }
   .user-btn { justify-content: center; padding: var(--s-2) 0; }
-  .user-btn .grow, .user-btn > span:last-child { display: none; }
+  /* specificity has to beat the desktop rule further down the file, or the
+     name and email keep laying out behind the collapsed rail and push the
+     page wider than the window */
+  .sidebar .user-btn .grow, .sidebar .user-btn > span:last-child { display: none; }
   .topbar { padding: 0 var(--s-4); }
   .view { padding: var(--s-5) var(--s-4) var(--s-9); }
 }
@@ -1278,3 +1281,34 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .manual > summary:hover { color: var(--ink); }
 .manual-body { display: grid; gap: var(--s-3); padding-top: var(--s-4); }
 .facts dt .li-mark { margin-right: 3px; }
+
+/* ---- resume drop zone --------------------------------------------------- */
+.drop {
+  display: grid; justify-items: center; gap: 6px; padding: var(--s-8) var(--s-5);
+  border: 1.5px dashed var(--line-2); border-radius: var(--r-3); background: var(--sunk);
+  cursor: pointer; text-align: center;
+  transition: border-color var(--t-2) var(--ease), background var(--t-2) var(--ease);
+}
+.drop:hover, .drop.over { border-color: var(--ac); background: var(--ac-wash); }
+.drop.over { border-style: solid; }
+.drop b { font-size: var(--fs-md); font-weight: 600; }
+.drop-ic {
+  width: 40px; height: 40px; border-radius: var(--r-2); background: var(--panel);
+  border: 1px solid var(--line); display: grid; place-items: center; color: var(--ink-3);
+  font-size: 16px; margin-bottom: 2px;
+}
+.drop:hover .drop-ic, .drop.over .drop-ic { background: var(--ac); border-color: var(--ac); color: #fff; }
+.or {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--s-3); align-items: center;
+  margin: var(--s-5) 0 var(--s-3);
+}
+.or::before, .or::after { content: ""; height: 1px; background: var(--line); }
+.or span { font-size: var(--fs-xs); color: var(--ink-4); text-transform: uppercase; letter-spacing: .08em; font-family: var(--mono); }
+.linkish {
+  border: none; background: none; padding: 0; cursor: pointer; color: var(--ac);
+  font: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+.linkish:hover { color: var(--ac-hover, var(--ac)); }
+/* a chip never gets to be wider than what holds it */
+.chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.rankrow .rr-tag-warn { color: var(--warn); background: var(--warn-wash); }

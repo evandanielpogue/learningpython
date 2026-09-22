@@ -73,12 +73,14 @@
         '<span class="art">↑</span><h2>Start with your résumé</h2>' +
         '<p>We read it once. Every company you add after that gets its wins picked from it, matched to the listing.</p>' +
         '<button class="btn btn-primary btn-lg" id="go-import">Add your résumé <span class="arr">→</span></button>' +
+        '<p class="hint mt4">Want to look around first? <button class="linkish" id="go-demo">Load an example workspace</button></p>' +
         '</div></div>';
     } else if (!list.length) {
       html += '<div class="card" style="overflow:hidden"><div class="empty">' +
         '<span class="art">◎</span><h2>Add your first company</h2>' +
         '<p>Paste the job listing. We pull the role apart, pick the three wins that answer it, and go looking for the people behind the req.</p>' +
         '<button class="btn btn-primary btn-lg" id="go-new">Paste a job listing <span class="arr">→</span></button>' +
+        '<p class="hint mt4">Or <button class="linkish" id="go-demo">load an example workspace</button> to see a finished one.</p>' +
         '</div></div>';
     } else {
       html += '<div class="opps">' + list.map(oppCard).join('') +
@@ -106,6 +108,11 @@
     });
 
     UI.on(v, 'click', '#go-import', function () { Router.go('/import'); });
+    UI.on(v, 'click', '#go-demo', function () {
+      var c = Store.createSeedCampaign();
+      UI.toast('Example loaded. Acme, three days in.');
+      Router.go('/c/' + c.id);
+    });
     UI.on(v, 'click', '#go-new', function () { Router.go('/new'); });
     var top = document.getElementById('new-top');
     if (top) top.addEventListener('click', function () { Router.go('/new'); });
@@ -143,9 +150,10 @@
 
       '<div class="card p5 mb4">' +
         '<h3 class="mb3">How you write</h3>' +
-        '<p class="dim mb4" style="font-size:var(--fs-sm)">Pulled from the writing sample you handed over. Every draft starts from this.</p>' +
-        '<div class="row wrap g2">' + pf.voice.traits.map(function (t) { return '<span class="chip chip-accent">' + esc(t) + '</span>'; }).join('') + '</div>' +
-        '<p class="dim mt4" style="font-size:var(--fs-sm)">Reads like: short, leads with a number, one ask, no throat clearing.</p>' +
+        '<p class="dim mb4" style="font-size:var(--fs-sm)">Read off your own bullets. Every draft starts from this.</p>' +
+        (pf.voice.traits.length
+          ? '<div class="row wrap g2">' + pf.voice.traits.map(function (t) { return '<span class="chip chip-accent">' + esc(t) + '</span>'; }).join('') + '</div>'
+          : '<p class="hint">Nothing read yet. Import a résumé and this fills in from how you write.</p>') +
       '</div>' +
 
       '<div class="card p5 mb4">' +

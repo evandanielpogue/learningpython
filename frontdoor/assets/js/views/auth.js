@@ -33,7 +33,7 @@
           '<h1>' + (signup ? 'Start with one company' : 'Welcome back') + '</h1>' +
           '<p class="sub">' + (signup
             ? 'Pick a company you actually want to work at. We will build the rest around it.'
-            : 'Pick up where you left off with Acme.') + '</p>' +
+            : 'Pick up where you left off.') + '</p>' +
           '<form id="auth-form" novalidate>' +
             (signup ? '<div class="field"><label for="f-name">Your name</label>' +
               '<input class="input" id="f-name" value="Evan Pogue" autocomplete="name"></div>' : '') +
@@ -74,10 +74,8 @@
       err.classList.add('hide');
       UI.busy(btn, 750).then(function () {
         Store.signIn(email.value.trim());
-        if (signup) { UI.toast('Welcome. Start with your resume.'); Router.go('/import'); return; }
-        Store.createSeedCampaign();
-        UI.toast('Signed in. Acme is waiting for you.');
-        Router.go('/');
+        UI.toast(Store.state.profile.imported ? 'Signed in.' : 'Welcome. Start with your resume.');
+        Router.go(Store.state.profile.imported ? '/' : '/import');
       });
     }
 
@@ -93,10 +91,8 @@
       var b = this;
       UI.busy(b, 850).then(function () {
         Store.signIn(email.value.trim());
-        if (signup) { UI.toast('Welcome. Start with your resume.'); Router.go('/import'); return; }
-        Store.createSeedCampaign();
         UI.toast('Signed in with Google.');
-        Router.go('/');
+        Router.go(Store.state.profile.imported ? '/' : '/import');
       });
     });
   }

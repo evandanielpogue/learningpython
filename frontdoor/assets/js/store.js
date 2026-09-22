@@ -11,7 +11,7 @@
 (function (window) {
   'use strict';
 
-  var KEY = 'frontdoor.v4';
+  var KEY = 'frontdoor.v5';
 
   var PERSONAS = [
     { key: 'Peer',           colour: '--p-peer' },
@@ -30,56 +30,62 @@
     return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
   }
 
-  /* ---- profile --------------------------------------------------------- */
-  var SEED_PROFILE = {
-    name: 'Evan Pogue',
-    email: 'evan@example.com',
-    phone: '312 555 0148',
-    location: 'Chicago, IL',
-    years: 8,
-    photo: null,
-    imported: false,
-    source: null,
-    voice: { traits: ['Direct', 'Numbers first', 'One ask'] },
-    roles: [
-      { id: 'r1', title: 'Senior AE, Mid-Market', company: 'Brightline, Chicago', span: '2023 to now', on: true,
-        bullets: [
-          'Carried $1.2M and finished at 112% through a seat pricing change',
-          'Rebuilt discovery when cycles went from 30 days to 70',
-          'Held the team together through 40% attrition and still made the year'
-        ] },
-      { id: 'r2', title: 'Account Executive', company: 'Northwind, Chicago', span: '2021 to 2023', on: true,
-        bullets: [
-          'Grew territory ARR 41% year over year',
-          'Got four new AEs to quota in two quarters',
-          'Top 3 of 38 reps, two years running'
-        ] },
-      { id: 'r3', title: 'SDR, then AE', company: 'Cobalt, remote', span: '2018 to 2021', on: true,
-        bullets: [
-          'Closed the biggest deal the company had done at $340k',
-          'Built the outbound motion from nothing'
-        ] }
-    ],
-    /* tags are what a listing gets matched against */
-    wins: [
-      { id: 'w1', text: 'Finished at 112% through a pricing change', where: 'Brightline, FY25', metric: '112%', short: 'through a pricing change',
-        tags: ['pricing', 'quota', 'attainment', 'change', 'seat', 'packaging', 'reprice'] },
-      { id: 'w2', text: 'Carried a $1.2M quota and hit it', where: 'Brightline, FY25', metric: '$1.2M', short: 'quota carried and hit',
-        tags: ['quota', 'mid-market', 'enterprise', 'acv', 'closing', 'number'] },
-      { id: 'w3', text: 'Rebuilt discovery when cycles went 30 to 70 days', where: 'Brightline, Q2', metric: '30→70', short: 'day cycles, rebuilt discovery',
-        tags: ['discovery', 'cycle', 'process', 'meddpicc', 'qualification', 'sales process', 'complex'] },
-      { id: 'w4', text: 'Grew territory ARR 41% year over year', where: 'Northwind, FY23', metric: '41%', short: 'territory ARR growth',
-        tags: ['territory', 'growth', 'arr', 'expansion', 'pipeline', 'new logo'] },
-      { id: 'w5', text: 'Ramped four new AEs to quota in two quarters', where: 'Northwind, FY23', metric: '4 AEs', short: 'ramped to quota in two quarters',
-        tags: ['ramp', 'coaching', 'onboarding', 'mentor', 'team', 'lead', 'manager', 'hiring'] },
-      { id: 'w6', text: 'Top 3 of 38 reps, two years running', where: 'Northwind', metric: 'Top 3', short: 'of 38 reps, two years running',
-        tags: ['performance', 'ranking', 'consistent', 'top', 'president'] },
-      { id: 'w7', text: 'Closed the biggest deal the company had done', where: 'Cobalt, FY21', metric: '$340k', short: 'largest deal in company history',
-        tags: ['enterprise', 'large', 'strategic', 'acv', 'negotiation', 'outbound'] }
-    ],
-    stack: ['Salesforce', 'HubSpot', 'Outreach', 'Gong', 'Clay', 'Sales Navigator', 'MEDDPICC'],
-    reference: { quote: 'Evan rebuilt our discovery script in the middle of a pricing change and we still made the year. He is who you want in the room when the motion breaks.', who: 'Dev Nair', role: 'VP Sales at Brightline', initials: 'DN' }
-  };
+  /* ---- profile ----------------------------------------------------------
+     Empty until a resume goes in. Nothing here is invented for you. ------- */
+  function blankProfile() {
+    return {
+      name: '', email: '', phone: '', location: '', years: 0,
+      photo: null, imported: false, source: null,
+      voice: { traits: [] },
+      roles: [], wins: [],
+      stack: [],
+      reference: { quote: '', who: '', role: '', initials: '' }
+    };
+  }
+
+  /* The example, for anyone who wants to see it working before handing over
+     their own history. */
+  var EXAMPLE_RESUME = [
+    'Evan Pogue',
+    'Chicago, IL | evan@example.com | 312 555 0148',
+    '',
+    'EXPERIENCE',
+    '',
+    'Senior AE, Mid-Market - Brightline, Chicago (2023 to now)',
+    '- Carried $1.2M and finished at 112% through a seat pricing change',
+    '- Rebuilt discovery when cycles went from 30 days to 70',
+    '- Held the team together through 40% attrition and still made the year',
+    '',
+    'Account Executive - Northwind, Chicago (2021 to 2023)',
+    '- Grew territory ARR 41% year over year',
+    '- Got four new AEs to quota in two quarters',
+    '- Top 3 of 38 reps, two years running',
+    '',
+    'SDR, then AE - Cobalt, remote (2018 to 2021)',
+    '- Closed the biggest deal the company had done at $340k',
+    '- Built the outbound motion from nothing',
+    '',
+    'TOOLS',
+    'Salesforce, HubSpot, Outreach, Gong, Clay, Sales Navigator, MEDDPICC'
+  ].join('\n');
+
+  /* words worth matching a listing against, per win */
+  var TAGS = [
+    [/pricing|reprice|packaging|seat/i,          ['pricing', 'packaging', 'seat', 'change']],
+    [/quota|attainment|\bplan\b|number/i,        ['quota', 'attainment', 'number']],
+    [/cycle|discovery|process|meddpicc|qualif/i, ['discovery', 'cycle', 'process', 'meddpicc']],
+    [/territory|arr|growth|expansion|pipeline/i, ['territory', 'growth', 'arr', 'pipeline']],
+    [/ramp|onboard|coach|mentor|train|hire/i,    ['ramp', 'coaching', 'onboarding', 'team']],
+    [/top \d|rank|president|award|consistent/i,  ['performance', 'ranking', 'consistent']],
+    [/enterprise|largest|biggest|strategic/i,    ['enterprise', 'strategic', 'large']],
+    [/outbound|cold|prospect/i,                  ['outbound', 'prospecting']],
+    [/mid[- ]market|smb|commercial/i,            ['mid-market', 'smb']],
+    [/team|manage|lead|director/i,               ['team', 'lead', 'manager']]
+  ];
+  var TOOLS = ['Salesforce', 'HubSpot', 'Outreach', 'Salesloft', 'Gong', 'Chorus', 'Clay', 'Apollo',
+    'ZoomInfo', 'Sales Navigator', 'MEDDPICC', 'MEDDIC', 'Challenger', 'Sandler',
+    'Looker', 'Tableau', 'Excel', 'Notion', 'Slack', 'Zendesk', 'Intercom', 'Marketo', 'Pardot',
+    'Pipedrive', 'Jira', 'Asana', 'Figma', 'SQL', 'Python'];
 
   /* ---- message templates ----------------------------------------------- */
   var TEMPLATES = [
@@ -259,7 +265,7 @@
   function defaults() {
     return {
       user: null,
-      profile: clone(SEED_PROFILE),
+      profile: blankProfile(),
       templates: clone(TEMPLATES),
       campaigns: [],
       lastCampaign: null
@@ -301,7 +307,11 @@
 
     /* auth */
     signIn: function (email) {
-      var nm = state.profile.name;
+      /* before a resume goes in there is no name, so fall back to the part of
+         the address in front of the @ rather than showing a shrug */
+      var nm = state.profile.name ||
+        String(email || '').split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); }) ||
+        'You';
       state.user = { email: email || state.profile.email, name: nm, initials: Store.initials(nm) };
       Store.save();
       return state.user;
@@ -319,9 +329,12 @@
 
     createSeedCampaign: function () {
       if (Store.campaign('c_acme')) return Store.campaign('c_acme');
+      if (!state.profile.imported) {
+        Store.applyResume(Store.parseResume(EXAMPLE_RESUME, 'Evan_Pogue.pdf'));
+      }
       var c = seedCampaign();
-      state.profile.imported = true;
-      state.profile.source = state.profile.source || 'Evan_Pogue.pdf';
+      c.winIds = Store.rankWins(ACME_LISTING).slice(0, 3).map(function (r) { return r.win.id; });
+      c.sections = clone(SECTIONS);
       c.tasks[0].on = true;
       c.tasks[1].on = true;
       c.tasks[2].on = true;
@@ -441,13 +454,13 @@
       var dom = slugify(company).replace(/-/g, '') + '.com';
       var seg = /mid[- ]market/i.test(role || '') ? 'Mid-Market' : /enterprise/i.test(role || '') ? 'Enterprise' : 'Sales';
       return [
-        { id: uid('g'), name: 'Director, ' + seg, title: 'Likely hiring manager at ' + company, persona: 'Hiring manager',
+        { id: uid('g'), placeholder: true, name: 'Director, ' + seg, title: 'Likely hiring manager at ' + company, persona: 'Hiring manager',
           found: 'Named on the team page', why: 'Owns the number this role carries. The one person who can skip the queue.',
           email: 'first.last@' + dom, linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'Fifteen minutes' },
-        { id: uid('g'), name: 'Talent Partner', title: 'Recruiter on this req at ' + company, persona: 'Recruiter',
+        { id: uid('g'), placeholder: true, name: 'Talent Partner', title: 'Recruiter on this req at ' + company, persona: 'Recruiter',
           found: 'Posted the req', why: 'Knows whether the req is moving or already has a finalist.',
           email: 'talent@' + dom, linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'Whether the req is moving' },
-        { id: uid('g'), name: 'Someone you already know', title: 'Worked with you, now near ' + company, persona: 'Shared tie',
+        { id: uid('g'), placeholder: true, name: 'Someone you already know', title: 'Worked with you, now near ' + company, persona: 'Shared tie',
           found: 'Overlap in your history', why: 'A warm forward beats a cold email every time. Ask them to paste two lines.',
           email: '', linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'An introduction' }
       ];
@@ -465,6 +478,248 @@
       if (have > -1) c.winIds.splice(have, 1);
       else if (c.winIds.length < 3) c.winIds.push(wid);
       Store.save();
+    },
+
+    /* ---- read a resume ---------------------------------------------------
+       A real parse of real text, not a fake scan. Everything it cannot find
+       it leaves blank rather than inventing. -------------------------------- */
+    EXAMPLE_RESUME: EXAMPLE_RESUME,
+
+    parseResume: function (text, source) {
+      var raw = String(text || '').replace(/\r/g, '');
+      var lines = raw.split('\n').map(function (l) { return l.trim(); });
+      var out = blankProfile();
+      out.imported = true;
+      out.source = source || 'pasted text';
+
+      var isBullet = function (l) { return /^[-\u2013\u2014\u2022*\u00b7]\s+/.test(l); };
+      var strip = function (l) { return l.replace(/^[-\u2013\u2014\u2022*\u00b7]\s+/, '').replace(/[.;]$/, ''); };
+      var isSection = function (l) {
+        return /^[A-Z][A-Z \/&]{2,28}$/.test(l) ||
+               /^(experience|work experience|employment|skills|tools|education|summary|profile|about)\b/i.test(l);
+      };
+
+      var email = raw.match(/[\w.+-]+@[\w-]+\.[\w.]{2,}/);
+      if (email) out.email = email[0];
+      var phone = raw.match(/(?:\+?\d[\d ().-]{8,}\d)/);
+      if (phone) out.phone = phone[0].trim();
+      var loc = raw.match(/\b([A-Z][a-zA-Z.\- ]{2,20},\s?(?:[A-Z]{2}\b|[A-Z][a-z]+))/);
+      if (loc) out.location = loc[1].trim();
+
+      /* the name is the first short line with no digits and no @ in it */
+      for (var i = 0; i < lines.length && i < 8; i++) {
+        var l = lines[i];
+        if (!l || /[@\d]/.test(l) || isSection(l)) continue;
+        if (l.split(/\s+/).length <= 4 && l.length <= 48) { out.name = l.replace(/[|,].*$/, '').trim(); break; }
+      }
+
+      /* roles: a heading followed by bullets */
+      var section = '';
+      var role = null;
+      var years = [];
+      lines.forEach(function (l, idx) {
+        if (!l) return;
+        if (isSection(l) && !isBullet(l)) { section = l.toLowerCase(); role = null; return; }
+
+        if (isBullet(l)) {
+          if (role) role.bullets.push(strip(l));
+          else if (/tool|skill/.test(section)) {
+            strip(l).split(/[,;\u00b7|]/).forEach(function (t) { if (t.trim()) out.stack.push(t.trim()); });
+          }
+          return;
+        }
+
+        if (/tool|skill/.test(section)) {
+          l.split(/[,;\u00b7|]/).forEach(function (t) { if (t.trim()) out.stack.push(t.trim()); });
+          return;
+        }
+
+        var next = lines.slice(idx + 1, idx + 4).filter(Boolean)[0] || '';
+        var span = l.match(/\(?\b((?:19|20)\d{2})\s*(?:to|-|\u2013|\u2014|until)\s*((?:19|20)\d{2}|now|present|current)\b\)?/i);
+        if (!span && !isBullet(next)) return;
+        if (l.length > 120) return;
+
+        var head = l.replace(span ? span[0] : '', '').replace(/[()]/g, '').trim();
+        var bits = head.split(/\s+[-\u2013\u2014|]\s+|\s+\bat\b\s+/i);
+        role = {
+          id: uid('r'),
+          title: (bits[0] || head).replace(/[,\s]+$/, ''),
+          company: (bits[1] || '').replace(/[,\s]+$/, ''),
+          span: span ? span[1] + ' to ' + span[2].toLowerCase() : '',
+          on: true, bullets: []
+        };
+        if (span) years.push(parseInt(span[1], 10));
+        out.roles.push(role);
+      });
+      out.roles = out.roles.filter(function (r) { return r.bullets.length; });
+
+      if (years.length) {
+        out.years = Math.max(0, Math.min(50, new Date().getFullYear() - Math.min.apply(null, years)));
+      }
+
+      /* wins are the bullets with a number in them. The label under the big
+         number is the clause that number sits in, with the number taken back
+         out, so it stays a sentence instead of a shredded one. */
+      var METRIC = /\$[\d.,]+\s?[KkMmBb]?|\d+(?:\.\d+)?%|\b\d+(?:\s+\w+)?\s+to\s+\d+\b|\bTop\s?\d+\b|\b\d[\d,]*\s?[KkMmBb]?\b/;
+      var TIDY = /^(?:and|to|at|of|in|on|through|from|with|by|the|a)\s+|\s+(?:and|to|at|of|in|on|through|from|with|by|the|a)$/gi;
+      var seen = {};
+      out.roles.forEach(function (r) {
+        r.bullets.forEach(function (b) {
+          var mm = b.match(METRIC);
+          if (!mm || seen[b]) return;
+          seen[b] = 1;
+          var hit = mm[0].trim();
+
+          var metric = /\sto\s/i.test(hit)
+            ? hit.replace(/\s+\w+\s+to\s+|\s+to\s+/i, '\u2192')
+            : hit;
+
+          /* the clause holding the number, minus the number */
+          var clauses = b.split(/,\s+|\s+and\s+|\s+with\s+/i);
+          var at = 0;
+          for (var k = 0; k < clauses.length; k++) if (clauses[k].indexOf(hit) > -1) { at = k; break; }
+          var label = clauses[at].replace(hit, ' ').replace(/\s{2,}/g, ' ').trim().replace(TIDY, '').trim();
+          if (label.split(/\s+/).length < 3 && clauses[at + 1]) {
+            label = clauses[at + 1].replace(/\s{2,}/g, ' ').trim().replace(TIDY, '').trim();
+          }
+          if (label.length > 52) label = label.slice(0, 50).replace(/\s\S*$/, '') + '\u2026';
+
+          var tags = [];
+          TAGS.forEach(function (t) { if (t[0].test(b)) tags = tags.concat(t[1]); });
+          out.wins.push({
+            id: uid('w'), text: b, where: [r.company, r.span].filter(Boolean).join(', '),
+            metric: metric, short: label.charAt(0).toLowerCase() + label.slice(1),
+            tags: tags
+          });
+        });
+      });
+      out.wins = out.wins.slice(0, 12);
+
+      /* tools: whatever a skills section listed, plus anything we recognise */
+      TOOLS.forEach(function (t) {
+        if (new RegExp('\\b' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(raw)) out.stack.push(t);
+      });
+      var uniq = {};
+      out.stack = out.stack.filter(function (t) {
+        var k = t.toLowerCase();
+        if (uniq[k] || t.length > 24) return false;
+        uniq[k] = 1; return true;
+      }).slice(0, 14);
+
+      /* how they write, read off the bullets rather than guessed at */
+      var all = [];
+      out.roles.forEach(function (r) { all = all.concat(r.bullets); });
+      if (all.length) {
+        var avg = all.reduce(function (a, b) { return a + b.split(/\s+/).length; }, 0) / all.length;
+        var numeric = all.filter(function (b) { return /\d/.test(b); }).length / all.length;
+        if (avg < 15) out.voice.traits.push('Short lines');
+        if (numeric > 0.5) out.voice.traits.push('Numbers first');
+        if (avg >= 15) out.voice.traits.push('Full sentences');
+        out.voice.traits.push('One ask');
+      }
+      return out;
+    },
+
+    applyResume: function (parsed) {
+      var photo = state.profile.photo;
+      state.profile = parsed;
+      state.profile.photo = photo;
+      if (state.user && parsed.name) {
+        state.user.name = parsed.name;
+        state.user.initials = Store.initials(parsed.name);
+      }
+      if (state.user && !parsed.email) state.profile.email = state.user.email;
+      Store.save();
+      return state.profile;
+    },
+
+    /* ---- research you add yourself --------------------------------------- */
+    addResearch: function (cid, data) {
+      var c = Store.campaign(cid); if (!c) return null;
+      var o = {
+        id: uid('res'), kind: data.kind || 'Note', date: data.date || 'just now',
+        title: data.title || '', detail: data.detail || '',
+        source: data.source || '', use: data.use || data.title || ''
+      };
+      c.research.unshift(o);
+      Store.completeTask(cid, 't4');
+      Store.save();
+      return o;
+    },
+    removeResearch: function (cid, id) {
+      var c = Store.campaign(cid); if (!c) return;
+      c.research = c.research.filter(function (o) { return o.id !== id; });
+      Store.save();
+    },
+
+    /* ---- build the fourteen days ----------------------------------------
+       A plan of who to reach and when, matched against whoever is actually
+       on the list. Anything with nobody to send it to is left out. -------- */
+    PLAN: [
+      { day: 0,  channel: 'ATS',      persona: null,             stage: null,
+        note: 'Apply. You still have to exist in the system.' },
+      { day: 0,  channel: 'LinkedIn', persona: 'Peer',           stage: 'First touch',
+        note: 'Ask about the team, nothing else' },
+      { day: 2,  channel: 'Email',    persona: 'Recruiter',      stage: 'First touch',
+        note: 'Name the req, ask one question' },
+      { day: 3,  channel: 'Email',    persona: 'Hiring manager', stage: 'First touch',
+        note: 'Your angle, then the page' },
+      { day: 5,  channel: 'LinkedIn', persona: 'Shared tie',     stage: 'Referral ask',
+        note: 'Ask for the intro, write it for them' },
+      { day: 7,  channel: 'Reply',    persona: 'Peer',           stage: 'Referral ask',
+        note: 'Now you can ask for the referral' },
+      { day: 8,  channel: 'Email',    persona: 'Hiring manager', stage: 'Follow up',
+        note: 'Bring something new or do not write' },
+      { day: 10, channel: 'Email',    persona: 'Skip level',     stage: 'Escalation',
+        note: 'Eighty words, business first' },
+      { day: 12, channel: 'Call',     persona: 'Recruiter',      stage: 'Follow up',
+        note: 'Pick up the phone' },
+      { day: 14, channel: 'Email',    persona: null,             stage: 'Breakup',
+        note: 'Say you are stopping, leave the door open' }
+    ],
+
+    buildSequence: function (cid) {
+      var c = Store.campaign(cid); if (!c) return [];
+      var used = {};
+      var steps = [];
+
+      Store.PLAN.forEach(function (row) {
+        var person = null;
+        if (row.persona) {
+          person = c.contacts.filter(function (p) { return p.persona === row.persona; })[0] || null;
+          if (!person) return;            /* nobody to send it to */
+        } else if (row.stage === 'Breakup') {
+          person = c.contacts.filter(function (p) { return p.persona === 'Hiring manager'; })[0] ||
+                   c.contacts[0] || null;
+        }
+        if (person) used[person.id] = (used[person.id] || 0) + 1;
+
+        var t = null;
+        if (row.stage) {
+          var pool = state.templates.filter(function (x) { return x.stage === row.stage; });
+          t = pool.filter(function (x) { return x.persona === (row.persona || (person ? person.persona : '')); })[0] ||
+              pool.filter(function (x) { return x.channel === row.channel; })[0] || pool[0] || null;
+        }
+        var subject = '';
+        if (row.channel === 'Email') {
+          subject = row.stage === 'Follow up' ? 'one more thing on ' + c.company
+                  : row.stage === 'Breakup'   ? 'closing the loop'
+                  : row.stage === 'Escalation' ? c.company + ' and the number'
+                  : 'applied for the ' + c.role;
+        }
+        steps.push({
+          id: uid('s'), day: row.day, contact: person ? person.id : null,
+          template: t ? t.id : null, channel: t ? t.channel : row.channel,
+          note: row.note, status: 'queued', subject: subject,
+          body: t ? Store.fill(t.body, c, person) : ''
+        });
+      });
+
+      c.steps = steps;
+      c.activeStep = steps[0] ? steps[0].id : null;
+      Store.completeTask(cid, 't5');
+      Store.save();
+      return steps;
     },
 
     /* ---- look someone up by their profile URL ----------------------------
@@ -530,7 +785,8 @@
         colour: Store.colourFor(data.persona || 'Other'),
         tenure: data.tenure || '', prev: data.prev || '', mutuals: data.mutuals || 0,
         email: data.email || '', linkedin: data.linkedin || '',
-        ask: data.ask || '', notes: '', activity: data.activity || []
+        ask: data.ask || '', notes: '', activity: data.activity || [],
+        placeholder: !!data.placeholder
       };
       c.contacts.push(person);
       Store.save();

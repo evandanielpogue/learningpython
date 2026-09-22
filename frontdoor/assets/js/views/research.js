@@ -17,7 +17,8 @@
     var v = Shell.mount({
       nav: 'research',
       crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Research' }],
-      actions: '<button class="btn btn-secondary btn-sm" id="refresh">Refresh</button>',
+      actions: '<button class="btn btn-secondary btn-sm" id="add-find">Add something you found</button>' +
+               '<button class="btn btn-secondary btn-sm" id="refresh">Refresh</button>',
       html:
         '<div class="page-head"><h1>What they said, recently, in public</h1>' +
         '<p>Nobody replies to a message that could have been sent to anyone. Take a line from here and the first sentence is already specific.</p></div>' +
@@ -50,7 +51,12 @@
       subtabs();
       var feed = v.querySelector('#feed');
       if (tab === 'company') {
-        feed.innerHTML = '<div class="feed">' + c.research.map(function (o) { return item(o, null); }).join('') + '</div>';
+        feed.innerHTML = c.research.length
+          ? '<div class="feed">' + c.research.map(function (o) { return item(o, null); }).join('') + '</div>'
+          : '<div class="card"><div class="empty"><span class="art">\u25c8</span>' +
+            '<h2>Nothing on ' + esc(c.company) + ' yet</h2>' +
+            '<p>Paste anything you come across: a post, a podcast line, a pricing change. One specific sentence is what separates a reply from a delete.</p>' +
+            '<button class="btn btn-primary btn-lg" id="add-empty">Add what you found <span class="arr">\u2192</span></button></div></div>';
       } else {
         var any = c.contacts.some(function (p) { return p.activity && p.activity.length; });
         feed.innerHTML = any
@@ -70,6 +76,48 @@
       UI.toast('Dropped into your draft.');
       Router.go('/c/' + c.id + '/sequence');
     });
+    function addSheet() {
+      UI.sheet({
+        title: 'Something you found',
+        html: '<form id="res-form" class="col g3">' +
+          '<div class="grid cols-2">' +
+            '<div class="field"><label for="r-kind">What kind</label>' +
+              '<select class="input" id="r-kind">' +
+              ['Leadership', 'Product', 'Hiring', 'Funding', 'Earnings', 'Post', 'Podcast', 'Note']
+                .map(function (k) { return '<option>' + k + '</option>'; }).join('') + '</select></div>' +
+            '<div class="field"><label for="r-src">Where it came from</label>' +
+              '<input class="input" id="r-src" placeholder="LinkedIn, their pricing page, a podcast"></div>' +
+          '</div>' +
+          '<div class="field"><label for="r-title">In a line</label>' +
+            '<input class="input" id="r-title" placeholder="Moved SMB to a five seat minimum"></div>' +
+          '<div class="field"><label for="r-detail">What it actually says</label>' +
+            '<textarea class="input" id="r-detail" placeholder="Paste the post, or write what you took from it."></textarea></div>' +
+          '<div class="field"><label for="r-use">The sentence you would put in a message</label>' +
+            '<input class="input" id="r-use" placeholder="The five seat floor turns a one call close into a two call close."></div>' +
+          '<div class="row g2 wrap"><button class="btn btn-primary btn-sm" type="submit">Add it</button></div></form>',
+        onMount: function (node, close) {
+          node.querySelector('#res-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var title = node.querySelector('#r-title').value.trim();
+            if (!title) { node.querySelector('#r-title').classList.add('err'); return; }
+            Store.addResearch(c.id, {
+              kind: node.querySelector('#r-kind').value,
+              source: node.querySelector('#r-src').value.trim(),
+              title: title,
+              detail: node.querySelector('#r-detail').value.trim(),
+              use: node.querySelector('#r-use').value.trim() || title
+            });
+            close();
+            tab = 'company';
+            paint();
+            UI.toast('Added. Use it in a step when it fits.');
+          });
+          setTimeout(function () { node.querySelector('#r-title').focus(); }, 60);
+        }
+      });
+    }
+    UI.on(v, 'click', '#add-empty', addSheet);
+    document.getElementById('add-find').addEventListener('click', addSheet);
     document.getElementById('refresh').addEventListener('click', function () {
       var b = this;
       UI.busy(b, 900).then(function () { UI.toast('Nothing new since this morning.'); });

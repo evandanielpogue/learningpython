@@ -275,7 +275,13 @@
             '<a class="btn btn-ghost btn-sm" href="#/c/' + c.id + '/sequence">Open the sequence <span class="arr">→</span></a></div>' +
             (upNext.length
               ? '<div class="seq">' + upNext.map(function (s) { return stepRow(c, s); }).join('') + '</div>'
-              : '<p class="dim" style="font-size:var(--fs-sm)">No sequence yet. Build one and it shows up here.</p>') +
+              : '<p class="dim mb4" style="font-size:var(--fs-sm)">' +
+                (c.contacts.length
+                  ? 'Nothing scheduled yet. Ten touches across your ' + c.contacts.length + ' contacts, built from your templates.'
+                  : 'Add the people we found first, then the fourteen days build around them.') + '</p>' +
+                '<a class="btn btn-primary btn-sm" href="#/c/' + c.id +
+                (c.contacts.length ? '/sequence">Build the sequence' : '/people">Add contacts') +
+                ' <span class="arr">→</span></a>') +
           '</div>' +
         '</div>' +
 

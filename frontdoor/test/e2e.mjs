@@ -27,11 +27,18 @@ async function step(label, fn) {
   catch (e) { fail++; console.log('  FAIL  ' + label + '  ->  ' + String(e.message).split('\n')[0]); }
 }
 
-const signIn = async (page) => {
+/* Signing in now lands a brand new account on the import screen, so tests
+   that want a populated workspace ask for the example explicitly. */
+const signIn = async (page, demo = true) => {
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.fill('#f-pass', 'demo1234');
   await page.click('#f-submit');
   await page.waitForSelector('.shell', { timeout: 6000 });
+  if (demo) {
+    await page.evaluate(() => { Store.createSeedCampaign(); });
+    await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
+    await page.waitForTimeout(200);
+  }
 };
 
 /* ---------------------------------------------------------------- auth -- */
@@ -68,6 +75,136 @@ await group('Route guard', async (page) => {
     await page.waitForSelector('#auth-form', { timeout: 5000 });
     const h = await page.evaluate(() => location.hash);
     if (h !== '#/login') throw new Error('hash=' + h);
+  });
+});
+
+/* ---------------------------------------------------------- cold start -- */
+await group('Cold start, all the way through', async (page) => {
+  await step('a new account lands on the resume screen with nothing in it', async () => {
+    await signIn(page, false);
+    await page.waitForSelector('#drop', { timeout: 5000 });
+    const st = await page.evaluate(() => ({
+      campaigns: Store.campaigns().length,
+      imported: Store.state.profile.imported,
+      roles: Store.state.profile.roles.length
+    }));
+    if (st.campaigns) throw new Error(st.campaigns + ' campaigns on a new account');
+    if (st.imported || st.roles) throw new Error('profile was pre-filled');
+  });
+  await step('a pasted resume is actually parsed', async () => {
+    await page.click('#use-example');
+    await page.click('#read');
+    await page.waitForSelector('#roles', { timeout: 6000 });
+    const pf = await page.evaluate(() => Store.state.profile);
+    if (pf.name !== 'Evan Pogue') throw new Error('name: ' + pf.name);
+    if (pf.email !== 'evan@example.com') throw new Error('email: ' + pf.email);
+    if (pf.location !== 'Chicago, IL') throw new Error('location: ' + pf.location);
+    if (pf.roles.length !== 3) throw new Error(pf.roles.length + ' roles');
+    if (pf.roles[0].bullets.length !== 3) throw new Error('bullets lost');
+    if (pf.wins.length < 5) throw new Error(pf.wins.length + ' wins');
+    if (pf.wins.some(w => !w.metric || !w.short)) throw new Error('a win came out empty');
+    if (!pf.stack.length) throw new Error('no tools');
+    if (!pf.years) throw new Error('no years');
+  });
+  await step('confirming sends you to add a company', async () => {
+    await page.click('#done-import');
+    await page.waitForSelector('#listing', { timeout: 5000 });
+  });
+  await step('the listing picks wins out of the parsed resume', async () => {
+    await page.click('#use-sample');
+    await page.click('#read');
+    await page.waitForSelector('#wins', { timeout: 8000 });
+    const picked = await page.locator('.opt[aria-pressed="true"]').count();
+    if (picked !== 3) throw new Error(picked + ' picked');
+    const why = await page.locator('.opt[aria-pressed="true"] em').first().textContent();
+    if (!/Matches the listing/.test(why)) throw new Error('not matched: ' + why);
+  });
+  await step('the company is created with nobody on it yet', async () => {
+    await page.click('#skip-story');
+    await page.waitForSelector('.task', { timeout: 6000 });
+    const c = await page.evaluate(() => Store.campaigns()[0]);
+    if (c.company !== 'Acme') throw new Error('company: ' + c.company);
+    if (c.contacts.length) throw new Error('contacts appeared from nowhere');
+    if (c.suggested.length !== 3) throw new Error(c.suggested.length + ' suggested');
+    if (c.steps.length) throw new Error('a sequence appeared from nowhere');
+  });
+  await step('the summary asks for contacts before a sequence', async () => {
+    const t = await page.locator('.card', { hasText: 'Up next' }).textContent();
+    if (!/Add contacts/.test(t)) throw new Error('no prompt: ' + t.slice(0, 80));
+  });
+  await step('the three suggestions can all be added', async () => {
+    const id = await page.evaluate(() => Store.campaigns()[0].id);
+    await page.goto(BASE + '#/c/' + id + '/people', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.foundcard', { timeout: 5000 });
+    for (let i = 0; i < 3; i++) {
+      await page.locator('[data-take]').first().click();
+      await page.waitForTimeout(260);
+    }
+    const n = await page.evaluate(() => Store.campaigns()[0].contacts.length);
+    if (n !== 3) throw new Error(n + ' contacts');
+  });
+  await step('an empty sequence offers to build itself', async () => {
+    const id = await page.evaluate(() => Store.campaigns()[0].id);
+    await page.goto(BASE + '#/c/' + id + '/sequence', { waitUntil: 'networkidle' });
+    await page.waitForSelector('#build', { timeout: 5000 });
+    await page.click('#build');
+    await page.waitForSelector('.stepcard', { timeout: 6000 });
+  });
+  await step('every built step is addressed and already written', async () => {
+    const steps = await page.evaluate(() => Store.campaigns()[0].steps);
+    if (steps.length < 5) throw new Error(steps.length + ' steps built');
+    for (const s of steps) {
+      if (s.channel !== 'ATS' && !s.contact) throw new Error('step "' + s.note + '" has nobody');
+      if (/\{\w+\}/.test(s.body)) throw new Error('placeholder left in "' + s.note + '"');
+      if (s.channel !== 'ATS' && !s.body.trim()) throw new Error('empty draft on "' + s.note + '"');
+    }
+    const days = steps.map(s => s.day);
+    for (let i = 1; i < days.length; i++) if (days[i] < days[i - 1]) throw new Error('out of order');
+  });
+  await step('the steps go to the people we actually added', async () => {
+    const who = await page.evaluate(() => {
+      const c = Store.campaigns()[0];
+      return c.steps.filter(s => s.contact)
+        .map(s => (c.contacts.filter(p => p.id === s.contact)[0] || {}).persona);
+    });
+    if (!who.includes('Hiring manager')) throw new Error('never writes to the hiring manager');
+    if (!who.includes('Recruiter')) throw new Error('never writes to the recruiter');
+  });
+  await step('a found seat can be given a real name', async () => {
+    const id = await page.evaluate(() => Store.campaigns()[0].id);
+    await page.goto(BASE + '#/c/' + id + '/people', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.rankrow', { timeout: 5000 });
+    if (!(await page.locator('.rr-tag-warn').count())) throw new Error('nothing flagged as unnamed');
+    await page.locator('.rankrow').first().click();
+    await page.waitForTimeout(240);
+    await page.fill('#d-name', 'Marcus Reed');
+    await page.locator('#d-name').dispatchEvent('change');
+    await page.waitForTimeout(340);
+    if (!(await page.locator('.rankrow', { hasText: 'Marcus Reed' }).count())) throw new Error('name not applied');
+    const still = await page.evaluate(() => Store.campaigns()[0].contacts.filter(p => p.placeholder).length);
+    if (still === 3) throw new Error('placeholder flag never cleared');
+  });
+  await step('research starts empty and takes what you find', async () => {
+    const id = await page.evaluate(() => Store.campaigns()[0].id);
+    await page.goto(BASE + '#/c/' + id + '/research', { waitUntil: 'networkidle' });
+    await page.waitForSelector('#add-empty', { timeout: 5000 });
+    await page.click('#add-empty');
+    await page.waitForSelector('#res-form', { timeout: 4000 });
+    await page.fill('#r-title', 'Moved SMB to a five seat minimum');
+    await page.fill('#r-use', 'The five seat floor turns a one call close into a two call close.');
+    await page.click('#res-form button[type=submit]');
+    await page.waitForTimeout(400);
+    if (!(await page.locator('.feed-item').count())) throw new Error('not listed');
+  });
+  await step('the page is built from the parsed resume', async () => {
+    const id = await page.evaluate(() => Store.campaigns()[0].id);
+    await page.goto(BASE + '#/c/' + id + '/page', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.pub', { timeout: 5000 });
+    if (!(await page.locator('.pg-hero h1', { hasText: 'Evan Pogue' }).count())) throw new Error('no name');
+    if ((await page.locator('.pg-stats div').count()) !== 3) throw new Error('wrong number of stats');
+    if (await page.locator('.pg-quote').count()) throw new Error('empty reference section rendered');
+    const t = await page.locator('.pub').textContent();
+    if (/undefined|NaN|\{\w+\}/.test(t)) throw new Error('rubbish on the page');
   });
 });
 

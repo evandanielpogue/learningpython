@@ -50,8 +50,27 @@
                '<button class="btn btn-secondary btn-sm" id="preview">Preview</button>',
       html: '<div class="page-head"><h1>Sequence</h1>' +
             '<p>Ten touches over two weeks. Change the order, the timing, who each one goes to, and what it says.</p></div>' +
-            '<div class="builder"><div class="rail" id="rail"></div><div id="editor"></div></div>'
+            '<div id="seq-mount"></div>'
     });
+
+    /* nothing to edit until there is something to edit */
+    function emptyHTML() {
+      if (!c.contacts.length) {
+        return '<div class="card" style="overflow:hidden"><div class="empty">' +
+          '<span class="art">\u25ce</span><h2>Add someone first</h2>' +
+          '<p>A sequence is who you are writing to and when. Add the people we found for ' +
+          esc(c.company) + ' and the fourteen days build themselves around them.</p>' +
+          '<a class="btn btn-primary btn-lg" href="#/c/' + c.id + '/people">Add contacts <span class="arr">\u2192</span></a>' +
+          '</div></div>';
+      }
+      return '<div class="card" style="overflow:hidden"><div class="empty">' +
+        '<span class="art">\u2261</span><h2>Build the fourteen days</h2>' +
+        '<p>Ten touches across the ' + c.contacts.length + ' ' +
+        (c.contacts.length === 1 ? 'person' : 'people') + ' on your list, each starting from the template you normally send ' +
+        'them at that point. Change anything after.</p>' +
+        '<button class="btn btn-primary btn-lg" id="build">Build it <span class="arr">\u2192</span></button>' +
+        '</div></div>';
+    }
 
     function step() { return c.steps.filter(function (s) { return s.id === c.activeStep; })[0] || c.steps[0]; }
     function contactOf(s) { return c.contacts.filter(function (x) { return x.id === s.contact; })[0] || null; }
@@ -230,7 +249,25 @@
       words();
       grow();
     }
-    function paintAll() { paintRail(); paintEditor(); }
+    function paintAll() {
+      var mount = v.querySelector('#seq-mount');
+      if (!c.steps.length) {
+        mount.innerHTML = emptyHTML();
+        var chip = document.getElementById('cap-chip');
+        if (chip) chip.textContent = 'Nothing scheduled';
+        var build = mount.querySelector('#build');
+        if (build) build.addEventListener('click', function () {
+          var made = Store.buildSequence(c.id);
+          paintAll();
+          UI.toast(made.length + ' touches over ' + made[made.length - 1].day + ' days. Edit any of them.');
+        });
+        return;
+      }
+      if (!mount.querySelector('#rail')) {
+        mount.innerHTML = '<div class="builder"><div class="rail" id="rail"></div><div id="editor"></div></div>';
+      }
+      paintRail(); paintEditor();
+    }
 
     function words() {
       var b = v.querySelector('#body'); if (!b) return;
@@ -366,7 +403,8 @@
     });
 
     document.getElementById('preview').addEventListener('click', function () {
-      var s = step(); if (!s) return;
+      var s = step();
+      if (!s) { UI.toast('Build the sequence first.'); return; }
       var p = contactOf(s);
       var b = v.querySelector('#body');
       var text = Store.fill(b ? b.value : Store.bodyFor(c, s), c, p);

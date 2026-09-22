@@ -71,7 +71,8 @@
             '<span class="avatar avatar-md" style="background:var(' + p.colour + ')">' + esc(Store.initials(p.name)) + '</span>' +
             '<span class="rr-main"><span class="rr-name">' + esc(p.name) + '</span>' +
             '<span class="rr-sub">' + esc(p.title || 'No title yet') + '</span></span>' +
-            '<span class="rr-tag">' + esc(p.persona) + '</span>' +
+            '<span class="rr-tag' + (p.placeholder ? ' rr-tag-warn' : '') + '">' +
+              (p.placeholder ? 'Needs a name' : esc(p.persona)) + '</span>' +
             '<span class="rr-moves">' +
               '<button class="icon-btn" data-up="' + p.id + '" aria-label="Move up"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
               '<button class="icon-btn" data-down="' + p.id + '" aria-label="Move down"' + (i === c.contacts.length - 1 ? ' disabled' : '') + '>↓</button>' +
@@ -175,6 +176,18 @@
               '<dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.linkedin) + '</dd></div>' : '') +
           '</dl>' +
           '<hr class="divider" style="margin:var(--s-4) 0">' +
+          (p.placeholder
+            ? '<p class="lookup-msg mb3">We know the seat, not the person. Paste their profile or type their name.</p>' +
+              '<div class="lookup mb3">' + UI.liMark(18) +
+                '<input class="lookup-in" id="d-url" placeholder="linkedin.com/in/..." autocomplete="off" spellcheck="false">' +
+                '<button class="btn btn-secondary btn-sm" type="button" id="d-find">Find them</button></div>'
+            : '') +
+          '<div class="grid cols-2 mb3">' +
+            '<div class="field"><label for="d-name">Name</label>' +
+              '<input class="input" id="d-name" value="' + esc(p.placeholder ? '' : p.name) + '" placeholder="' + esc(p.placeholder ? p.name : '') + '"></div>' +
+            '<div class="field"><label for="d-title">Title</label>' +
+              '<input class="input" id="d-title" value="' + esc(p.title) + '" placeholder="Director, Mid-Market"></div>' +
+          '</div>' +
           '<div class="field mb3"><label for="d-persona">How you know them</label>' +
             '<select class="input" id="d-persona">' + personaOptions(p.persona) + '</select></div>' +
           '<div class="field mb3"><label for="d-ask">What you want from them</label>' +
@@ -198,8 +211,37 @@
         });
       }
       patch('persona', d.querySelector('#d-persona'));
+      patch('title', d.querySelector('#d-title'));
       patch('ask', d.querySelector('#d-ask'));
       patch('notes', d.querySelector('#d-notes'));
+
+      /* naming someone clears the placeholder, in the list and everywhere a
+         step already points at them */
+      d.querySelector('#d-name').addEventListener('change', function () {
+        var nm = this.value.trim();
+        if (!nm) return;
+        Store.updateContact(c.id, p.id, { name: nm, placeholder: false });
+        /* repaint after the blur finishes, or the browser tears this input out
+           from under the event that is still running */
+        setTimeout(paint, 0);
+        UI.toast('Now it says ' + nm + ' everywhere it said the job title.');
+      });
+
+      var find = d.querySelector('#d-find');
+      if (find) find.addEventListener('click', function () {
+        var res = Store.lookupLinkedIn(d.querySelector('#d-url').value, c.id);
+        if (!res.ok) { UI.toast(res.reason); return; }
+        Store.updateContact(c.id, p.id, {
+          name: res.person.name, title: res.person.title || p.title,
+          persona: res.person.persona !== 'Other' ? res.person.persona : p.persona,
+          email: res.person.email || p.email, linkedin: res.person.linkedin,
+          tenure: res.person.tenure || p.tenure, mutuals: res.person.mutuals || p.mutuals,
+          activity: (res.person.activity && res.person.activity.length) ? res.person.activity : p.activity,
+          placeholder: false
+        });
+        setTimeout(paint, 0);
+        UI.toast('That is ' + res.person.name + '.');
+      });
 
       d.querySelector('#del').addEventListener('click', function () {
         UI.confirm({ title: 'Remove ' + p.name + '?', body: 'Any step pointed at them loses its contact. You can add them back later.', confirm: 'Remove', danger: true })

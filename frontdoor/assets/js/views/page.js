@@ -33,11 +33,11 @@
         '<div class="pg-portrait">' + Views.photoHTML(112) + '</div>' +
         '<div class="pg-hero-txt">' +
           '<p class="pg-eyebrow">Written for ' + esc(c.company) + ' · ' + esc(c.role) + '</p>' +
-          '<h1>' + esc(pf.name) + '</h1>' +
+          '<h1>' + esc(pf.name || 'Your name') + '</h1>' +
           '<p class="pg-thesis">' + esc(angle ? angle.take : (c.story || 'Here is why this company, and what I would do in the first ninety days.')) + '</p>' +
           '<div class="pg-chips">' +
-            '<span>' + esc(pf.location) + '</span>' +
-            '<span>' + pf.years + ' years in SaaS</span>' +
+            (pf.location ? '<span>' + esc(pf.location) + '</span>' : '') +
+            (pf.years ? '<span>' + pf.years + ' years</span>' : '') +
             (c.req ? '<span>Req ' + esc(c.req) + '</span>' : '') +
           '</div>' +
         '</div></section>';
@@ -93,12 +93,14 @@
         }).join('') + '</div></section>';
     }
     function sSaid() {
+      if (!pf.reference || !pf.reference.quote) return '';
       return '<section data-sec="said"><h2 class="pg-h">Someone who worked with me</h2>' +
         '<figure class="pg-quote"><blockquote>' + esc(pf.reference.quote) + '</blockquote>' +
         '<figcaption><span class="avatar avatar-md" style="background:var(--p-tie)">' + esc(pf.reference.initials) + '</span>' +
         '<span><b>' + esc(pf.reference.who) + '</b><em>' + esc(pf.reference.role) + '</em></span></figcaption></figure></section>';
     }
     function sStack() {
+      if (!pf.stack.length) return '';
       return '<section data-sec="stack"><h2 class="pg-h">Tools I live in</h2>' +
         '<div class="pg-chips">' + pf.stack.map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('') + '</div></section>';
     }

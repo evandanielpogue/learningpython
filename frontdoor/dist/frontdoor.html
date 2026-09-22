@@ -325,7 +325,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   .nav-item .nav-label, .nav-item .nav-count { display: none; }
   .nav-item .nav-ico { font-size: 15px; }
   .user-btn { justify-content: center; padding: var(--s-2) 0; }
-  .user-btn .grow, .user-btn > span:last-child { display: none; }
+  /* specificity has to beat the desktop rule further down the file, or the
+     name and email keep laying out behind the collapsed rail and push the
+     page wider than the window */
+  .sidebar .user-btn .grow, .sidebar .user-btn > span:last-child { display: none; }
   .topbar { padding: 0 var(--s-4); }
   .view { padding: var(--s-5) var(--s-4) var(--s-9); }
 }
@@ -1382,6 +1385,37 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .manual-body { display: grid; gap: var(--s-3); padding-top: var(--s-4); }
 .facts dt .li-mark { margin-right: 3px; }
 
+/* ---- resume drop zone --------------------------------------------------- */
+.drop {
+  display: grid; justify-items: center; gap: 6px; padding: var(--s-8) var(--s-5);
+  border: 1.5px dashed var(--line-2); border-radius: var(--r-3); background: var(--sunk);
+  cursor: pointer; text-align: center;
+  transition: border-color var(--t-2) var(--ease), background var(--t-2) var(--ease);
+}
+.drop:hover, .drop.over { border-color: var(--ac); background: var(--ac-wash); }
+.drop.over { border-style: solid; }
+.drop b { font-size: var(--fs-md); font-weight: 600; }
+.drop-ic {
+  width: 40px; height: 40px; border-radius: var(--r-2); background: var(--panel);
+  border: 1px solid var(--line); display: grid; place-items: center; color: var(--ink-3);
+  font-size: 16px; margin-bottom: 2px;
+}
+.drop:hover .drop-ic, .drop.over .drop-ic { background: var(--ac); border-color: var(--ac); color: #fff; }
+.or {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--s-3); align-items: center;
+  margin: var(--s-5) 0 var(--s-3);
+}
+.or::before, .or::after { content: ""; height: 1px; background: var(--line); }
+.or span { font-size: var(--fs-xs); color: var(--ink-4); text-transform: uppercase; letter-spacing: .08em; font-family: var(--mono); }
+.linkish {
+  border: none; background: none; padding: 0; cursor: pointer; color: var(--ac);
+  font: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+.linkish:hover { color: var(--ac-hover, var(--ac)); }
+/* a chip never gets to be wider than what holds it */
+.chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.rankrow .rr-tag-warn { color: var(--warn); background: var(--warn-wash); }
+
 </style>
 </head>
 <body>
@@ -1422,7 +1456,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 (function (window) {
   'use strict';
 
-  var KEY = 'frontdoor.v4';
+  var KEY = 'frontdoor.v5';
 
   var PERSONAS = [
     { key: 'Peer',           colour: '--p-peer' },
@@ -1441,56 +1475,62 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
   }
 
-  /* ---- profile --------------------------------------------------------- */
-  var SEED_PROFILE = {
-    name: 'Evan Pogue',
-    email: 'evan@example.com',
-    phone: '312 555 0148',
-    location: 'Chicago, IL',
-    years: 8,
-    photo: null,
-    imported: false,
-    source: null,
-    voice: { traits: ['Direct', 'Numbers first', 'One ask'] },
-    roles: [
-      { id: 'r1', title: 'Senior AE, Mid-Market', company: 'Brightline, Chicago', span: '2023 to now', on: true,
-        bullets: [
-          'Carried $1.2M and finished at 112% through a seat pricing change',
-          'Rebuilt discovery when cycles went from 30 days to 70',
-          'Held the team together through 40% attrition and still made the year'
-        ] },
-      { id: 'r2', title: 'Account Executive', company: 'Northwind, Chicago', span: '2021 to 2023', on: true,
-        bullets: [
-          'Grew territory ARR 41% year over year',
-          'Got four new AEs to quota in two quarters',
-          'Top 3 of 38 reps, two years running'
-        ] },
-      { id: 'r3', title: 'SDR, then AE', company: 'Cobalt, remote', span: '2018 to 2021', on: true,
-        bullets: [
-          'Closed the biggest deal the company had done at $340k',
-          'Built the outbound motion from nothing'
-        ] }
-    ],
-    /* tags are what a listing gets matched against */
-    wins: [
-      { id: 'w1', text: 'Finished at 112% through a pricing change', where: 'Brightline, FY25', metric: '112%', short: 'through a pricing change',
-        tags: ['pricing', 'quota', 'attainment', 'change', 'seat', 'packaging', 'reprice'] },
-      { id: 'w2', text: 'Carried a $1.2M quota and hit it', where: 'Brightline, FY25', metric: '$1.2M', short: 'quota carried and hit',
-        tags: ['quota', 'mid-market', 'enterprise', 'acv', 'closing', 'number'] },
-      { id: 'w3', text: 'Rebuilt discovery when cycles went 30 to 70 days', where: 'Brightline, Q2', metric: '30→70', short: 'day cycles, rebuilt discovery',
-        tags: ['discovery', 'cycle', 'process', 'meddpicc', 'qualification', 'sales process', 'complex'] },
-      { id: 'w4', text: 'Grew territory ARR 41% year over year', where: 'Northwind, FY23', metric: '41%', short: 'territory ARR growth',
-        tags: ['territory', 'growth', 'arr', 'expansion', 'pipeline', 'new logo'] },
-      { id: 'w5', text: 'Ramped four new AEs to quota in two quarters', where: 'Northwind, FY23', metric: '4 AEs', short: 'ramped to quota in two quarters',
-        tags: ['ramp', 'coaching', 'onboarding', 'mentor', 'team', 'lead', 'manager', 'hiring'] },
-      { id: 'w6', text: 'Top 3 of 38 reps, two years running', where: 'Northwind', metric: 'Top 3', short: 'of 38 reps, two years running',
-        tags: ['performance', 'ranking', 'consistent', 'top', 'president'] },
-      { id: 'w7', text: 'Closed the biggest deal the company had done', where: 'Cobalt, FY21', metric: '$340k', short: 'largest deal in company history',
-        tags: ['enterprise', 'large', 'strategic', 'acv', 'negotiation', 'outbound'] }
-    ],
-    stack: ['Salesforce', 'HubSpot', 'Outreach', 'Gong', 'Clay', 'Sales Navigator', 'MEDDPICC'],
-    reference: { quote: 'Evan rebuilt our discovery script in the middle of a pricing change and we still made the year. He is who you want in the room when the motion breaks.', who: 'Dev Nair', role: 'VP Sales at Brightline', initials: 'DN' }
-  };
+  /* ---- profile ----------------------------------------------------------
+     Empty until a resume goes in. Nothing here is invented for you. ------- */
+  function blankProfile() {
+    return {
+      name: '', email: '', phone: '', location: '', years: 0,
+      photo: null, imported: false, source: null,
+      voice: { traits: [] },
+      roles: [], wins: [],
+      stack: [],
+      reference: { quote: '', who: '', role: '', initials: '' }
+    };
+  }
+
+  /* The example, for anyone who wants to see it working before handing over
+     their own history. */
+  var EXAMPLE_RESUME = [
+    'Evan Pogue',
+    'Chicago, IL | evan@example.com | 312 555 0148',
+    '',
+    'EXPERIENCE',
+    '',
+    'Senior AE, Mid-Market - Brightline, Chicago (2023 to now)',
+    '- Carried $1.2M and finished at 112% through a seat pricing change',
+    '- Rebuilt discovery when cycles went from 30 days to 70',
+    '- Held the team together through 40% attrition and still made the year',
+    '',
+    'Account Executive - Northwind, Chicago (2021 to 2023)',
+    '- Grew territory ARR 41% year over year',
+    '- Got four new AEs to quota in two quarters',
+    '- Top 3 of 38 reps, two years running',
+    '',
+    'SDR, then AE - Cobalt, remote (2018 to 2021)',
+    '- Closed the biggest deal the company had done at $340k',
+    '- Built the outbound motion from nothing',
+    '',
+    'TOOLS',
+    'Salesforce, HubSpot, Outreach, Gong, Clay, Sales Navigator, MEDDPICC'
+  ].join('\n');
+
+  /* words worth matching a listing against, per win */
+  var TAGS = [
+    [/pricing|reprice|packaging|seat/i,          ['pricing', 'packaging', 'seat', 'change']],
+    [/quota|attainment|\bplan\b|number/i,        ['quota', 'attainment', 'number']],
+    [/cycle|discovery|process|meddpicc|qualif/i, ['discovery', 'cycle', 'process', 'meddpicc']],
+    [/territory|arr|growth|expansion|pipeline/i, ['territory', 'growth', 'arr', 'pipeline']],
+    [/ramp|onboard|coach|mentor|train|hire/i,    ['ramp', 'coaching', 'onboarding', 'team']],
+    [/top \d|rank|president|award|consistent/i,  ['performance', 'ranking', 'consistent']],
+    [/enterprise|largest|biggest|strategic/i,    ['enterprise', 'strategic', 'large']],
+    [/outbound|cold|prospect/i,                  ['outbound', 'prospecting']],
+    [/mid[- ]market|smb|commercial/i,            ['mid-market', 'smb']],
+    [/team|manage|lead|director/i,               ['team', 'lead', 'manager']]
+  ];
+  var TOOLS = ['Salesforce', 'HubSpot', 'Outreach', 'Salesloft', 'Gong', 'Chorus', 'Clay', 'Apollo',
+    'ZoomInfo', 'Sales Navigator', 'MEDDPICC', 'MEDDIC', 'Challenger', 'Sandler',
+    'Looker', 'Tableau', 'Excel', 'Notion', 'Slack', 'Zendesk', 'Intercom', 'Marketo', 'Pardot',
+    'Pipedrive', 'Jira', 'Asana', 'Figma', 'SQL', 'Python'];
 
   /* ---- message templates ----------------------------------------------- */
   var TEMPLATES = [
@@ -1670,7 +1710,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   function defaults() {
     return {
       user: null,
-      profile: clone(SEED_PROFILE),
+      profile: blankProfile(),
       templates: clone(TEMPLATES),
       campaigns: [],
       lastCampaign: null
@@ -1712,7 +1752,11 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
     /* auth */
     signIn: function (email) {
-      var nm = state.profile.name;
+      /* before a resume goes in there is no name, so fall back to the part of
+         the address in front of the @ rather than showing a shrug */
+      var nm = state.profile.name ||
+        String(email || '').split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); }) ||
+        'You';
       state.user = { email: email || state.profile.email, name: nm, initials: Store.initials(nm) };
       Store.save();
       return state.user;
@@ -1730,9 +1774,12 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
     createSeedCampaign: function () {
       if (Store.campaign('c_acme')) return Store.campaign('c_acme');
+      if (!state.profile.imported) {
+        Store.applyResume(Store.parseResume(EXAMPLE_RESUME, 'Evan_Pogue.pdf'));
+      }
       var c = seedCampaign();
-      state.profile.imported = true;
-      state.profile.source = state.profile.source || 'Evan_Pogue.pdf';
+      c.winIds = Store.rankWins(ACME_LISTING).slice(0, 3).map(function (r) { return r.win.id; });
+      c.sections = clone(SECTIONS);
       c.tasks[0].on = true;
       c.tasks[1].on = true;
       c.tasks[2].on = true;
@@ -1852,13 +1899,13 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       var dom = slugify(company).replace(/-/g, '') + '.com';
       var seg = /mid[- ]market/i.test(role || '') ? 'Mid-Market' : /enterprise/i.test(role || '') ? 'Enterprise' : 'Sales';
       return [
-        { id: uid('g'), name: 'Director, ' + seg, title: 'Likely hiring manager at ' + company, persona: 'Hiring manager',
+        { id: uid('g'), placeholder: true, name: 'Director, ' + seg, title: 'Likely hiring manager at ' + company, persona: 'Hiring manager',
           found: 'Named on the team page', why: 'Owns the number this role carries. The one person who can skip the queue.',
           email: 'first.last@' + dom, linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'Fifteen minutes' },
-        { id: uid('g'), name: 'Talent Partner', title: 'Recruiter on this req at ' + company, persona: 'Recruiter',
+        { id: uid('g'), placeholder: true, name: 'Talent Partner', title: 'Recruiter on this req at ' + company, persona: 'Recruiter',
           found: 'Posted the req', why: 'Knows whether the req is moving or already has a finalist.',
           email: 'talent@' + dom, linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'Whether the req is moving' },
-        { id: uid('g'), name: 'Someone you already know', title: 'Worked with you, now near ' + company, persona: 'Shared tie',
+        { id: uid('g'), placeholder: true, name: 'Someone you already know', title: 'Worked with you, now near ' + company, persona: 'Shared tie',
           found: 'Overlap in your history', why: 'A warm forward beats a cold email every time. Ask them to paste two lines.',
           email: '', linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'An introduction' }
       ];
@@ -1876,6 +1923,248 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       if (have > -1) c.winIds.splice(have, 1);
       else if (c.winIds.length < 3) c.winIds.push(wid);
       Store.save();
+    },
+
+    /* ---- read a resume ---------------------------------------------------
+       A real parse of real text, not a fake scan. Everything it cannot find
+       it leaves blank rather than inventing. -------------------------------- */
+    EXAMPLE_RESUME: EXAMPLE_RESUME,
+
+    parseResume: function (text, source) {
+      var raw = String(text || '').replace(/\r/g, '');
+      var lines = raw.split('\n').map(function (l) { return l.trim(); });
+      var out = blankProfile();
+      out.imported = true;
+      out.source = source || 'pasted text';
+
+      var isBullet = function (l) { return /^[-\u2013\u2014\u2022*\u00b7]\s+/.test(l); };
+      var strip = function (l) { return l.replace(/^[-\u2013\u2014\u2022*\u00b7]\s+/, '').replace(/[.;]$/, ''); };
+      var isSection = function (l) {
+        return /^[A-Z][A-Z \/&]{2,28}$/.test(l) ||
+               /^(experience|work experience|employment|skills|tools|education|summary|profile|about)\b/i.test(l);
+      };
+
+      var email = raw.match(/[\w.+-]+@[\w-]+\.[\w.]{2,}/);
+      if (email) out.email = email[0];
+      var phone = raw.match(/(?:\+?\d[\d ().-]{8,}\d)/);
+      if (phone) out.phone = phone[0].trim();
+      var loc = raw.match(/\b([A-Z][a-zA-Z.\- ]{2,20},\s?(?:[A-Z]{2}\b|[A-Z][a-z]+))/);
+      if (loc) out.location = loc[1].trim();
+
+      /* the name is the first short line with no digits and no @ in it */
+      for (var i = 0; i < lines.length && i < 8; i++) {
+        var l = lines[i];
+        if (!l || /[@\d]/.test(l) || isSection(l)) continue;
+        if (l.split(/\s+/).length <= 4 && l.length <= 48) { out.name = l.replace(/[|,].*$/, '').trim(); break; }
+      }
+
+      /* roles: a heading followed by bullets */
+      var section = '';
+      var role = null;
+      var years = [];
+      lines.forEach(function (l, idx) {
+        if (!l) return;
+        if (isSection(l) && !isBullet(l)) { section = l.toLowerCase(); role = null; return; }
+
+        if (isBullet(l)) {
+          if (role) role.bullets.push(strip(l));
+          else if (/tool|skill/.test(section)) {
+            strip(l).split(/[,;\u00b7|]/).forEach(function (t) { if (t.trim()) out.stack.push(t.trim()); });
+          }
+          return;
+        }
+
+        if (/tool|skill/.test(section)) {
+          l.split(/[,;\u00b7|]/).forEach(function (t) { if (t.trim()) out.stack.push(t.trim()); });
+          return;
+        }
+
+        var next = lines.slice(idx + 1, idx + 4).filter(Boolean)[0] || '';
+        var span = l.match(/\(?\b((?:19|20)\d{2})\s*(?:to|-|\u2013|\u2014|until)\s*((?:19|20)\d{2}|now|present|current)\b\)?/i);
+        if (!span && !isBullet(next)) return;
+        if (l.length > 120) return;
+
+        var head = l.replace(span ? span[0] : '', '').replace(/[()]/g, '').trim();
+        var bits = head.split(/\s+[-\u2013\u2014|]\s+|\s+\bat\b\s+/i);
+        role = {
+          id: uid('r'),
+          title: (bits[0] || head).replace(/[,\s]+$/, ''),
+          company: (bits[1] || '').replace(/[,\s]+$/, ''),
+          span: span ? span[1] + ' to ' + span[2].toLowerCase() : '',
+          on: true, bullets: []
+        };
+        if (span) years.push(parseInt(span[1], 10));
+        out.roles.push(role);
+      });
+      out.roles = out.roles.filter(function (r) { return r.bullets.length; });
+
+      if (years.length) {
+        out.years = Math.max(0, Math.min(50, new Date().getFullYear() - Math.min.apply(null, years)));
+      }
+
+      /* wins are the bullets with a number in them. The label under the big
+         number is the clause that number sits in, with the number taken back
+         out, so it stays a sentence instead of a shredded one. */
+      var METRIC = /\$[\d.,]+\s?[KkMmBb]?|\d+(?:\.\d+)?%|\b\d+(?:\s+\w+)?\s+to\s+\d+\b|\bTop\s?\d+\b|\b\d[\d,]*\s?[KkMmBb]?\b/;
+      var TIDY = /^(?:and|to|at|of|in|on|through|from|with|by|the|a)\s+|\s+(?:and|to|at|of|in|on|through|from|with|by|the|a)$/gi;
+      var seen = {};
+      out.roles.forEach(function (r) {
+        r.bullets.forEach(function (b) {
+          var mm = b.match(METRIC);
+          if (!mm || seen[b]) return;
+          seen[b] = 1;
+          var hit = mm[0].trim();
+
+          var metric = /\sto\s/i.test(hit)
+            ? hit.replace(/\s+\w+\s+to\s+|\s+to\s+/i, '\u2192')
+            : hit;
+
+          /* the clause holding the number, minus the number */
+          var clauses = b.split(/,\s+|\s+and\s+|\s+with\s+/i);
+          var at = 0;
+          for (var k = 0; k < clauses.length; k++) if (clauses[k].indexOf(hit) > -1) { at = k; break; }
+          var label = clauses[at].replace(hit, ' ').replace(/\s{2,}/g, ' ').trim().replace(TIDY, '').trim();
+          if (label.split(/\s+/).length < 3 && clauses[at + 1]) {
+            label = clauses[at + 1].replace(/\s{2,}/g, ' ').trim().replace(TIDY, '').trim();
+          }
+          if (label.length > 52) label = label.slice(0, 50).replace(/\s\S*$/, '') + '\u2026';
+
+          var tags = [];
+          TAGS.forEach(function (t) { if (t[0].test(b)) tags = tags.concat(t[1]); });
+          out.wins.push({
+            id: uid('w'), text: b, where: [r.company, r.span].filter(Boolean).join(', '),
+            metric: metric, short: label.charAt(0).toLowerCase() + label.slice(1),
+            tags: tags
+          });
+        });
+      });
+      out.wins = out.wins.slice(0, 12);
+
+      /* tools: whatever a skills section listed, plus anything we recognise */
+      TOOLS.forEach(function (t) {
+        if (new RegExp('\\b' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(raw)) out.stack.push(t);
+      });
+      var uniq = {};
+      out.stack = out.stack.filter(function (t) {
+        var k = t.toLowerCase();
+        if (uniq[k] || t.length > 24) return false;
+        uniq[k] = 1; return true;
+      }).slice(0, 14);
+
+      /* how they write, read off the bullets rather than guessed at */
+      var all = [];
+      out.roles.forEach(function (r) { all = all.concat(r.bullets); });
+      if (all.length) {
+        var avg = all.reduce(function (a, b) { return a + b.split(/\s+/).length; }, 0) / all.length;
+        var numeric = all.filter(function (b) { return /\d/.test(b); }).length / all.length;
+        if (avg < 15) out.voice.traits.push('Short lines');
+        if (numeric > 0.5) out.voice.traits.push('Numbers first');
+        if (avg >= 15) out.voice.traits.push('Full sentences');
+        out.voice.traits.push('One ask');
+      }
+      return out;
+    },
+
+    applyResume: function (parsed) {
+      var photo = state.profile.photo;
+      state.profile = parsed;
+      state.profile.photo = photo;
+      if (state.user && parsed.name) {
+        state.user.name = parsed.name;
+        state.user.initials = Store.initials(parsed.name);
+      }
+      if (state.user && !parsed.email) state.profile.email = state.user.email;
+      Store.save();
+      return state.profile;
+    },
+
+    /* ---- research you add yourself --------------------------------------- */
+    addResearch: function (cid, data) {
+      var c = Store.campaign(cid); if (!c) return null;
+      var o = {
+        id: uid('res'), kind: data.kind || 'Note', date: data.date || 'just now',
+        title: data.title || '', detail: data.detail || '',
+        source: data.source || '', use: data.use || data.title || ''
+      };
+      c.research.unshift(o);
+      Store.completeTask(cid, 't4');
+      Store.save();
+      return o;
+    },
+    removeResearch: function (cid, id) {
+      var c = Store.campaign(cid); if (!c) return;
+      c.research = c.research.filter(function (o) { return o.id !== id; });
+      Store.save();
+    },
+
+    /* ---- build the fourteen days ----------------------------------------
+       A plan of who to reach and when, matched against whoever is actually
+       on the list. Anything with nobody to send it to is left out. -------- */
+    PLAN: [
+      { day: 0,  channel: 'ATS',      persona: null,             stage: null,
+        note: 'Apply. You still have to exist in the system.' },
+      { day: 0,  channel: 'LinkedIn', persona: 'Peer',           stage: 'First touch',
+        note: 'Ask about the team, nothing else' },
+      { day: 2,  channel: 'Email',    persona: 'Recruiter',      stage: 'First touch',
+        note: 'Name the req, ask one question' },
+      { day: 3,  channel: 'Email',    persona: 'Hiring manager', stage: 'First touch',
+        note: 'Your angle, then the page' },
+      { day: 5,  channel: 'LinkedIn', persona: 'Shared tie',     stage: 'Referral ask',
+        note: 'Ask for the intro, write it for them' },
+      { day: 7,  channel: 'Reply',    persona: 'Peer',           stage: 'Referral ask',
+        note: 'Now you can ask for the referral' },
+      { day: 8,  channel: 'Email',    persona: 'Hiring manager', stage: 'Follow up',
+        note: 'Bring something new or do not write' },
+      { day: 10, channel: 'Email',    persona: 'Skip level',     stage: 'Escalation',
+        note: 'Eighty words, business first' },
+      { day: 12, channel: 'Call',     persona: 'Recruiter',      stage: 'Follow up',
+        note: 'Pick up the phone' },
+      { day: 14, channel: 'Email',    persona: null,             stage: 'Breakup',
+        note: 'Say you are stopping, leave the door open' }
+    ],
+
+    buildSequence: function (cid) {
+      var c = Store.campaign(cid); if (!c) return [];
+      var used = {};
+      var steps = [];
+
+      Store.PLAN.forEach(function (row) {
+        var person = null;
+        if (row.persona) {
+          person = c.contacts.filter(function (p) { return p.persona === row.persona; })[0] || null;
+          if (!person) return;            /* nobody to send it to */
+        } else if (row.stage === 'Breakup') {
+          person = c.contacts.filter(function (p) { return p.persona === 'Hiring manager'; })[0] ||
+                   c.contacts[0] || null;
+        }
+        if (person) used[person.id] = (used[person.id] || 0) + 1;
+
+        var t = null;
+        if (row.stage) {
+          var pool = state.templates.filter(function (x) { return x.stage === row.stage; });
+          t = pool.filter(function (x) { return x.persona === (row.persona || (person ? person.persona : '')); })[0] ||
+              pool.filter(function (x) { return x.channel === row.channel; })[0] || pool[0] || null;
+        }
+        var subject = '';
+        if (row.channel === 'Email') {
+          subject = row.stage === 'Follow up' ? 'one more thing on ' + c.company
+                  : row.stage === 'Breakup'   ? 'closing the loop'
+                  : row.stage === 'Escalation' ? c.company + ' and the number'
+                  : 'applied for the ' + c.role;
+        }
+        steps.push({
+          id: uid('s'), day: row.day, contact: person ? person.id : null,
+          template: t ? t.id : null, channel: t ? t.channel : row.channel,
+          note: row.note, status: 'queued', subject: subject,
+          body: t ? Store.fill(t.body, c, person) : ''
+        });
+      });
+
+      c.steps = steps;
+      c.activeStep = steps[0] ? steps[0].id : null;
+      Store.completeTask(cid, 't5');
+      Store.save();
+      return steps;
     },
 
     /* ---- look someone up by their profile URL ----------------------------
@@ -1941,7 +2230,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         colour: Store.colourFor(data.persona || 'Other'),
         tenure: data.tenure || '', prev: data.prev || '', mutuals: data.mutuals || 0,
         email: data.email || '', linkedin: data.linkedin || '',
-        ask: data.ask || '', notes: '', activity: data.activity || []
+        ask: data.ask || '', notes: '', activity: data.activity || [],
+        placeholder: !!data.placeholder
       };
       c.contacts.push(person);
       Store.save();
@@ -2647,7 +2937,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '<h1>' + (signup ? 'Start with one company' : 'Welcome back') + '</h1>' +
           '<p class="sub">' + (signup
             ? 'Pick a company you actually want to work at. We will build the rest around it.'
-            : 'Pick up where you left off with Acme.') + '</p>' +
+            : 'Pick up where you left off.') + '</p>' +
           '<form id="auth-form" novalidate>' +
             (signup ? '<div class="field"><label for="f-name">Your name</label>' +
               '<input class="input" id="f-name" value="Evan Pogue" autocomplete="name"></div>' : '') +
@@ -2688,10 +2978,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       err.classList.add('hide');
       UI.busy(btn, 750).then(function () {
         Store.signIn(email.value.trim());
-        if (signup) { UI.toast('Welcome. Start with your resume.'); Router.go('/import'); return; }
-        Store.createSeedCampaign();
-        UI.toast('Signed in. Acme is waiting for you.');
-        Router.go('/');
+        UI.toast(Store.state.profile.imported ? 'Signed in.' : 'Welcome. Start with your resume.');
+        Router.go(Store.state.profile.imported ? '/' : '/import');
       });
     }
 
@@ -2707,10 +2995,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       var b = this;
       UI.busy(b, 850).then(function () {
         Store.signIn(email.value.trim());
-        if (signup) { UI.toast('Welcome. Start with your resume.'); Router.go('/import'); return; }
-        Store.createSeedCampaign();
         UI.toast('Signed in with Google.');
-        Router.go('/');
+        Router.go(Store.state.profile.imported ? '/' : '/import');
       });
     });
   }
@@ -2797,12 +3083,14 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         '<span class="art">↑</span><h2>Start with your résumé</h2>' +
         '<p>We read it once. Every company you add after that gets its wins picked from it, matched to the listing.</p>' +
         '<button class="btn btn-primary btn-lg" id="go-import">Add your résumé <span class="arr">→</span></button>' +
+        '<p class="hint mt4">Want to look around first? <button class="linkish" id="go-demo">Load an example workspace</button></p>' +
         '</div></div>';
     } else if (!list.length) {
       html += '<div class="card" style="overflow:hidden"><div class="empty">' +
         '<span class="art">◎</span><h2>Add your first company</h2>' +
         '<p>Paste the job listing. We pull the role apart, pick the three wins that answer it, and go looking for the people behind the req.</p>' +
         '<button class="btn btn-primary btn-lg" id="go-new">Paste a job listing <span class="arr">→</span></button>' +
+        '<p class="hint mt4">Or <button class="linkish" id="go-demo">load an example workspace</button> to see a finished one.</p>' +
         '</div></div>';
     } else {
       html += '<div class="opps">' + list.map(oppCard).join('') +
@@ -2830,6 +3118,11 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     });
 
     UI.on(v, 'click', '#go-import', function () { Router.go('/import'); });
+    UI.on(v, 'click', '#go-demo', function () {
+      var c = Store.createSeedCampaign();
+      UI.toast('Example loaded. Acme, three days in.');
+      Router.go('/c/' + c.id);
+    });
     UI.on(v, 'click', '#go-new', function () { Router.go('/new'); });
     var top = document.getElementById('new-top');
     if (top) top.addEventListener('click', function () { Router.go('/new'); });
@@ -2867,9 +3160,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
       '<div class="card p5 mb4">' +
         '<h3 class="mb3">How you write</h3>' +
-        '<p class="dim mb4" style="font-size:var(--fs-sm)">Pulled from the writing sample you handed over. Every draft starts from this.</p>' +
-        '<div class="row wrap g2">' + pf.voice.traits.map(function (t) { return '<span class="chip chip-accent">' + esc(t) + '</span>'; }).join('') + '</div>' +
-        '<p class="dim mt4" style="font-size:var(--fs-sm)">Reads like: short, leads with a number, one ask, no throat clearing.</p>' +
+        '<p class="dim mb4" style="font-size:var(--fs-sm)">Read off your own bullets. Every draft starts from this.</p>' +
+        (pf.voice.traits.length
+          ? '<div class="row wrap g2">' + pf.voice.traits.map(function (t) { return '<span class="chip chip-accent">' + esc(t) + '</span>'; }).join('') + '</div>'
+          : '<p class="hint">Nothing read yet. Import a résumé and this fills in from how you write.</p>') +
       '</div>' +
 
       '<div class="card p5 mb4">' +
@@ -3217,7 +3511,13 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             '<a class="btn btn-ghost btn-sm" href="#/c/' + c.id + '/sequence">Open the sequence <span class="arr">→</span></a></div>' +
             (upNext.length
               ? '<div class="seq">' + upNext.map(function (s) { return stepRow(c, s); }).join('') + '</div>'
-              : '<p class="dim" style="font-size:var(--fs-sm)">No sequence yet. Build one and it shows up here.</p>') +
+              : '<p class="dim mb4" style="font-size:var(--fs-sm)">' +
+                (c.contacts.length
+                  ? 'Nothing scheduled yet. Ten touches across your ' + c.contacts.length + ' contacts, built from your templates.'
+                  : 'Add the people we found first, then the fourteen days build around them.') + '</p>' +
+                '<a class="btn btn-primary btn-sm" href="#/c/' + c.id +
+                (c.contacts.length ? '/sequence">Build the sequence' : '/people">Add contacts') +
+                ' <span class="arr">→</span></a>') +
           '</div>' +
         '</div>' +
 
@@ -3289,8 +3589,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 ;
 /* assets/js/views/importer.js */
 /* ==========================================================================
-   views/importer.js — read the résumé once. Which wins matter is decided
-   per company, against the listing, so nothing is picked here.
+   views/importer.js — read a resume once. Which wins matter is decided per
+   company, against that listing, so nothing is picked here.
    ========================================================================== */
 (function (window, document) {
   'use strict';
@@ -3298,112 +3598,189 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   var esc = UI.esc;
   window.Views = window.Views || {};
 
-  var SCAN = [
-    ['Name and where you are', 'Chicago'],
-    ['Roles', '3'],
-    ['Wins with a number in them', '7'],
-    ['Tools and methodology', '7'],
-    ['How you write', 'from your summary']
-  ];
+  var TEXTY = /\.(txt|md|markdown|text|csv|json|rtf)$/i;
 
   window.Views.importer = function () {
-    var step = Store.state.profile.imported ? 2 : 1;
+    var pf = Store.state.profile;
+    var step = pf.imported ? 2 : 1;
+    var parsed = null;
+    var pending = '';
 
     function pips(active) {
-      return '<div class="steps-bar">' + ['Import', 'Check it', 'Add a company'].map(function (l, i) {
+      return '<div class="steps-bar">' + ['Your resume', 'Check it', 'Add a company'].map(function (l, i) {
         var n = i + 1;
-        var state = n < active ? 'done' : n === active ? 'active' : 'todo';
-        return '<span class="step-pip" data-state="' + state + '"><span class="n"><span>' + n + '</span></span>' + esc(l) + '</span>' +
+        var st = n < active ? 'done' : n === active ? 'active' : 'todo';
+        return '<span class="step-pip" data-state="' + st + '"><span class="n"><span>' + n + '</span></span>' + esc(l) + '</span>' +
           (i < 2 ? '<span style="color:var(--ink-4)">→</span>' : '');
       }).join('') + '</div>';
     }
 
-    function paint() {
-      var pf = Store.state.profile;
-      var body;
+    /* ------------------------------------------------------------ step 1 -- */
+    function stepOne() {
+      return pips(1) +
+        '<div class="card p6">' +
+          '<h3 class="mb2">Hand over your history</h3>' +
+          '<p class="dim mb5" style="font-size:var(--fs-sm)">We read it once. Every company you add after this pulls from it.</p>' +
+          '<label class="drop" id="drop" for="file-in">' +
+            '<span class="drop-ic">↑</span>' +
+            '<b>Drop your resume here</b>' +
+            '<span class="hint">or click to choose a file</span>' +
+            '<input type="file" id="file-in" accept=".txt,.md,.rtf,.pdf,.doc,.docx,text/plain" hidden>' +
+          '</label>' +
+          '<p class="lookup-msg hide" id="file-msg"></p>' +
 
-      if (step === 1) {
-        body = pips(1) +
-          '<div class="card p6">' +
-            '<h3 class="mb3">Where does your history live?</h3>' +
-            '<p class="dim mb5" style="font-size:var(--fs-sm)">We read it once. Every company you add after this pulls from it.</p>' +
-            '<div class="grid cols-2">' +
-              '<button class="dropzone" data-src="linkedin.com/in/evanpogue"><span class="dz-ic dz-li">' + UI.liMark(18) + '</span><b>LinkedIn profile</b><span class="hint">Paste the URL</span></button>' +
-              '<button class="dropzone" data-src="Evan_Pogue.pdf"><span class="dz-ic">↑</span><b>Résumé</b><span class="hint">PDF or Word</span></button>' +
-            '</div>' +
-            '<div class="hide mt5" id="scan-box"><p class="cap mb3" id="scan-src">Reading</p><div id="scan"></div></div>' +
-          '</div>';
-      } else {
-        body = pips(2) +
-          '<div class="card p6 mb4">' +
-            '<div class="row between wrap mb3 g3"><h3>Here is what came out</h3>' +
-            '<span class="cap">' + esc(pf.source || 'your résumé') + '</span></div>' +
-            '<p class="dim mb5" style="font-size:var(--fs-sm)">Turn off anything you would not put in front of a hiring manager. Which of your wins to lead with gets decided per company, against that listing.</p>' +
-            '<div class="grid" style="gap:var(--s-2)" id="roles"></div>' +
+          '<div class="or"><span>or paste it</span></div>' +
+          '<textarea class="input listing-in" id="paste" spellcheck="false" ' +
+            'placeholder="Open your resume, select all, paste it here. Plain text is fine."></textarea>' +
+          '<div class="row between wrap mt4 g3">' +
+            '<button class="btn btn-ghost btn-sm" id="use-example">Use an example resume</button>' +
+            '<button class="btn btn-primary" id="read" disabled>Read it <span class="arr">→</span></button>' +
           '</div>' +
+        '</div>';
+    }
 
-          '<div class="card p6 mb4">' +
-            '<h3 class="mb3">' + pf.wins.length + ' wins with a number in them</h3>' +
-            '<div class="row wrap g2">' + pf.wins.map(function (w) {
-              return '<span class="chip"><b class="mono">' + esc(w.metric) + '</b> ' + esc(w.short) + '</span>';
-            }).join('') + '</div>' +
-          '</div>' +
+    function wireOne(v) {
+      var ta = v.querySelector('#paste');
+      var go = v.querySelector('#read');
+      var msg = v.querySelector('#file-msg');
+      var drop = v.querySelector('#drop');
 
-          '<div class="row g2 wrap">' +
-            '<button class="btn btn-primary" id="done-import">Looks right <span class="arr">→</span></button>' +
-            '<button class="btn btn-ghost" id="redo-import">Import something else</button>' +
-          '</div>';
+      function check() { go.disabled = ta.value.trim().length < 60; }
+      ta.value = pending;
+      check();
+      ta.addEventListener('input', function () { pending = ta.value; check(); });
+
+      function take(file) {
+        if (!file) return;
+        msg.classList.remove('hide', 'ok');
+        if (!TEXTY.test(file.name) && !/^text\//.test(file.type)) {
+          msg.textContent = 'We cannot read ' + (file.name.split('.').pop() || 'that').toUpperCase() +
+            ' in the browser yet. Open it, select all, and paste it below.';
+          ta.focus();
+          return;
+        }
+        var fr = new FileReader();
+        fr.onload = function () {
+          ta.value = String(fr.result).replace(/\u0000/g, '');
+          pending = ta.value;
+          check();
+          msg.classList.add('ok');
+          msg.textContent = 'Read ' + file.name + '. Have a look, then read it in.';
+        };
+        fr.onerror = function () { msg.textContent = 'Could not open that file.'; };
+        fr.readAsText(file);
       }
 
-      var v = Shell.mount({
-        nav: 'home',
-        crumbs: [{ label: 'Overview', href: '/' }, { label: 'Your history' }],
-        html: '<div class="page-head"><h1>Your history</h1><p>Two minutes of setup that every message and page is built from.</p></div>' + body
+      v.querySelector('#file-in').addEventListener('change', function () { take(this.files && this.files[0]); });
+      ['dragenter', 'dragover'].forEach(function (e) {
+        drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.add('over'); });
+      });
+      ['dragleave', 'drop'].forEach(function (e) {
+        drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.remove('over'); });
+      });
+      drop.addEventListener('drop', function (ev) {
+        take(ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]);
       });
 
-      if (step === 1) {
-        UI.on(v, 'click', '[data-src]', function (e, el) {
-          var src = el.dataset.src;
-          v.querySelectorAll('.dropzone').forEach(function (d) { d.disabled = true; d.style.opacity = .4; });
-          var box = v.querySelector('#scan-box');
-          box.classList.remove('hide');
-          v.querySelector('#scan-src').textContent = 'Reading ' + src;
-          v.querySelector('#scan').innerHTML = SCAN.map(function (s, i) {
-            return '<div class="scan-line" id="sl' + i + '"><span class="dot"></span><span>' + esc(s[0]) + '</span><em><span class="skel"></span></em></div>';
-          }).join('');
-          SCAN.forEach(function (s, i) {
-            setTimeout(function () {
-              var ln = v.querySelector('#sl' + i);
-              if (!ln) return;
-              ln.classList.add('done');
-              ln.querySelector('em').textContent = s[1];
-              if (i === SCAN.length - 1) {
-                Store.markImported(src);
-                setTimeout(function () { step = 2; paint(); UI.toast('Got it. Three roles, seven wins.'); }, 420);
-              }
-            }, 300 * (i + 1));
-          });
-        });
-      } else {
-        var rolesEl = v.querySelector('#roles');
-        function paintRoles() {
-          rolesEl.innerHTML = Store.state.profile.roles.map(function (r) {
-            return '<button class="opt" data-role="' + r.id + '" aria-pressed="' + r.on + '">' +
-              '<span class="box"></span><span class="ot">' + esc(r.title) + '<em>' + esc(r.company) + ', ' + esc(r.span) + '</em></span>' +
-              '<span class="om mono">' + r.bullets.length + '</span></button>';
-          }).join('');
-        }
-        paintRoles();
-        UI.on(v, 'click', '[data-role]', function (e, el) { Store.toggleRole(el.dataset.role); paintRoles(); });
+      v.querySelector('#use-example').addEventListener('click', function () {
+        ta.value = Store.EXAMPLE_RESUME;
+        pending = ta.value;
+        check();
+        ta.focus();
+      });
 
-        v.querySelector('#done-import').addEventListener('click', function () {
-          var first = Store.campaigns()[0];
-          if (first) { UI.toast('Saved.'); Router.go('/'); return; }
-          UI.toast('Saved. Now paste a job listing.');
-          Router.go('/new');
-        });
-        v.querySelector('#redo-import').addEventListener('click', function () { step = 1; paint(); });
+      go.addEventListener('click', function () {
+        parsed = Store.parseResume(ta.value, pending === Store.EXAMPLE_RESUME ? 'the example resume' : 'your resume');
+        Store.applyResume(parsed);
+        step = 2;
+        paint();
+        UI.toast(parsed.roles.length + ' roles and ' + parsed.wins.length + ' wins.');
+      });
+    }
+
+    /* ------------------------------------------------------------ step 2 -- */
+    function stepTwo() {
+      var p = Store.state.profile;
+      var missing = [];
+      if (!p.name) missing.push('a name');
+      if (!p.roles.length) missing.push('any roles');
+      if (!p.wins.length) missing.push('a win with a number in it');
+
+      return pips(2) +
+        '<div class="card p6 mb4">' +
+          '<div class="row between wrap mb3 g3"><h3>Here is what came out</h3>' +
+          '<span class="cap">' + esc(p.source || 'your resume') + '</span></div>' +
+          (missing.length
+            ? '<p class="lookup-msg mb4">We could not find ' + esc(missing.join(', ')) +
+              '. Go back and paste more of it, or fix it in Settings later.</p>'
+            : '') +
+          '<dl class="facts mb5">' +
+            '<div><dt>Name</dt><dd>' + esc(p.name || '—') + '</dd></div>' +
+            '<div><dt>Where</dt><dd>' + esc(p.location || '—') + '</dd></div>' +
+            '<div><dt>Email</dt><dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.email || '—') + '</dd></div>' +
+            (p.years ? '<div><dt>Years</dt><dd>' + p.years + '</dd></div>' : '') +
+          '</dl>' +
+          '<p class="cap mb3" style="margin-top:var(--s-5)">Roles</p>' +
+          (p.roles.length
+            ? '<div class="grid" style="gap:var(--s-2)" id="roles"></div>'
+            : '<p class="hint">None found.</p>') +
+        '</div>' +
+
+        '<div class="card p6 mb4">' +
+          '<h3 class="mb3">' + p.wins.length + ' win' + (p.wins.length === 1 ? '' : 's') + ' with a number in them</h3>' +
+          (p.wins.length
+            ? '<p class="dim mb4" style="font-size:var(--fs-sm)">Which three you lead with gets decided per company, against that listing.</p>' +
+              '<div class="leadwins">' + p.wins.map(function (w) {
+                return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
+              }).join('') + '</div>'
+            : '<p class="hint">Nothing with a number in it. Bullets like "grew ARR 41%" are what we match against a listing.</p>') +
+        '</div>' +
+
+        (Store.state.profile.stack.length
+          ? '<div class="card p6 mb4"><h3 class="mb3">Tools</h3><div class="row wrap g2">' +
+            Store.state.profile.stack.map(function (t) { return '<span class="chip">' + esc(t) + '</span>'; }).join('') +
+            '</div></div>'
+          : '') +
+
+        '<div class="row g2 wrap">' +
+          '<button class="btn btn-primary" id="done-import">Looks right <span class="arr">→</span></button>' +
+          '<button class="btn btn-ghost" id="redo-import">Read a different one</button>' +
+        '</div>';
+    }
+
+    function wireTwo(v) {
+      var rolesEl = v.querySelector('#roles');
+      function paintRoles() {
+        if (!rolesEl) return;
+        rolesEl.innerHTML = Store.state.profile.roles.map(function (r) {
+          return '<button class="opt" data-role="' + r.id + '" aria-pressed="' + r.on + '">' +
+            '<span class="box"></span><span class="ot">' + esc(r.title || 'Untitled role') +
+            '<em>' + esc([r.company, r.span].filter(Boolean).join(', ')) + '</em></span>' +
+            '<span class="om mono">' + r.bullets.length + '</span></button>';
+        }).join('');
       }
+      paintRoles();
+      UI.on(v, 'click', '[data-role]', function (e, el) { Store.toggleRole(el.dataset.role); paintRoles(); });
+
+      v.querySelector('#done-import').addEventListener('click', function () {
+        if (Store.campaigns().length) { UI.toast('Saved.'); Router.go('/'); return; }
+        UI.toast('Saved. Now paste a job listing.');
+        Router.go('/new');
+      });
+      v.querySelector('#redo-import').addEventListener('click', function () {
+        step = 1; pending = ''; paint();
+      });
+    }
+
+    function paint() {
+      var v = Shell.mount({
+        nav: 'home',
+        crumbs: [{ label: 'Overview', href: '/' }, { label: 'Your resume' }],
+        html: '<div class="page-head"><h1>Your history</h1>' +
+              '<p>Two minutes of setup that every message and every page is built from.</p></div>' +
+              (step === 1 ? stepOne() : stepTwo())
+      });
+      if (step === 1) wireOne(v); else wireTwo(v);
     }
 
     paint();
@@ -3485,7 +3862,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             '<span class="avatar avatar-md" style="background:var(' + p.colour + ')">' + esc(Store.initials(p.name)) + '</span>' +
             '<span class="rr-main"><span class="rr-name">' + esc(p.name) + '</span>' +
             '<span class="rr-sub">' + esc(p.title || 'No title yet') + '</span></span>' +
-            '<span class="rr-tag">' + esc(p.persona) + '</span>' +
+            '<span class="rr-tag' + (p.placeholder ? ' rr-tag-warn' : '') + '">' +
+              (p.placeholder ? 'Needs a name' : esc(p.persona)) + '</span>' +
             '<span class="rr-moves">' +
               '<button class="icon-btn" data-up="' + p.id + '" aria-label="Move up"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
               '<button class="icon-btn" data-down="' + p.id + '" aria-label="Move down"' + (i === c.contacts.length - 1 ? ' disabled' : '') + '>↓</button>' +
@@ -3589,6 +3967,18 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
               '<dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.linkedin) + '</dd></div>' : '') +
           '</dl>' +
           '<hr class="divider" style="margin:var(--s-4) 0">' +
+          (p.placeholder
+            ? '<p class="lookup-msg mb3">We know the seat, not the person. Paste their profile or type their name.</p>' +
+              '<div class="lookup mb3">' + UI.liMark(18) +
+                '<input class="lookup-in" id="d-url" placeholder="linkedin.com/in/..." autocomplete="off" spellcheck="false">' +
+                '<button class="btn btn-secondary btn-sm" type="button" id="d-find">Find them</button></div>'
+            : '') +
+          '<div class="grid cols-2 mb3">' +
+            '<div class="field"><label for="d-name">Name</label>' +
+              '<input class="input" id="d-name" value="' + esc(p.placeholder ? '' : p.name) + '" placeholder="' + esc(p.placeholder ? p.name : '') + '"></div>' +
+            '<div class="field"><label for="d-title">Title</label>' +
+              '<input class="input" id="d-title" value="' + esc(p.title) + '" placeholder="Director, Mid-Market"></div>' +
+          '</div>' +
           '<div class="field mb3"><label for="d-persona">How you know them</label>' +
             '<select class="input" id="d-persona">' + personaOptions(p.persona) + '</select></div>' +
           '<div class="field mb3"><label for="d-ask">What you want from them</label>' +
@@ -3612,8 +4002,37 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         });
       }
       patch('persona', d.querySelector('#d-persona'));
+      patch('title', d.querySelector('#d-title'));
       patch('ask', d.querySelector('#d-ask'));
       patch('notes', d.querySelector('#d-notes'));
+
+      /* naming someone clears the placeholder, in the list and everywhere a
+         step already points at them */
+      d.querySelector('#d-name').addEventListener('change', function () {
+        var nm = this.value.trim();
+        if (!nm) return;
+        Store.updateContact(c.id, p.id, { name: nm, placeholder: false });
+        /* repaint after the blur finishes, or the browser tears this input out
+           from under the event that is still running */
+        setTimeout(paint, 0);
+        UI.toast('Now it says ' + nm + ' everywhere it said the job title.');
+      });
+
+      var find = d.querySelector('#d-find');
+      if (find) find.addEventListener('click', function () {
+        var res = Store.lookupLinkedIn(d.querySelector('#d-url').value, c.id);
+        if (!res.ok) { UI.toast(res.reason); return; }
+        Store.updateContact(c.id, p.id, {
+          name: res.person.name, title: res.person.title || p.title,
+          persona: res.person.persona !== 'Other' ? res.person.persona : p.persona,
+          email: res.person.email || p.email, linkedin: res.person.linkedin,
+          tenure: res.person.tenure || p.tenure, mutuals: res.person.mutuals || p.mutuals,
+          activity: (res.person.activity && res.person.activity.length) ? res.person.activity : p.activity,
+          placeholder: false
+        });
+        setTimeout(paint, 0);
+        UI.toast('That is ' + res.person.name + '.');
+      });
 
       d.querySelector('#del').addEventListener('click', function () {
         UI.confirm({ title: 'Remove ' + p.name + '?', body: 'Any step pointed at them loses its contact. You can add them back later.', confirm: 'Remove', danger: true })
@@ -3704,7 +4123,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     var v = Shell.mount({
       nav: 'research',
       crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Research' }],
-      actions: '<button class="btn btn-secondary btn-sm" id="refresh">Refresh</button>',
+      actions: '<button class="btn btn-secondary btn-sm" id="add-find">Add something you found</button>' +
+               '<button class="btn btn-secondary btn-sm" id="refresh">Refresh</button>',
       html:
         '<div class="page-head"><h1>What they said, recently, in public</h1>' +
         '<p>Nobody replies to a message that could have been sent to anyone. Take a line from here and the first sentence is already specific.</p></div>' +
@@ -3737,7 +4157,12 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       subtabs();
       var feed = v.querySelector('#feed');
       if (tab === 'company') {
-        feed.innerHTML = '<div class="feed">' + c.research.map(function (o) { return item(o, null); }).join('') + '</div>';
+        feed.innerHTML = c.research.length
+          ? '<div class="feed">' + c.research.map(function (o) { return item(o, null); }).join('') + '</div>'
+          : '<div class="card"><div class="empty"><span class="art">\u25c8</span>' +
+            '<h2>Nothing on ' + esc(c.company) + ' yet</h2>' +
+            '<p>Paste anything you come across: a post, a podcast line, a pricing change. One specific sentence is what separates a reply from a delete.</p>' +
+            '<button class="btn btn-primary btn-lg" id="add-empty">Add what you found <span class="arr">\u2192</span></button></div></div>';
       } else {
         var any = c.contacts.some(function (p) { return p.activity && p.activity.length; });
         feed.innerHTML = any
@@ -3757,6 +4182,48 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       UI.toast('Dropped into your draft.');
       Router.go('/c/' + c.id + '/sequence');
     });
+    function addSheet() {
+      UI.sheet({
+        title: 'Something you found',
+        html: '<form id="res-form" class="col g3">' +
+          '<div class="grid cols-2">' +
+            '<div class="field"><label for="r-kind">What kind</label>' +
+              '<select class="input" id="r-kind">' +
+              ['Leadership', 'Product', 'Hiring', 'Funding', 'Earnings', 'Post', 'Podcast', 'Note']
+                .map(function (k) { return '<option>' + k + '</option>'; }).join('') + '</select></div>' +
+            '<div class="field"><label for="r-src">Where it came from</label>' +
+              '<input class="input" id="r-src" placeholder="LinkedIn, their pricing page, a podcast"></div>' +
+          '</div>' +
+          '<div class="field"><label for="r-title">In a line</label>' +
+            '<input class="input" id="r-title" placeholder="Moved SMB to a five seat minimum"></div>' +
+          '<div class="field"><label for="r-detail">What it actually says</label>' +
+            '<textarea class="input" id="r-detail" placeholder="Paste the post, or write what you took from it."></textarea></div>' +
+          '<div class="field"><label for="r-use">The sentence you would put in a message</label>' +
+            '<input class="input" id="r-use" placeholder="The five seat floor turns a one call close into a two call close."></div>' +
+          '<div class="row g2 wrap"><button class="btn btn-primary btn-sm" type="submit">Add it</button></div></form>',
+        onMount: function (node, close) {
+          node.querySelector('#res-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var title = node.querySelector('#r-title').value.trim();
+            if (!title) { node.querySelector('#r-title').classList.add('err'); return; }
+            Store.addResearch(c.id, {
+              kind: node.querySelector('#r-kind').value,
+              source: node.querySelector('#r-src').value.trim(),
+              title: title,
+              detail: node.querySelector('#r-detail').value.trim(),
+              use: node.querySelector('#r-use').value.trim() || title
+            });
+            close();
+            tab = 'company';
+            paint();
+            UI.toast('Added. Use it in a step when it fits.');
+          });
+          setTimeout(function () { node.querySelector('#r-title').focus(); }, 60);
+        }
+      });
+    }
+    UI.on(v, 'click', '#add-empty', addSheet);
+    document.getElementById('add-find').addEventListener('click', addSheet);
     document.getElementById('refresh').addEventListener('click', function () {
       var b = this;
       UI.busy(b, 900).then(function () { UI.toast('Nothing new since this morning.'); });
@@ -3820,8 +4287,27 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
                '<button class="btn btn-secondary btn-sm" id="preview">Preview</button>',
       html: '<div class="page-head"><h1>Sequence</h1>' +
             '<p>Ten touches over two weeks. Change the order, the timing, who each one goes to, and what it says.</p></div>' +
-            '<div class="builder"><div class="rail" id="rail"></div><div id="editor"></div></div>'
+            '<div id="seq-mount"></div>'
     });
+
+    /* nothing to edit until there is something to edit */
+    function emptyHTML() {
+      if (!c.contacts.length) {
+        return '<div class="card" style="overflow:hidden"><div class="empty">' +
+          '<span class="art">\u25ce</span><h2>Add someone first</h2>' +
+          '<p>A sequence is who you are writing to and when. Add the people we found for ' +
+          esc(c.company) + ' and the fourteen days build themselves around them.</p>' +
+          '<a class="btn btn-primary btn-lg" href="#/c/' + c.id + '/people">Add contacts <span class="arr">\u2192</span></a>' +
+          '</div></div>';
+      }
+      return '<div class="card" style="overflow:hidden"><div class="empty">' +
+        '<span class="art">\u2261</span><h2>Build the fourteen days</h2>' +
+        '<p>Ten touches across the ' + c.contacts.length + ' ' +
+        (c.contacts.length === 1 ? 'person' : 'people') + ' on your list, each starting from the template you normally send ' +
+        'them at that point. Change anything after.</p>' +
+        '<button class="btn btn-primary btn-lg" id="build">Build it <span class="arr">\u2192</span></button>' +
+        '</div></div>';
+    }
 
     function step() { return c.steps.filter(function (s) { return s.id === c.activeStep; })[0] || c.steps[0]; }
     function contactOf(s) { return c.contacts.filter(function (x) { return x.id === s.contact; })[0] || null; }
@@ -4000,7 +4486,25 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       words();
       grow();
     }
-    function paintAll() { paintRail(); paintEditor(); }
+    function paintAll() {
+      var mount = v.querySelector('#seq-mount');
+      if (!c.steps.length) {
+        mount.innerHTML = emptyHTML();
+        var chip = document.getElementById('cap-chip');
+        if (chip) chip.textContent = 'Nothing scheduled';
+        var build = mount.querySelector('#build');
+        if (build) build.addEventListener('click', function () {
+          var made = Store.buildSequence(c.id);
+          paintAll();
+          UI.toast(made.length + ' touches over ' + made[made.length - 1].day + ' days. Edit any of them.');
+        });
+        return;
+      }
+      if (!mount.querySelector('#rail')) {
+        mount.innerHTML = '<div class="builder"><div class="rail" id="rail"></div><div id="editor"></div></div>';
+      }
+      paintRail(); paintEditor();
+    }
 
     function words() {
       var b = v.querySelector('#body'); if (!b) return;
@@ -4136,7 +4640,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     });
 
     document.getElementById('preview').addEventListener('click', function () {
-      var s = step(); if (!s) return;
+      var s = step();
+      if (!s) { UI.toast('Build the sequence first.'); return; }
       var p = contactOf(s);
       var b = v.querySelector('#body');
       var text = Store.fill(b ? b.value : Store.bodyFor(c, s), c, p);
@@ -4310,11 +4815,11 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         '<div class="pg-portrait">' + Views.photoHTML(112) + '</div>' +
         '<div class="pg-hero-txt">' +
           '<p class="pg-eyebrow">Written for ' + esc(c.company) + ' · ' + esc(c.role) + '</p>' +
-          '<h1>' + esc(pf.name) + '</h1>' +
+          '<h1>' + esc(pf.name || 'Your name') + '</h1>' +
           '<p class="pg-thesis">' + esc(angle ? angle.take : (c.story || 'Here is why this company, and what I would do in the first ninety days.')) + '</p>' +
           '<div class="pg-chips">' +
-            '<span>' + esc(pf.location) + '</span>' +
-            '<span>' + pf.years + ' years in SaaS</span>' +
+            (pf.location ? '<span>' + esc(pf.location) + '</span>' : '') +
+            (pf.years ? '<span>' + pf.years + ' years</span>' : '') +
             (c.req ? '<span>Req ' + esc(c.req) + '</span>' : '') +
           '</div>' +
         '</div></section>';
@@ -4370,12 +4875,14 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         }).join('') + '</div></section>';
     }
     function sSaid() {
+      if (!pf.reference || !pf.reference.quote) return '';
       return '<section data-sec="said"><h2 class="pg-h">Someone who worked with me</h2>' +
         '<figure class="pg-quote"><blockquote>' + esc(pf.reference.quote) + '</blockquote>' +
         '<figcaption><span class="avatar avatar-md" style="background:var(--p-tie)">' + esc(pf.reference.initials) + '</span>' +
         '<span><b>' + esc(pf.reference.who) + '</b><em>' + esc(pf.reference.role) + '</em></span></figcaption></figure></section>';
     }
     function sStack() {
+      if (!pf.stack.length) return '';
       return '<section data-sec="stack"><h2 class="pg-h">Tools I live in</h2>' +
         '<div class="pg-chips">' + pf.stack.map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('') + '</div></section>';
     }
