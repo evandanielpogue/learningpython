@@ -41,188 +41,164 @@
 
   *{box-sizing:border-box}
   body{background:var(--ground); color:var(--ink); font-family:var(--ui); font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased}
-  h1,h2,h3{margin:0; line-height:1.12; letter-spacing:-.028em; font-weight:600}
+  h1,h2,h3,h4{margin:0; line-height:1.14; letter-spacing:-.028em; font-weight:600}
   h1{font-size:1.85rem; font-weight:700}
   h2{font-size:1.3rem}
   h3{font-size:1rem}
   p{margin:0}
   button{font-family:inherit}
-  .mono{font-family:var(--mono)}
   .lbl{font-family:var(--mono); font-size:.66rem; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3)}
+  .dim{color:var(--ink-2)}
 
-  /* shell */
-  .shell{display:grid; grid-template-columns:232px 1fr; min-height:100%;}
-  @media (max-width:900px){ .shell{grid-template-columns:1fr} }
+  .shell{display:grid; grid-template-columns:238px 1fr; min-height:100%}
+  @media (max-width:940px){ .shell{grid-template-columns:1fr} }
 
   .rail{
     border-right:1px solid var(--line); background:var(--surface); padding:20px 16px;
-    display:flex; flex-direction:column; gap:22px;
+    display:flex; flex-direction:column; gap:20px;
     position:sticky; top:env(safe-area-inset-top,0px); align-self:start; max-height:100vh; overflow:auto;
   }
-  @media (max-width:900px){
-    .rail{position:sticky; top:env(safe-area-inset-top,0px); z-index:30; border-right:none; border-bottom:1px solid var(--line);
-      flex-direction:row; align-items:center; gap:14px; overflow-x:auto; max-height:none; padding:12px 16px}
-    .rail .brand small{display:none}
+  @media (max-width:940px){
+    .rail{position:sticky; top:env(safe-area-inset-top,0px); z-index:40; border-right:none; border-bottom:1px solid var(--line);
+      flex-direction:row; align-items:center; gap:12px; overflow-x:auto; max-height:none; padding:11px 14px}
+    .rail .brand small, .rail-foot, .prog{display:none}
   }
   .brand{display:flex; align-items:center; gap:10px; flex:none}
-  .brand .m{width:26px; height:26px; border-radius:8px; background:var(--brand); flex:none; position:relative}
-  .brand .m::after{content:""; position:absolute; left:7px; top:7px; width:12px; height:12px; border-radius:3px; background:var(--surface)}
+  .brand .m{width:27px; height:27px; border-radius:8px; background:var(--brand); flex:none; position:relative}
+  .brand .m::after{content:""; position:absolute; left:7px; top:7px; width:13px; height:13px; border-radius:3px; background:var(--surface)}
   .brand b{font-size:.98rem; font-weight:700; letter-spacing:-.03em; line-height:1.1}
-  .brand small{display:block; font-size:.64rem; color:var(--ink-3); letter-spacing:.06em; font-family:var(--mono)}
+  .brand small{display:block; font-size:.62rem; color:var(--ink-3); letter-spacing:.08em; font-family:var(--mono)}
+  .prog{height:4px; border-radius:99px; background:var(--surface-3); overflow:hidden}
+  .prog i{display:block; height:100%; background:var(--brand); border-radius:99px; transition:width .45s cubic-bezier(.2,.8,.3,1)}
 
-  .steps{display:flex; flex-direction:column; gap:2px}
-  @media (max-width:900px){ .steps{flex-direction:row; gap:6px} }
+  .steps{display:flex; flex-direction:column; gap:1px}
+  @media (max-width:940px){ .steps{flex-direction:row; gap:5px} }
   .step{
     display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:var(--r-sm);
     background:none; border:none; cursor:pointer; color:var(--ink-2); text-align:left; width:100%;
-    font-size:.88rem; font-weight:500; white-space:nowrap; transition:background .15s ease, color .15s ease;
+    font-size:.87rem; font-weight:500; white-space:nowrap; transition:background .15s, color .15s;
   }
   .step:hover{background:var(--surface-2); color:var(--ink)}
   .step[aria-current="true"]{background:var(--ink); color:var(--ground); font-weight:600}
   .step:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
-  .step .n{
-    width:21px; height:21px; border-radius:99px; flex:none; display:grid; place-items:center;
-    font-family:var(--mono); font-size:.65rem; border:1.5px solid var(--line-2); color:var(--ink-3);
-  }
+  .step .n{width:21px; height:21px; border-radius:99px; flex:none; display:grid; place-items:center;
+    font-family:var(--mono); font-size:.64rem; border:1.5px solid var(--line-2); color:var(--ink-3)}
   .step[aria-current="true"] .n{border-color:var(--ground); color:var(--ground)}
   .step.done .n{background:var(--ok); border-color:var(--ok); color:#fff}
-  .step.done .n::after{content:"✓"; font-size:.7rem}
+  .step.done .n::after{content:"✓"; font-size:.68rem}
   .step.done .n span{display:none}
-  @media (max-width:900px){ .step .t{display:none} .step{padding:8px} }
+  @media (max-width:940px){ .step .t{display:none} .step{padding:8px} }
+  .rail-foot{margin-top:auto; font-size:.7rem; color:var(--ink-3); font-family:var(--mono); line-height:1.7}
 
-  .rail-foot{margin-top:auto; font-size:.72rem; color:var(--ink-3); font-family:var(--mono)}
-  @media (max-width:900px){ .rail-foot{display:none} }
-
-  /* canvas */
-  .canvas{padding:clamp(20px,3.5vw,40px) clamp(16px,3.5vw,44px) 90px; max-width:1080px; width:100%}
-  .head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:24px}
-  .head .lbl{margin-bottom:7px}
+  .canvas{padding:clamp(20px,3.5vw,38px) clamp(16px,3.5vw,42px) 96px; max-width:1120px; width:100%}
+  .head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px}
+  .head .lbl{margin-bottom:6px}
   .panel{display:none}
   .panel.on{display:block; animation:in .32s cubic-bezier(.2,.8,.3,1)}
   @keyframes in{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
-  @media (prefers-reduced-motion:reduce){ .panel.on{animation:none} }
 
-  .btn{
-    display:inline-flex; align-items:center; justify-content:center; gap:8px;
-    font-weight:600; font-size:.92rem; padding:12px 20px; border-radius:99px;
-    border:1.5px solid transparent; cursor:pointer; transition:transform .14s ease, background .14s ease;
-  }
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:600; font-size:.92rem;
+    padding:12px 20px; border-radius:99px; border:1.5px solid transparent; cursor:pointer; transition:transform .14s, background .14s}
   .btn:hover{transform:translateY(-1px)}
   .btn-p{background:var(--brand); color:#fff}
   .btn-p:hover{background:var(--brand-deep)}
   .btn-g{background:var(--surface); color:var(--ink); border-color:var(--line-2)}
   .btn-g:hover{border-color:var(--brand); color:var(--brand)}
-  .btn-sm{padding:8px 15px; font-size:.84rem}
+  .btn-sm{padding:8px 15px; font-size:.83rem}
   .btn:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
-  .next{margin-top:26px; display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  .next{margin-top:24px; display:flex; gap:10px; flex-wrap:wrap; align-items:center}
 
   .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--sh)}
   .pad{padding:22px}
   .grid{display:grid; gap:14px}
-  .g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
-  .g3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(198px,1fr))}
+  .kv{display:flex; gap:7px; flex-wrap:wrap}
+  .pill{display:inline-flex; align-items:center; gap:6px; padding:6px 13px; border-radius:99px;
+    background:var(--surface-2); border:1px solid var(--line); font-size:.81rem; color:var(--ink-2)}
+  .pill b{color:var(--ink); font-weight:600}
+  .pov{border-left:3px solid var(--brand); padding-left:15px; font-size:1.01rem; line-height:1.55}
 
-  /* 1 — chat */
-  .chat{display:flex; flex-direction:column; gap:12px; padding:22px; min-height:330px}
-  .bub{max-width:80%; padding:12px 16px; border-radius:16px; font-size:.95rem; line-height:1.5; animation:in .3s ease}
-  .bub.a{background:var(--surface-2); border-bottom-left-radius:5px; align-self:flex-start}
-  .bub.u{background:var(--ink); color:var(--ground); border-bottom-right-radius:5px; align-self:flex-end}
-  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px}
-  .chip{
-    padding:9px 15px; border-radius:99px; border:1.5px solid var(--line-2); background:var(--surface);
-    font-size:.87rem; font-weight:500; color:var(--ink-2); cursor:pointer; transition:all .14s ease;
-  }
-  .chip:hover{border-color:var(--brand); color:var(--brand); transform:translateY(-1px)}
-  .chip:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
-  .vp{display:grid; gap:10px}
-  .vp .row{display:grid; grid-template-columns:96px 1fr; gap:12px; align-items:start; font-size:.92rem}
-  .vp .row span{color:var(--ink-3); font-family:var(--mono); font-size:.68rem; text-transform:uppercase; letter-spacing:.09em; padding-top:4px}
-  .meter{height:6px; border-radius:99px; background:var(--surface-3); overflow:hidden}
-  .meter i{display:block; height:100%; background:var(--brand); border-radius:99px; transition:width .5s cubic-bezier(.2,.8,.3,1)}
-
-  /* 2 — campaign */
-  .drop{
-    border:2px dashed var(--line-2); border-radius:var(--radius); padding:34px 22px; text-align:center;
-    cursor:pointer; background:var(--surface); transition:all .16s ease;
-  }
+  /* 1 import */
+  .imp{display:grid; grid-template-columns:1fr auto 1fr; gap:18px; align-items:center}
+  @media (max-width:720px){ .imp{grid-template-columns:1fr} .imp .or{justify-self:center} }
+  .or{font-family:var(--mono); font-size:.68rem; color:var(--ink-3); letter-spacing:.1em}
+  .drop{border:2px dashed var(--line-2); border-radius:var(--radius); padding:34px 20px; text-align:center;
+    cursor:pointer; background:var(--surface); transition:all .16s; width:100%; display:grid; gap:8px; place-items:center}
   .drop:hover{border-color:var(--brand); background:var(--brand-tint)}
   .drop:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
-  .jd{font-family:var(--mono); font-size:.8rem; color:var(--ink-2); text-align:left; line-height:1.7; white-space:pre-wrap}
-  .kv{display:flex; gap:8px; flex-wrap:wrap}
-  .pill{
-    display:inline-flex; align-items:center; gap:6px; padding:6px 13px; border-radius:99px;
-    background:var(--surface-2); border:1px solid var(--line); font-size:.82rem; color:var(--ink-2);
-  }
-  .pill b{color:var(--ink); font-weight:600}
-  .pov{border-left:3px solid var(--brand); padding-left:16px; font-size:1.02rem; line-height:1.55}
+  .drop .ic{width:40px; height:40px; border-radius:11px; background:var(--surface-2); display:grid; place-items:center; font-size:1.1rem}
+  .drop b{font-size:1rem; font-weight:600}
+  .scan{display:grid; gap:10px; padding:26px 22px}
+  .scan .ln{display:grid; grid-template-columns:20px 1fr auto; gap:12px; align-items:center; font-size:.9rem; color:var(--ink-3)}
+  .scan .ln.hit{color:var(--ink)}
+  .scan .ln i{width:20px; height:20px; border-radius:99px; border:1.5px solid var(--line-2); display:grid; place-items:center; font-style:normal; font-size:.65rem}
+  .scan .ln.hit i{background:var(--ok); border-color:var(--ok); color:#fff}
+  .scan .ln.hit i::after{content:"✓"}
+  .scan .ln em{font-style:normal; font-family:var(--mono); font-size:.72rem; color:var(--ink-3)}
 
-  /* 3 — org map */
+  /* selectable */
+  .sel{display:grid; gap:8px}
+  .opt{display:grid; grid-template-columns:22px 1fr auto; gap:12px; align-items:start; text-align:left; width:100%;
+    background:var(--surface); border:1.5px solid var(--line); border-radius:var(--r-sm); padding:13px 15px; cursor:pointer; transition:all .15s}
+  .opt:hover{border-color:var(--line-2)}
+  .opt[aria-pressed="true"]{border-color:var(--brand); background:var(--brand-tint)}
+  .opt:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
+  .opt .bx{width:20px; height:20px; border-radius:6px; border:1.5px solid var(--line-2); display:grid; place-items:center; font-size:.68rem; margin-top:1px}
+  .opt[aria-pressed="true"] .bx{background:var(--brand); border-color:var(--brand); color:#fff}
+  .opt[aria-pressed="true"] .bx::after{content:"✓"}
+  .opt .tx{font-size:.93rem; font-weight:500; line-height:1.4}
+  .opt .tx em{font-style:normal; display:block; font-size:.79rem; color:var(--ink-3); font-weight:400; margin-top:2px}
+  .opt .mt{font-family:var(--mono); font-size:.76rem; color:var(--brand); font-weight:500}
+  .cnt{font-family:var(--mono); font-size:.72rem; color:var(--ink-3)}
+
+  /* org map */
   .map{display:grid; grid-template-columns:200px 1fr; gap:26px; align-items:center}
   @media (max-width:760px){ .map{grid-template-columns:1fr; gap:14px} }
-  .target{
-    background:var(--ink); color:var(--ground); border-radius:var(--radius); padding:20px; display:grid; gap:7px;
-    position:relative;
-  }
+  .target{background:var(--ink); color:var(--ground); border-radius:var(--radius); padding:20px; display:grid; gap:6px}
   .target .lbl{color:var(--ink-3)}
   .people{display:grid; gap:9px; position:relative}
-  @media (min-width:761px){
-    .people::before{
-      content:""; position:absolute; left:-14px; top:8%; bottom:8%; width:1.5px; background:var(--line-2);
-    }
-  }
-  .person{
-    display:grid; grid-template-columns:38px 1fr auto; gap:13px; align-items:center;
-    background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm);
-    padding:13px 15px; cursor:pointer; position:relative; transition:all .16s ease; text-align:left; width:100%;
-  }
-  @media (min-width:761px){
-    .person::before{content:""; position:absolute; left:-14px; top:50%; width:14px; height:1.5px; background:var(--line-2)}
-  }
-  .person:hover{transform:translateX(3px); border-color:var(--line-2); box-shadow:var(--sh)}
+  @media (min-width:761px){ .people::before{content:""; position:absolute; left:-14px; top:8%; bottom:8%; width:1.5px; background:var(--line-2)} }
+  .person{display:grid; grid-template-columns:38px 1fr auto; gap:13px; align-items:center; background:var(--surface);
+    border:1px solid var(--line); border-radius:var(--r-sm); padding:13px 15px; cursor:pointer; position:relative; transition:all .16s; text-align:left; width:100%}
+  @media (min-width:761px){ .person::before{content:""; position:absolute; left:-14px; top:50%; width:14px; height:1.5px; background:var(--line-2)} }
+  .person:hover{transform:translateX(3px); box-shadow:var(--sh)}
   .person[aria-pressed="true"]{border-color:var(--c); box-shadow:0 0 0 1px var(--c), var(--sh)}
   .person:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
-  .av{width:38px; height:38px; border-radius:99px; display:grid; place-items:center; font-weight:600; font-size:.85rem; color:#fff; background:var(--c); flex:none}
-  .person .nm{font-weight:600; font-size:.94rem; line-height:1.25}
-  .person .ro{font-size:.79rem; color:var(--ink-3)}
-  .person .tag{font-family:var(--mono); font-size:.64rem; text-transform:uppercase; letter-spacing:.08em; color:var(--c); background:var(--surface-2); padding:4px 9px; border-radius:6px}
-  .detail{margin-top:16px; display:grid; gap:12px}
-  .detail .grid{gap:12px}
+  .av{width:38px; height:38px; border-radius:99px; display:grid; place-items:center; font-weight:600; font-size:.83rem; color:#fff; background:var(--c)}
+  .person .nm{font-weight:600; font-size:.93rem; line-height:1.25}
+  .person .ro{font-size:.78rem; color:var(--ink-3)}
+  .person .tag{font-family:var(--mono); font-size:.63rem; text-transform:uppercase; letter-spacing:.08em; color:var(--c); background:var(--surface-2); padding:4px 9px; border-radius:6px}
 
-  /* 4 — sequence */
+  /* sequence */
   .seq{position:relative; display:grid; gap:7px; padding-left:34px}
   .seq::before{content:""; position:absolute; left:11px; top:14px; bottom:14px; width:1.5px; background:var(--line)}
-  .touch{
-    position:relative; display:grid; grid-template-columns:52px 1fr auto; gap:13px; align-items:center;
-    background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); padding:12px 15px;
-    cursor:pointer; transition:all .16s ease; text-align:left; width:100%;
-  }
-  .touch::before{
-    content:""; position:absolute; left:-29px; top:50%; translate:0 -50%;
-    width:11px; height:11px; border-radius:99px; background:var(--c); box-shadow:0 0 0 3.5px var(--ground);
-  }
+  .touch{position:relative; display:grid; grid-template-columns:52px 1fr auto; gap:13px; align-items:center; background:var(--surface);
+    border:1px solid var(--line); border-radius:var(--r-sm); padding:12px 15px; cursor:pointer; transition:all .16s; text-align:left; width:100%}
+  .touch::before{content:""; position:absolute; left:-29px; top:50%; translate:0 -50%; width:11px; height:11px;
+    border-radius:99px; background:var(--c); box-shadow:0 0 0 3.5px var(--ground)}
   .touch:hover{transform:translateX(3px); box-shadow:var(--sh)}
   .touch[aria-pressed="true"]{border-color:var(--c); box-shadow:0 0 0 1px var(--c), var(--sh)}
   .touch:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
-  .touch .d{font-family:var(--mono); font-size:.76rem; color:var(--ink-3)}
-  .touch .w{font-weight:600; font-size:.92rem}
-  .touch .w em{font-style:normal; color:var(--ink-3); font-weight:400; font-size:.82rem; display:block}
-  .touch .ch{font-family:var(--mono); font-size:.66rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3)}
-  .cap{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:16px; font-size:.86rem; color:var(--ink-2)}
-  .cap b{color:var(--ink)}
+  .touch .d{font-family:var(--mono); font-size:.75rem; color:var(--ink-3)}
+  .touch .w{font-weight:600; font-size:.91rem}
+  .touch .w em{font-style:normal; color:var(--ink-3); font-weight:400; font-size:.81rem; display:block}
+  .touch .ch{font-family:var(--mono); font-size:.65rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3)}
 
-  /* 5 — composer */
-  .comp{display:grid; grid-template-columns:1fr 268px; gap:16px; align-items:start}
-  @media (max-width:860px){ .comp{grid-template-columns:1fr} }
-  .msg{
-    font-family:var(--mono); font-size:.87rem; line-height:1.8; white-space:pre-wrap; color:var(--ink);
-    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:22px; box-shadow:var(--sh);
-  }
+  /* composer */
+  .comp{display:grid; grid-template-columns:1fr 292px; gap:16px; align-items:start}
+  @media (max-width:900px){ .comp{grid-template-columns:1fr} }
+  .msg{font-family:var(--mono); font-size:.86rem; line-height:1.85; white-space:pre-wrap; color:var(--ink);
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:22px; box-shadow:var(--sh)}
   .msg mark{background:var(--brand-tint); color:inherit; border-radius:3px; padding:1px 2px; box-decoration-break:clone}
-  .notes{display:grid; gap:9px; margin-top:14px}
-  .note{display:grid; grid-template-columns:20px 1fr; gap:10px; font-size:.85rem; color:var(--ink-2); align-items:start}
-  .note i{width:20px; height:20px; border-radius:99px; background:var(--brand-tint); color:var(--brand); display:grid; place-items:center; font-style:normal; font-size:.7rem; font-weight:700; font-family:var(--mono)}
-  .ctrl{display:grid; gap:18px}
-  .ctrl label{display:grid; gap:8px}
+  .msg.flash{animation:fl .7s ease}
+  @keyframes fl{0%{background:var(--brand-tint)} 100%{background:var(--surface)}}
+  .notes{display:grid; gap:9px; margin-top:13px}
+  .note{display:grid; grid-template-columns:20px 1fr; gap:10px; font-size:.84rem; color:var(--ink-2); align-items:start}
+  .note i{width:20px; height:20px; border-radius:99px; background:var(--brand-tint); color:var(--brand); display:grid; place-items:center;
+    font-style:normal; font-size:.68rem; font-weight:700; font-family:var(--mono)}
+  .ctrl{display:grid; gap:16px}
+  .ctrl label{display:grid; gap:7px}
   .ctrl .lbl{display:flex; justify-content:space-between; align-items:baseline}
   .ctrl .lbl b{color:var(--ink); font-family:var(--ui); font-size:.85rem; letter-spacing:0; text-transform:none; font-weight:600}
   input[type=range]{width:100%; -webkit-appearance:none; appearance:none; background:none; height:22px; cursor:pointer}
@@ -231,204 +207,277 @@
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:19px; height:19px; border-radius:99px; background:var(--brand); border:3px solid var(--surface); box-shadow:var(--sh); margin-top:-7px}
   input[type=range]::-moz-range-thumb{width:19px; height:19px; border-radius:99px; background:var(--brand); border:3px solid var(--surface); box-shadow:var(--sh)}
   input[type=range]:focus-visible{outline:3px solid var(--brand); outline-offset:2px; border-radius:99px}
-  .tog{display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:.88rem; font-weight:500}
-  .sw{width:40px; height:23px; border-radius:99px; background:var(--surface-3); border:none; cursor:pointer; position:relative; transition:background .18s ease; flex:none}
+  .tog{display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:.87rem; font-weight:500}
+  .sw{width:40px; height:23px; border-radius:99px; background:var(--surface-3); border:none; cursor:pointer; position:relative; transition:background .18s; flex:none}
   .sw::after{content:""; position:absolute; top:3px; left:3px; width:17px; height:17px; border-radius:99px; background:var(--surface); box-shadow:var(--sh); transition:transform .18s cubic-bezier(.2,.8,.3,1)}
   .sw[aria-pressed="true"]{background:var(--brand)}
   .sw[aria-pressed="true"]::after{transform:translateX(17px)}
   .sw:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
 
-  /* 6 — page */
+  /* ai box */
+  .ai{margin-top:13px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--sh); overflow:hidden}
+  .ai-log{display:grid; gap:9px; padding:16px 18px; max-height:158px; overflow:auto}
+  .ai-log:empty{display:none}
+  .ai-m{font-size:.87rem; line-height:1.5; padding:9px 13px; border-radius:12px; max-width:88%}
+  .ai-m.u{background:var(--ink); color:var(--ground); justify-self:end; border-bottom-right-radius:4px}
+  .ai-m.a{background:var(--surface-2); justify-self:start; border-bottom-left-radius:4px; color:var(--ink-2)}
+  .ai-sug{display:flex; gap:7px; flex-wrap:wrap; padding:14px 18px 0}
+  .sug{padding:7px 13px; border-radius:99px; border:1.5px solid var(--line-2); background:var(--surface);
+    font-size:.82rem; color:var(--ink-2); cursor:pointer; transition:all .14s}
+  .sug:hover{border-color:var(--brand); color:var(--brand)}
+  .sug:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
+  .ai-in{display:flex; gap:9px; align-items:center; padding:14px 18px; border-top:1px solid var(--line); margin-top:14px}
+  .ai-in input{flex:1; border:none; background:none; font-family:inherit; font-size:.92rem; color:var(--ink); outline:none; min-width:0}
+  .ai-in input::placeholder{color:var(--ink-3)}
+  .ai-in button{width:34px; height:34px; border-radius:99px; border:none; background:var(--brand); color:#fff; cursor:pointer; flex:none; font-size:.9rem}
+  .ai-in button:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
+
+  /* page */
+  .pagewrap{display:grid; grid-template-columns:214px 1fr; gap:16px; align-items:start}
+  @media (max-width:900px){ .pagewrap{grid-template-columns:1fr} }
+  .secs{display:grid; gap:5px; position:sticky; top:84px}
+  @media (max-width:900px){ .secs{position:static; grid-auto-flow:column; grid-auto-columns:max-content; overflow-x:auto; padding-bottom:6px} }
+  .sec-t{display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:var(--r-sm); background:none; border:none;
+    cursor:pointer; font-size:.86rem; font-weight:500; color:var(--ink-2); width:100%; text-align:left; white-space:nowrap; transition:background .14s}
+  .sec-t:hover{background:var(--surface-2); color:var(--ink)}
+  .sec-t .bx{width:17px; height:17px; border-radius:5px; border:1.5px solid var(--line-2); display:grid; place-items:center; font-size:.6rem; flex:none}
+  .sec-t[aria-pressed="true"] .bx{background:var(--ok); border-color:var(--ok); color:#fff}
+  .sec-t[aria-pressed="true"] .bx::after{content:"✓"}
+  .sec-t:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
+
   .browser{border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--sh-lg); background:var(--surface)}
   .bar{display:flex; align-items:center; gap:9px; padding:11px 15px; background:var(--surface-2); border-bottom:1px solid var(--line)}
   .bar i{width:9px; height:9px; border-radius:99px; background:var(--line-2); display:block}
-  .bar .url{flex:1; text-align:center; font-family:var(--mono); font-size:.72rem; color:var(--ink-3); background:var(--surface); border-radius:6px; padding:5px 12px}
-  .pg{padding:clamp(22px,3.5vw,40px); display:grid; gap:24px}
-  .pg-hero{display:grid; gap:9px}
-  .pg-hero h2{font-size:clamp(1.5rem,3.4vw,2.1rem); font-weight:700}
-  .pg-sec{display:grid; gap:9px}
-  .pg-sec h3{font-size:.7rem; font-family:var(--mono); text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:500}
-  .proof{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-  .proof div{background:var(--surface-2); border-radius:var(--r-sm); padding:15px}
-  .proof b{display:block; font-size:1.45rem; font-weight:700; letter-spacing:-.03em; color:var(--brand)}
-  .proof span{font-size:.82rem; color:var(--ink-2)}
-  .plan{display:grid; gap:8px}
-  .plan div{display:grid; grid-template-columns:62px 1fr; gap:13px; font-size:.92rem; color:var(--ink-2); align-items:start}
-  .plan span{font-family:var(--mono); font-size:.68rem; color:var(--brand); background:var(--brand-tint); padding:4px 8px; border-radius:6px; text-align:center}
+  .bar .url{flex:1; text-align:center; font-family:var(--mono); font-size:.71rem; color:var(--ink-3); background:var(--surface); border-radius:6px; padding:5px 12px}
+  .pg{padding:clamp(22px,3.4vw,44px); display:grid; gap:34px}
+  .pg section{display:grid; gap:12px}
+  .pg h3{font-size:.68rem; font-family:var(--mono); text-transform:uppercase; letter-spacing:.13em; color:var(--ink-3); font-weight:500}
+  .pg-hero{display:grid; gap:12px; padding-bottom:6px}
+  .pg-hero h2{font-size:clamp(1.6rem,3.6vw,2.4rem); font-weight:700}
+  .pg-hero .sub{font-size:clamp(1rem,2vw,1.15rem); color:var(--ink-2); max-width:54ch}
+  .proof{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(148px,1fr))}
+  .proof div{background:var(--surface-2); border-radius:var(--r-sm); padding:16px}
+  .proof b{display:block; font-size:1.5rem; font-weight:700; letter-spacing:-.035em; color:var(--brand)}
+  .proof span{font-size:.81rem; color:var(--ink-2); line-height:1.4}
+  .tl{display:grid; gap:0; position:relative; padding-left:26px}
+  .tl::before{content:""; position:absolute; left:5px; top:10px; bottom:10px; width:1.5px; background:var(--line)}
+  .job{padding:14px 0; position:relative; display:grid; gap:7px}
+  .job::before{content:""; position:absolute; left:-26px; top:20px; width:11px; height:11px; border-radius:99px; background:var(--surface); border:2.5px solid var(--brand)}
+  .job .hd{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:baseline}
+  .job .hd b{font-size:1rem; font-weight:600}
+  .job .hd em{font-style:normal; font-family:var(--mono); font-size:.72rem; color:var(--ink-3)}
+  .job .co{font-size:.87rem; color:var(--ink-2)}
+  .job ul{margin:3px 0 0; padding-left:17px; display:grid; gap:5px; font-size:.89rem; color:var(--ink-2)}
+  .plan{display:grid; gap:9px}
+  .plan div{display:grid; grid-template-columns:58px 1fr; gap:14px; font-size:.92rem; color:var(--ink-2); align-items:start}
+  .plan span{font-family:var(--mono); font-size:.68rem; color:var(--brand); background:var(--brand-tint); padding:5px 8px; border-radius:6px; text-align:center}
   .vid{aspect-ratio:16/9; border-radius:var(--r-sm); background:linear-gradient(140deg,var(--ink) 0%, #2C3444 100%); display:grid; place-items:center}
-  .vid b{width:52px; height:52px; border-radius:99px; background:var(--brand); display:grid; place-items:center; color:#fff; font-size:.9rem}
+  .vid b{width:54px; height:54px; border-radius:99px; background:var(--brand); display:grid; place-items:center; color:#fff}
+  .quote{background:var(--surface-2); border-radius:var(--r-sm); padding:20px; display:grid; gap:12px}
+  .quote p{font-size:1.02rem; line-height:1.5}
+  .quote .who{display:flex; align-items:center; gap:11px; font-size:.84rem; color:var(--ink-2)}
+  .quote .who i{width:34px; height:34px; border-radius:99px; background:var(--p5); color:#fff; display:grid; place-items:center; font-style:normal; font-weight:600; font-size:.76rem}
+  .pgfoot{border-top:1px solid var(--line); padding-top:22px; display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between}
+  .stack{display:flex; gap:6px; flex-wrap:wrap}
+  .stack span{font-family:var(--mono); font-size:.72rem; padding:5px 11px; border-radius:6px; background:var(--surface-2); color:var(--ink-2); border:1px solid var(--line)}
 
-  .toast{
-    position:fixed; right:18px; bottom:18px; z-index:60; display:flex; align-items:center; gap:11px;
+  .toast{position:fixed; right:18px; bottom:18px; z-index:70; display:flex; align-items:center; gap:11px;
     background:var(--ink); color:var(--ground); padding:13px 18px; border-radius:99px; box-shadow:var(--sh-lg);
-    font-size:.88rem; font-weight:500; opacity:0; transform:translateY(10px); pointer-events:none;
-    transition:opacity .3s ease, transform .3s cubic-bezier(.2,.8,.3,1);
-  }
+    font-size:.87rem; font-weight:500; opacity:0; transform:translateY(10px); pointer-events:none;
+    transition:opacity .3s, transform .3s cubic-bezier(.2,.8,.3,1)}
   .toast.on{opacity:1; transform:none}
   .toast i{width:8px; height:8px; border-radius:99px; background:var(--ok); flex:none}
+  .hide{display:none !important}
   @media (prefers-reduced-motion:reduce){ *{transition:none!important; animation:none!important} }
 </style>
 
 <div class="shell">
   <aside class="rail">
-    <a class="brand" href="#" onclick="return false"><span class="m"></span><b>Frontdoor<small>PROTOTYPE</small></b></a>
+    <a class="brand" href="#" onclick="return false"><span class="m"></span><b>Frontdoor<small>PROTOTYPE V2</small></b></a>
+    <div class="prog"><i id="prog" style="width:14%"></i></div>
     <nav class="steps" id="steps" aria-label="Steps"></nav>
-    <p class="rail-foot">Acme · Mid-Market AE</p>
+    <p class="rail-foot">Evan Pogue<br>→ Acme · Mid-Market AE</p>
   </aside>
 
   <main class="canvas">
 
-    <!-- 1 ─ ONBOARDING -->
+    <!-- 1 IMPORT -->
     <section class="panel on" id="p1">
-      <div class="head"><div><p class="lbl">Step 1</p><h1>Onboarding</h1></div><p class="lbl" id="chat-count">1 / 4</p></div>
-      <div class="grid g2">
-        <div class="card chat" id="chat"></div>
-        <div class="card pad">
-          <p class="lbl" style="margin-bottom:14px">Voice profile</p>
-          <div class="vp" id="vp">
-            <div class="row"><span>Tone</span><div><div class="meter"><i id="m1" style="width:8%"></i></div></div></div>
-            <div class="row"><span>Proof</span><div><div class="meter"><i id="m2" style="width:8%"></i></div></div></div>
-            <div class="row"><span>Edge</span><div><div class="meter"><i id="m3" style="width:8%"></i></div></div></div>
-            <div class="row"><span>Sample</span><div><div class="meter"><i id="m4" style="width:8%"></i></div></div></div>
-          </div>
-          <div id="vp-out" style="margin-top:18px; display:none">
-            <div class="kv" style="margin-bottom:12px">
-              <span class="pill"><b>Peer</b></span><span class="pill"><b>Short</b></span><span class="pill"><b>Numbers-first</b></span>
-            </div>
-            <p style="font-size:.9rem; color:var(--ink-2)">Writes like: direct, lowercase energy, leads with a number, one ask.</p>
-          </div>
+      <div class="head"><div><p class="lbl">Step 1</p><h1>Import</h1></div></div>
+      <div id="imp-pick">
+        <div class="imp">
+          <button class="drop" id="imp-li"><span class="ic">in</span><b>LinkedIn profile</b><span class="lbl">Paste your URL</span></button>
+          <span class="or">OR</span>
+          <button class="drop" id="imp-cv"><span class="ic">↑</span><b>Upload résumé</b><span class="lbl">PDF or DOCX</span></button>
         </div>
       </div>
-      <div class="next"><button class="btn btn-p" onclick="go(2)">Continue →</button></div>
+      <div class="card scan hide" id="scan"></div>
+      <div class="next hide" id="imp-next"><button class="btn btn-p" onclick="go(2)">Review profile →</button></div>
     </section>
 
-    <!-- 2 ─ CAMPAIGN -->
+    <!-- 2 PROFILE -->
     <section class="panel" id="p2">
-      <div class="head"><div><p class="lbl">Step 2</p><h1>New campaign</h1></div></div>
-      <div id="drop-wrap">
-        <button class="drop" id="drop" style="width:100%">
-          <p style="font-weight:600; font-size:1.02rem">Paste a job listing</p>
-          <p class="lbl" style="margin-top:7px">URL or text</p>
-        </button>
-      </div>
-      <div id="jd-out" style="display:none">
-        <div class="grid g2">
-          <div class="card pad">
-            <p class="lbl" style="margin-bottom:12px">Parsed</p>
-            <div class="jd">Acme · Mid-Market Account Executive
-Chicago, IL · Hybrid · Req #4821
-
-— 5+ yrs closing SaaS
-— $80–150k ACV, 60–90 day cycles
-— Ops &amp; RevOps buyers
-— Seat-based pricing, 5-seat floor</div>
+      <div class="head"><div><p class="lbl">Step 2</p><h1>What to lead with</h1></div><p class="lbl" id="sel-count">—</p></div>
+      <div class="grid g2">
+        <div class="card pad">
+          <p class="lbl" style="margin-bottom:12px">Wins found · pick 3</p>
+          <div class="sel" id="wins"></div>
+        </div>
+        <div>
+          <div class="card pad" style="margin-bottom:14px">
+            <p class="lbl" style="margin-bottom:12px">Roles</p>
+            <div class="sel" id="roles"></div>
           </div>
           <div class="card pad">
-            <p class="lbl" style="margin-bottom:12px">Company brief</p>
-            <div class="kv" style="margin-bottom:16px">
-              <span class="pill">Series B</span><span class="pill">~340 people</span><span class="pill">Repricing Q2</span>
-            </div>
-            <p class="lbl" style="margin-bottom:9px">Your angle</p>
-            <p class="pov">Seat-based pricing pushed the SMB floor to 5 seats — reps stop selling and start qualifying.</p>
+            <p class="lbl" style="margin-bottom:11px">Detected</p>
+            <div class="kv" id="stack"></div>
           </div>
         </div>
-        <div class="next"><button class="btn btn-p" onclick="go(3)">Build org map →</button></div>
+      </div>
+      <div class="next"><button class="btn btn-p" onclick="go(3)">Pick a target →</button></div>
+    </section>
+
+    <!-- 3 TARGET -->
+    <section class="panel" id="p3">
+      <div class="head"><div><p class="lbl">Step 3</p><h1>Target</h1></div></div>
+      <div id="drop-wrap">
+        <button class="drop" id="drop" style="width:100%"><span class="ic">⌘</span><b>Paste a job listing</b><span class="lbl">URL or text</span></button>
+      </div>
+      <div class="hide" id="jd-out">
+        <div class="grid g2" style="margin-bottom:16px">
+          <div class="card pad">
+            <p class="lbl" style="margin-bottom:11px">Parsed</p>
+            <h3 style="font-size:1.12rem; margin-bottom:4px">Mid-Market Account Executive</h3>
+            <p class="dim" style="font-size:.9rem; margin-bottom:13px">Acme · Chicago · Hybrid · Req #4821</p>
+            <div class="kv"><span class="pill">5+ yrs SaaS</span><span class="pill">$80–150k ACV</span><span class="pill">60–90 day cycles</span><span class="pill">RevOps buyers</span></div>
+          </div>
+          <div class="card pad">
+            <p class="lbl" style="margin-bottom:11px">Company brief</p>
+            <div class="kv" style="margin-bottom:14px"><span class="pill">Series B</span><span class="pill">~340 people</span><span class="pill">Repriced Q2</span><span class="pill">Hiring 6 AEs</span></div>
+            <p class="dim" style="font-size:.89rem">Seat-based pricing shipped in spring. SMB tier floor moved to 5 seats.</p>
+          </div>
+        </div>
+        <p class="lbl" style="margin-bottom:11px">Choose your angle</p>
+        <div class="sel" id="angles"></div>
+        <div class="next"><button class="btn btn-p" onclick="go(4)">Build org map →</button></div>
       </div>
     </section>
 
-    <!-- 3 ─ ORG MAP -->
-    <section class="panel" id="p3">
-      <div class="head"><div><p class="lbl">Step 3</p><h1>Org map</h1></div><p class="lbl">5 of 5</p></div>
+    <!-- 4 ORG MAP -->
+    <section class="panel" id="p4">
+      <div class="head"><div><p class="lbl">Step 4</p><h1>Org map</h1></div><p class="lbl">5 of 5</p></div>
       <div class="map">
-        <div class="target">
-          <p class="lbl">Target</p>
-          <h3 style="font-size:1.1rem">Acme</h3>
-          <p style="font-size:.86rem; opacity:.7">Mid-Market AE</p>
-        </div>
+        <div class="target"><p class="lbl">Target</p><h3 style="font-size:1.1rem">Acme</h3><p style="font-size:.85rem; opacity:.7">Mid-Market AE</p></div>
         <div class="people" id="people"></div>
       </div>
-      <div class="detail" id="pdetail"></div>
-      <div class="next"><button class="btn btn-p" onclick="go(4)">Build sequence →</button></div>
+      <div class="grid g3" id="pdetail" style="margin-top:16px"></div>
+      <div class="next"><button class="btn btn-p" onclick="go(5)">Build sequence →</button></div>
     </section>
 
-    <!-- 4 ─ SEQUENCE -->
-    <section class="panel" id="p4">
-      <div class="head"><div><p class="lbl">Step 4</p><h1>Sequence</h1></div><p class="lbl">14 days</p></div>
-      <div class="seq" id="seq"></div>
-      <div class="cap">
-        <span class="pill"><b>5</b> people</span>
-        <span class="pill"><b>10</b> touches</span>
-        <span class="pill"><b>0</b> auto-sent</span>
-      </div>
-      <div class="next"><button class="btn btn-p" onclick="go(5)">Open composer →</button></div>
-    </section>
-
-    <!-- 5 ─ COMPOSER -->
+    <!-- 5 SEQUENCE -->
     <section class="panel" id="p5">
-      <div class="head"><div><p class="lbl">Step 5 · S03 HM Cold Open</p><h1>Composer</h1></div><p class="lbl" id="wc">—</p></div>
+      <div class="head"><div><p class="lbl">Step 5</p><h1>Sequence</h1></div><p class="lbl">14 days</p></div>
+      <div class="seq" id="seq"></div>
+      <div class="kv" style="margin-top:16px"><span class="pill"><b>5</b> people</span><span class="pill"><b>10</b> touches</span><span class="pill"><b>0</b> auto-sent</span></div>
+      <div class="next"><button class="btn btn-p" onclick="go(6)">Open composer →</button></div>
+    </section>
+
+    <!-- 6 COMPOSER -->
+    <section class="panel" id="p6">
+      <div class="head"><div><p class="lbl">Step 6 · S03 HM Cold Open</p><h1>Composer</h1></div><p class="lbl" id="wc">—</p></div>
       <div class="comp">
         <div>
           <div class="msg" id="msg"></div>
           <div class="notes" id="notes"></div>
+          <div class="ai">
+            <div class="ai-log" id="ai-log"></div>
+            <div class="ai-sug" id="ai-sug"></div>
+            <form class="ai-in" id="ai-form">
+              <input id="ai-input" placeholder="Tell it what to change…" autocomplete="off" aria-label="Adjust the message">
+              <button type="submit" aria-label="Send">↑</button>
+            </form>
+          </div>
         </div>
         <div class="card pad ctrl">
-          <label>
-            <span class="lbl"><b>Tone</b><span id="t-val">Peer</span></span>
-            <input type="range" id="t" min="0" max="2" value="0" step="1" aria-label="Tone">
-          </label>
-          <label>
-            <span class="lbl"><b>Length</b><span id="l-val">Short</span></span>
-            <input type="range" id="l" min="0" max="1" value="0" step="1" aria-label="Length">
-          </label>
+          <label><span class="lbl"><b>Tone</b><span id="t-val">Peer</span></span><input type="range" id="t" min="0" max="2" value="0" step="1" aria-label="Tone"></label>
+          <label><span class="lbl"><b>Length</b><span id="l-val">Short</span></span><input type="range" id="l" min="0" max="1" value="0" step="1" aria-label="Length"></label>
           <div class="tog"><span>Why this works</span><button class="sw" id="ann" aria-pressed="true" aria-label="Toggle annotations"></button></div>
           <hr style="border:none; border-top:1px solid var(--line)">
           <div class="kv"><span class="pill"><b>34%</b> reply</span><span class="pill">n=812</span></div>
         </div>
       </div>
-      <div class="next"><button class="btn btn-p" onclick="go(6)">See the page →</button></div>
+      <div class="next"><button class="btn btn-p" onclick="go(7)">See the page →</button></div>
     </section>
 
-    <!-- 6 ─ PAGE -->
-    <section class="panel" id="p6">
-      <div class="head"><div><p class="lbl">Step 6</p><h1>Account plan</h1></div><button class="btn btn-g btn-sm" onclick="ping()">Simulate view</button></div>
-      <div class="browser">
-        <div class="bar"><i></i><i></i><i></i><span class="url">frontdoor.app/p/evan-acme</span></div>
-        <div class="pg">
-          <div class="pg-hero">
-            <p class="lbl">For Acme · Mid-Market AE</p>
-            <h2>Evan Pogue</h2>
-            <p style="color:var(--ink-2)">I've run the transition you're in the middle of.</p>
-          </div>
-          <div class="pg-sec">
-            <h3>Why Acme</h3>
-            <p class="pov">Seat-based pricing moved your SMB floor to 5 seats. That turns reps from sellers into qualifiers — and exposes anyone who can't run a two-call close.</p>
-          </div>
-          <div class="pg-sec">
-            <h3>Proof</h3>
-            <div class="proof">
-              <div><b>112%</b><span>through the transition</span></div>
-              <div><b>$1.2M</b><span>quota carried</span></div>
-              <div><b>30→70</b><span>day cycles, rebuilt</span></div>
+    <!-- 7 PAGE -->
+    <section class="panel" id="p7">
+      <div class="head"><div><p class="lbl">Step 7</p><h1>Account plan</h1></div><button class="btn btn-g btn-sm" onclick="ping()">Simulate view</button></div>
+      <div class="pagewrap">
+        <div>
+          <p class="lbl" style="margin-bottom:10px; padding-left:12px">Sections</p>
+          <div class="secs" id="secs"></div>
+        </div>
+        <div class="browser">
+          <div class="bar"><i></i><i></i><i></i><span class="url">frontdoor.app/p/evan-acme</span></div>
+          <div class="pg">
+
+            <div class="pg-hero" data-s="hero">
+              <p class="lbl">Prepared for Acme · Mid-Market AE</p>
+              <h2>Evan Pogue</h2>
+              <p class="sub">I've already run the transition Acme is in the middle of — seat-based pricing, longer cycles, a team that has to relearn discovery.</p>
+              <div class="kv" style="margin-top:4px"><span class="pill">Chicago</span><span class="pill">8 yrs SaaS</span><span class="pill">Mid-Market &amp; SMB</span></div>
             </div>
-          </div>
-          <div class="pg-sec">
-            <h3>First 90 days</h3>
-            <div class="plan">
-              <div><span>30</span>Ride 20 calls. Map where mid-market stalls.</div>
-              <div><span>60</span>Rewrite discovery for the 5-seat floor.</div>
-              <div><span>90</span>Two closed-won on the new motion.</div>
+
+            <section data-s="why">
+              <h3>Why Acme</h3>
+              <p class="pov" id="pg-pov">Seat-based pricing moved your SMB floor to 5 seats. Reps stop selling and start qualifying — and anyone who can't run a two-call close gets exposed fast.</p>
+            </section>
+
+            <section data-s="proof">
+              <h3>Selected proof</h3>
+              <div class="proof" id="pg-proof"></div>
+            </section>
+
+            <section data-s="exp">
+              <h3>Experience</h3>
+              <div class="tl" id="pg-exp"></div>
+            </section>
+
+            <section data-s="plan">
+              <h3>First 90 days at Acme</h3>
+              <div class="plan">
+                <div><span>30</span>Ride 20 calls. Map exactly where mid-market deals stall against the 5-seat floor.</div>
+                <div><span>60</span>Rewrite discovery for a two-call close. Ship it to the team as a working script, not a deck.</div>
+                <div><span>90</span>Two closed-won on the new motion, and a written teardown of what moved.</div>
+              </div>
+            </section>
+
+            <section data-s="video">
+              <h3>90 seconds</h3>
+              <div class="vid"><b>▶</b></div>
+            </section>
+
+            <section data-s="quote">
+              <h3>Reference</h3>
+              <div class="quote">
+                <p>“Evan rebuilt our discovery script in the middle of a pricing change and we still made the year. He's the person you want in the room when the motion breaks.”</p>
+                <div class="who"><i>DN</i><span><b>Dev Nair</b> · VP Sales, Brightline</span></div>
+              </div>
+            </section>
+
+            <section data-s="stack">
+              <h3>Stack</h3>
+              <div class="stack"><span>Salesforce</span><span>HubSpot</span><span>Outreach</span><span>Gong</span><span>Clay</span><span>Sales Navigator</span><span>MEDDPICC</span><span>Command of the Message</span></div>
+            </section>
+
+            <div class="pgfoot">
+              <div class="kv"><span class="pill">evan@example.com</span><span class="pill">312-555-0148</span></div>
+              <button class="btn btn-g btn-sm" onclick="return false">↓ Résumé</button>
             </div>
-          </div>
-          <div class="pg-sec">
-            <h3>90 seconds</h3>
-            <div class="vid"><b>▶</b></div>
           </div>
         </div>
       </div>
-      <div class="next">
-        <button class="btn btn-g" onclick="go(1)">↺ Restart</button>
-        <span class="lbl">Prototype · no backend</span>
-      </div>
+      <div class="next"><button class="btn btn-g" onclick="go(1)">↺ Restart</button><span class="lbl">Prototype · no backend</span></div>
     </section>
 
   </main>
@@ -438,170 +487,275 @@ Chicago, IL · Hybrid · Req #4821
 
 <script>
 /* ---------- steps ---------- */
-var STEPS = ['Onboarding','Campaign','Org map','Sequence','Composer','Page'];
-var cur = 1, maxSeen = 1;
-var railEl = document.getElementById('steps');
-railEl.innerHTML = STEPS.map(function(s,i){
+var STEPS=['Import','Profile','Target','Org map','Sequence','Composer','Page'];
+var cur=1,maxSeen=1;
+var railEl=document.getElementById('steps');
+railEl.innerHTML=STEPS.map(function(s,i){
   return '<button class="step" data-s="'+(i+1)+'"><span class="n"><span>'+(i+1)+'</span></span><span class="t">'+s+'</span></button>';
 }).join('');
 function go(n){
-  cur = n; maxSeen = Math.max(maxSeen, n);
-  document.querySelectorAll('.panel').forEach(function(p,i){ p.classList.toggle('on', i+1 === n); });
+  cur=n; maxSeen=Math.max(maxSeen,n);
+  document.querySelectorAll('.panel').forEach(function(p,i){p.classList.toggle('on',i+1===n);});
   document.querySelectorAll('.step').forEach(function(b,i){
-    b.setAttribute('aria-current', i+1 === n ? 'true' : 'false');
-    b.classList.toggle('done', i+1 < maxSeen);
+    b.setAttribute('aria-current',i+1===n?'true':'false');
+    b.classList.toggle('done',i+1<maxSeen);
   });
+  document.getElementById('prog').style.width=Math.round(n/STEPS.length*100)+'%';
   window.scrollTo({top:0});
-  if (n === 6) setTimeout(ping, 1200);
+  if(n===7) setTimeout(ping,1300);
 }
-railEl.addEventListener('click', function(e){
-  var b = e.target.closest('.step'); if (b) go(+b.dataset.s);
-});
+railEl.addEventListener('click',function(e){var b=e.target.closest('.step'); if(b) go(+b.dataset.s);});
 
-/* ---------- 1 chat ---------- */
-var Q = [
-  {q:"What role are you going after?", a:["Mid-Market AE","Enterprise AE","Sales Manager"]},
-  {q:"Proudest win?", a:["112% through a pricing change","Built a team from 2 to 11"]},
-  {q:"What do you do that most AEs don't?", a:["I rebuild the discovery script","I sell to ops, not champions"]},
-  {q:"Paste a message you were proud of.", a:["📋 Paste from clipboard"]}
+/* ---------- 1 import ---------- */
+var SCAN=[
+  ['Contact &amp; location','Chicago, IL'],
+  ['Roles','3 found'],
+  ['Quantified wins','7 found'],
+  ['Tooling &amp; methodology','8 found'],
+  ['Writing sample','from summary'],
+  ['Voice profile','built']
 ];
-var qi = 0, chat = document.getElementById('chat');
-function ask(){
-  if (qi >= Q.length){
-    chat.insertAdjacentHTML('beforeend','<div class="bub a">Got it. Here\'s how I\'ll write as you →</div>');
-    document.getElementById('vp-out').style.display='block';
-    chat.scrollTop = chat.scrollHeight;
-    return;
-  }
-  var q = Q[qi];
-  chat.insertAdjacentHTML('beforeend','<div class="bub a">'+q.q+'</div><div class="chips" id="c'+qi+'">'+
-    q.a.map(function(a){return '<button class="chip">'+a+'</button>';}).join('')+'</div>');
-  document.getElementById('c'+qi).addEventListener('click', function(e){
-    var b = e.target.closest('.chip'); if (!b) return;
-    this.remove();
-    chat.insertAdjacentHTML('beforeend','<div class="bub u">'+b.textContent+'</div>');
-    document.getElementById('m'+(qi+1)).style.width = '100%';
-    qi++;
-    document.getElementById('chat-count').textContent = Math.min(qi+1,4)+' / 4';
-    setTimeout(ask, 380);
-    chat.scrollTop = chat.scrollHeight;
+function runScan(src){
+  document.getElementById('imp-pick').classList.add('hide');
+  var el=document.getElementById('scan');
+  el.classList.remove('hide');
+  el.innerHTML='<p class="lbl" style="margin-bottom:6px">Reading '+src+'</p>'+
+    SCAN.map(function(s,i){return '<div class="ln" id="ln'+i+'"><i></i><span>'+s[0]+'</span><em></em></div>';}).join('');
+  SCAN.forEach(function(s,i){
+    setTimeout(function(){
+      var ln=document.getElementById('ln'+i);
+      if(!ln) return;
+      ln.classList.add('hit');
+      ln.querySelector('em').innerHTML=s[1];
+      if(i===SCAN.length-1) document.getElementById('imp-next').classList.remove('hide');
+    }, 340*(i+1));
   });
-  chat.scrollTop = chat.scrollHeight;
 }
-ask();
+document.getElementById('imp-li').addEventListener('click',function(){runScan('linkedin.com/in/evanpogue');});
+document.getElementById('imp-cv').addEventListener('click',function(){runScan('Evan_Pogue_Resume.pdf');});
 
-/* ---------- 2 campaign ---------- */
-document.getElementById('drop').addEventListener('click', function(){
-  document.getElementById('drop-wrap').style.display = 'none';
-  document.getElementById('jd-out').style.display = 'block';
-  document.getElementById('jd-out').style.animation = 'in .35s cubic-bezier(.2,.8,.3,1)';
+/* ---------- 2 profile ---------- */
+var WINS=[
+  {t:'Finished 112% through a pricing transition',s:'Brightline · FY25',m:'112%',on:true},
+  {t:'Carried and hit a $1.2M quota',s:'Brightline · FY25',m:'$1.2M',on:true},
+  {t:'Rebuilt discovery for 30→70 day cycles',s:'Brightline · Q2 FY25',m:'30→70',on:true},
+  {t:'Grew territory ARR 41% YoY',s:'Northwind · FY23',m:'41%',on:false},
+  {t:'Ramped 4 new AEs to quota in 2 quarters',s:'Northwind · FY23',m:'4 AEs',on:false},
+  {t:'Top 3 of 38 reps, two years running',s:'Northwind',m:'Top 3',on:false},
+  {t:'Closed largest deal in company history',s:'Cobalt · FY21',m:'$340k',on:false}
+];
+var ROLES=[
+  {t:'Senior AE, Mid-Market',s:'Brightline · 2023–2026',on:true},
+  {t:'Account Executive',s:'Northwind · 2021–2023',on:true},
+  {t:'SDR → AE',s:'Cobalt · 2018–2021',on:true}
+];
+var STACK=['Salesforce','HubSpot','Outreach','Gong','Clay','Sales Navigator','MEDDPICC','Command of the Message'];
+function drawSel(host,arr,max){
+  document.getElementById(host).innerHTML=arr.map(function(o,i){
+    return '<button class="opt" data-i="'+i+'" aria-pressed="'+o.on+'">'+
+      '<span class="bx"></span>'+
+      '<span class="tx">'+o.t+'<em>'+o.s+'</em></span>'+
+      (o.m?'<span class="mt">'+o.m+'</span>':'<span></span>')+'</button>';
+  }).join('');
+}
+function countSel(){
+  var n=WINS.filter(function(w){return w.on;}).length;
+  document.getElementById('sel-count').textContent=n+' of 3 wins';
+}
+drawSel('wins',WINS); drawSel('roles',ROLES); countSel();
+document.getElementById('stack').innerHTML=STACK.map(function(s){return '<span class="pill">'+s+'</span>';}).join('');
+document.getElementById('wins').addEventListener('click',function(e){
+  var b=e.target.closest('.opt'); if(!b) return;
+  var i=+b.dataset.i, on=WINS[i].on, n=WINS.filter(function(w){return w.on;}).length;
+  if(!on && n>=3) return;
+  WINS[i].on=!on; b.setAttribute('aria-pressed',WINS[i].on); countSel(); drawProof();
+});
+document.getElementById('roles').addEventListener('click',function(e){
+  var b=e.target.closest('.opt'); if(!b) return;
+  var i=+b.dataset.i; ROLES[i].on=!ROLES[i].on; b.setAttribute('aria-pressed',ROLES[i].on); drawExp();
 });
 
-/* ---------- 3 org map ---------- */
-var PEOPLE = [
-  {i:'MR', n:'Marcus Reed',  r:'Director, Mid-Market', t:'Hiring mgr', c:'--p1', eq:'Economic buyer', ask:'15 minutes', why:'Decides'},
-  {i:'PS', n:'Priya Shah',   r:'Talent Partner',        t:'Recruiter',  c:'--p2', eq:'Gatekeeper',     ask:'Process clarity', why:'Owns the process'},
-  {i:'DK', n:'Dana Koh',     r:'Mid-Market AE',         t:'Peer',       c:'--p3', eq:'Coach',          ask:'Information', why:'Lowest-risk ask, best intel'},
-  {i:'DW', n:'Diane Walsh',  r:'VP Sales',              t:'Skip-level', c:'--p4', eq:'Exec sponsor',   ask:'A point of view', why:'Can push a req'},
-  {i:'SL', n:'Sam Lowe',     r:'Ex-Acme · Brightline',  t:'Connector',  c:'--p5', eq:'Warm path',      ask:'An intro', why:'Shared tie'}
+/* ---------- 3 angles ---------- */
+var ANGLES=[
+  {t:'Seat-based pricing moved the SMB floor to 5 seats',s:'Reps become qualifiers · two-call close',on:true,
+   pov:"Seat-based pricing moved your SMB floor to 5 seats. Reps stop selling and start qualifying — and anyone who can't run a two-call close gets exposed fast."},
+  {t:'Six AE reqs open at once',s:'Ramp time is the constraint, not headcount',on:false,
+   pov:"Six AE reqs open at once means ramp is your constraint, not headcount. The team that onboards in 45 days instead of 90 makes the number."},
+  {t:'Series B, 340 people, repriced in Q2',s:'Forecast accuracy breaks after a reprice',on:false,
+   pov:"You repriced in Q2 at 340 people. Every forecast built on the old motion is now guesswork, and that lands on the front line first."}
 ];
-document.getElementById('people').innerHTML = PEOPLE.map(function(p,i){
+drawSel('angles',ANGLES);
+document.getElementById('angles').addEventListener('click',function(e){
+  var b=e.target.closest('.opt'); if(!b) return;
+  var i=+b.dataset.i;
+  ANGLES.forEach(function(a,j){a.on=(i===j);});
+  document.querySelectorAll('#angles .opt').forEach(function(x,j){x.setAttribute('aria-pressed',ANGLES[j].on);});
+  document.getElementById('pg-pov').textContent=ANGLES[i].pov;
+});
+document.getElementById('drop').addEventListener('click',function(){
+  document.getElementById('drop-wrap').classList.add('hide');
+  document.getElementById('jd-out').classList.remove('hide');
+});
+
+/* ---------- 4 org map ---------- */
+var PEOPLE=[
+  {i:'MR',n:'Marcus Reed',r:'Director, Mid-Market',t:'Hiring mgr',c:'--p1',eq:'Economic buyer',ask:'15 minutes',why:'Decides'},
+  {i:'PS',n:'Priya Shah',r:'Talent Partner',t:'Recruiter',c:'--p2',eq:'Gatekeeper',ask:'Process clarity',why:'Owns the process'},
+  {i:'DK',n:'Dana Koh',r:'Mid-Market AE',t:'Peer',c:'--p3',eq:'Coach',ask:'Information',why:'Lowest-risk ask, best intel'},
+  {i:'DW',n:'Diane Walsh',r:'VP Sales',t:'Skip-level',c:'--p4',eq:'Exec sponsor',ask:'A point of view',why:'Can push a req'},
+  {i:'SL',n:'Sam Lowe',r:'Ex-Acme · Brightline',t:'Connector',c:'--p5',eq:'Warm path',ask:'An intro',why:'Shared tie'}
+];
+document.getElementById('people').innerHTML=PEOPLE.map(function(p,i){
   return '<button class="person" data-i="'+i+'" aria-pressed="'+(i===0)+'" style="--c:var('+p.c+')">'+
-    '<span class="av">'+p.i+'</span>'+
-    '<span><span class="nm">'+p.n+'</span><span class="ro">'+p.r+'</span></span>'+
+    '<span class="av">'+p.i+'</span><span><span class="nm">'+p.n+'</span><span class="ro">'+p.r+'</span></span>'+
     '<span class="tag">'+p.t+'</span></button>';
 }).join('');
 function showPerson(i){
-  var p = PEOPLE[i];
-  document.querySelectorAll('.person').forEach(function(b,j){ b.setAttribute('aria-pressed', i===j); });
-  document.getElementById('pdetail').innerHTML =
-    '<div class="grid g3">'+
-      '<div class="card pad"><p class="lbl" style="margin-bottom:6px">Sales equivalent</p><h3>'+p.eq+'</h3></div>'+
-      '<div class="card pad"><p class="lbl" style="margin-bottom:6px">Why</p><h3>'+p.why+'</h3></div>'+
-      '<div class="card pad" style="border-color:var('+p.c+')"><p class="lbl" style="margin-bottom:6px">The ask</p><h3 style="color:var('+p.c+')">'+p.ask+'</h3></div>'+
-    '</div>';
+  var p=PEOPLE[i];
+  document.querySelectorAll('.person').forEach(function(b,j){b.setAttribute('aria-pressed',i===j);});
+  document.getElementById('pdetail').innerHTML=
+    '<div class="card pad"><p class="lbl" style="margin-bottom:6px">Sales equivalent</p><h3>'+p.eq+'</h3></div>'+
+    '<div class="card pad"><p class="lbl" style="margin-bottom:6px">Why</p><h3>'+p.why+'</h3></div>'+
+    '<div class="card pad" style="border-color:var('+p.c+')"><p class="lbl" style="margin-bottom:6px">The ask</p><h3 style="color:var('+p.c+')">'+p.ask+'</h3></div>';
 }
-document.getElementById('people').addEventListener('click', function(e){
-  var b = e.target.closest('.person'); if (b) showPerson(+b.dataset.i);
+document.getElementById('people').addEventListener('click',function(e){
+  var b=e.target.closest('.person'); if(b) showPerson(+b.dataset.i);
 });
 showPerson(0);
 
-/* ---------- 4 sequence ---------- */
-var SEQ = [
-  {d:'Day 0',  w:'Apply',        s:'ATS',        ch:'—',        c:'--line-2'},
-  {d:'Day 0',  w:'Dana Koh',     s:'Peer intel', ch:'LinkedIn', c:'--p3'},
-  {d:'Day 2',  w:'Priya Shah',   s:'Intro',      ch:'Email',    c:'--p2'},
-  {d:'Day 3',  w:'Marcus Reed',  s:'Cold open',  ch:'Email',    c:'--p1'},
-  {d:'Day 5',  w:'Sam Lowe',     s:'Warm ask',   ch:'LinkedIn', c:'--p5'},
-  {d:'Day 7',  w:'Dana Koh',     s:'Referral',   ch:'Reply',    c:'--p3'},
-  {d:'Day 8',  w:'Marcus Reed',  s:'POV follow', ch:'Email',    c:'--p1'},
-  {d:'Day 10', w:'Diane Walsh',  s:'Skip-level', ch:'Email',    c:'--p4'},
-  {d:'Day 12', w:'Priya Shah',   s:'Call',       ch:'Phone',    c:'--p2'},
-  {d:'Day 14', w:'Anyone silent',s:'Breakup',    ch:'Email',    c:'--line-2'}
+/* ---------- 5 sequence ---------- */
+var SEQ=[
+  {d:'Day 0',w:'Apply',s:'ATS',ch:'—',c:'--line-2'},
+  {d:'Day 0',w:'Dana Koh',s:'Peer intel',ch:'LinkedIn',c:'--p3'},
+  {d:'Day 2',w:'Priya Shah',s:'Intro',ch:'Email',c:'--p2'},
+  {d:'Day 3',w:'Marcus Reed',s:'Cold open',ch:'Email',c:'--p1'},
+  {d:'Day 5',w:'Sam Lowe',s:'Warm ask',ch:'LinkedIn',c:'--p5'},
+  {d:'Day 7',w:'Dana Koh',s:'Referral',ch:'Reply',c:'--p3'},
+  {d:'Day 8',w:'Marcus Reed',s:'POV follow',ch:'Email',c:'--p1'},
+  {d:'Day 10',w:'Diane Walsh',s:'Skip-level',ch:'Email',c:'--p4'},
+  {d:'Day 12',w:'Priya Shah',s:'Call',ch:'Phone',c:'--p2'},
+  {d:'Day 14',w:'Anyone silent',s:'Breakup',ch:'Email',c:'--line-2'}
 ];
-document.getElementById('seq').innerHTML = SEQ.map(function(t,i){
+document.getElementById('seq').innerHTML=SEQ.map(function(t,i){
   return '<button class="touch" data-i="'+i+'" aria-pressed="'+(i===3)+'" style="--c:var('+t.c+')">'+
-    '<span class="d">'+t.d+'</span>'+
-    '<span class="w">'+t.w+'<em>'+t.s+'</em></span>'+
-    '<span class="ch">'+t.ch+'</span></button>';
+    '<span class="d">'+t.d+'</span><span class="w">'+t.w+'<em>'+t.s+'</em></span><span class="ch">'+t.ch+'</span></button>';
 }).join('');
-document.getElementById('seq').addEventListener('click', function(e){
-  var b = e.target.closest('.touch'); if (!b) return;
-  document.querySelectorAll('.touch').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+document.getElementById('seq').addEventListener('click',function(e){
+  var b=e.target.closest('.touch'); if(!b) return;
+  document.querySelectorAll('.touch').forEach(function(x){x.setAttribute('aria-pressed','false');});
   b.setAttribute('aria-pressed','true');
-  if (+b.dataset.i === 3) go(5);
+  if(+b.dataset.i===3) go(6);
 });
 
-/* ---------- 5 composer ---------- */
-var TONES = ['Peer','Neutral','Formal'], LENS = ['Short','Standard'];
-var M = {
- '0-0': "Marcus — you moved to seat-based pricing in the spring. SMB floor is 5 seats now, so reps stop selling and start qualifying.\n\n@@Ran that exact transition at Brightline. 40% washed out. We rebuilt discovery and landed 112%.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes, or should I stay in the queue?**",
- '0-1': "Marcus — you moved to seat-based pricing in the spring and the SMB tier starts at 5 seats now. That usually means reps stop selling and start qualifying, and anyone who can't run a two-call close gets exposed fast.\n\n@@I ran that exact transition at Brightline last year — 40% of the team washed out, we rebuilt the discovery script, and landed at 112% for the year.@@\n\nI applied for the Mid-Market role. Put a 30-60-90 for it here:\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes, or should I stay in the queue?**",
- '1-0': "Marcus — noticed the move to seat-based pricing this spring, with the SMB tier now starting at five seats. That shift tends to turn reps into qualifiers.\n\n@@I led the same transition at Brightline and finished the year at 112%.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Would fifteen minutes be useful, or should I stay in the queue?**",
- '1-1': "Marcus — I noticed Acme moved to seat-based pricing this spring, with the SMB tier now starting at five seats. In my experience that shift turns reps from sellers into qualifiers, and it exposes anyone who can't run a two-call close.\n\n@@I led the same transition at Brightline last year. We lost 40% of the team, rebuilt the discovery script around longer cycles, and finished at 112%.@@\n\nI've applied for the Mid-Market role and put a 30-60-90 together here:\n##frontdoor.app/p/evan-acme##\n\n**Would fifteen minutes be useful, or should I stay in the queue?**",
- '2-0': "Marcus — I'm writing regarding Acme's recent move to seat-based pricing and its effect on the mid-market motion.\n\n@@I managed a comparable transition at Brightline, finishing the year at 112% of quota.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Would you be open to a brief conversation?**",
- '2-1': "Marcus — I'm writing regarding Acme's recent move to seat-based pricing and the effect a five-seat minimum tends to have on a mid-market team's selling motion.\n\n@@I managed a comparable transition at Brightline last year. Attrition ran near 40%, we rebuilt the discovery process around longer cycles, and the team finished at 112% of quota.@@\n\nI have applied for the Mid-Market Account Executive role and prepared a 30-60-90 plan here:\n##frontdoor.app/p/evan-acme##\n\n**Would you be open to a brief conversation, or should I remain in the queue?**"
+/* ---------- 6 composer ---------- */
+var TONES=['Peer','Neutral','Formal'],LENS=['Short','Standard'];
+var M={
+ '0-0':"Marcus — you moved to seat-based pricing in the spring. SMB floor is 5 seats now, so reps stop selling and start qualifying.\n\n@@Ran that exact transition at Brightline. 40% washed out. We rebuilt discovery and landed 112%.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes, or should I stay in the queue?**",
+ '0-1':"Marcus — you moved to seat-based pricing in the spring and the SMB tier starts at 5 seats now. That usually means reps stop selling and start qualifying, and anyone who can't run a two-call close gets exposed fast.\n\n@@I ran that exact transition at Brightline last year — 40% of the team washed out, we rebuilt the discovery script, and landed at 112% for the year.@@\n\nI applied for the Mid-Market role. Put a 30-60-90 for it here:\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes, or should I stay in the queue?**",
+ '1-0':"Marcus — noticed the move to seat-based pricing this spring, with the SMB tier now starting at five seats. That shift tends to turn reps into qualifiers.\n\n@@I led the same transition at Brightline and finished the year at 112%.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Would fifteen minutes be useful, or should I stay in the queue?**",
+ '1-1':"Marcus — I noticed Acme moved to seat-based pricing this spring, with the SMB tier now starting at five seats. In my experience that shift turns reps from sellers into qualifiers, and it exposes anyone who can't run a two-call close.\n\n@@I led the same transition at Brightline last year. We lost 40% of the team, rebuilt the discovery script around longer cycles, and finished at 112%.@@\n\nI've applied for the Mid-Market role and put a 30-60-90 together here:\n##frontdoor.app/p/evan-acme##\n\n**Would fifteen minutes be useful, or should I stay in the queue?**",
+ '2-0':"Marcus — I'm writing regarding Acme's recent move to seat-based pricing and its effect on the mid-market motion.\n\n@@I managed a comparable transition at Brightline, finishing the year at 112% of quota.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Would you be open to a brief conversation?**",
+ '2-1':"Marcus — I'm writing regarding Acme's recent move to seat-based pricing and the effect a five-seat minimum tends to have on a mid-market team's selling motion.\n\n@@I managed a comparable transition at Brightline last year. Attrition ran near 40%, we rebuilt the discovery process around longer cycles, and the team finished at 112% of quota.@@\n\nI have applied for the Mid-Market Account Executive role and prepared a 30-60-90 plan here:\n##frontdoor.app/p/evan-acme##\n\n**Would you be open to a brief conversation, or should I remain in the queue?**"
 };
-var NOTES = [
-  ['1','Opens on their business, not yours'],
-  ['2','One proof point, mapped to the problem'],
-  ['3','Page replaces the résumé'],
-  ['4','One ask, with an easy out']
-];
-var ann = true;
-function render(){
-  var t = +document.getElementById('t').value, l = +document.getElementById('l').value;
-  document.getElementById('t-val').textContent = TONES[t];
-  document.getElementById('l-val').textContent = LENS[l];
-  var raw = M[t+'-'+l];
-  var plain = raw.replace(/@@|##|\*\*/g,'');
-  document.getElementById('wc').textContent = plain.trim().split(/\s+/).length + ' words';
-  var html = plain.replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
-  if (ann){
-    html = raw
-      .replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; })
-      .replace(/@@([\s\S]*?)@@/g,'<mark>$1</mark>')
-      .replace(/##([\s\S]*?)##/g,'<mark>$1</mark>')
-      .replace(/\*\*([\s\S]*?)\*\*/g,'<mark>$1</mark>');
-  }
-  document.getElementById('msg').innerHTML = html;
-  document.getElementById('notes').innerHTML = ann ? NOTES.map(function(n){
-    return '<div class="note"><i>'+n[0]+'</i><span>'+n[1]+'</span></div>';
-  }).join('') : '';
+var OVERRIDE=null;
+var NOTES=[['1','Opens on their business, not yours'],['2','One proof point, mapped to the problem'],['3','Page replaces the résumé'],['4','One ask, with an easy out']];
+var ann=true;
+function stripMarks(s){return s.replace(/@@|##|\*\*/g,'');}
+function esc(s){return s.replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+function render(flash){
+  var t=+document.getElementById('t').value,l=+document.getElementById('l').value;
+  document.getElementById('t-val').textContent=TONES[t];
+  document.getElementById('l-val').textContent=LENS[l];
+  var raw=OVERRIDE||M[t+'-'+l];
+  document.getElementById('wc').textContent=stripMarks(raw).trim().split(/\s+/).length+' words';
+  var html=esc(ann?raw:stripMarks(raw));
+  if(ann) html=html.replace(/@@([\s\S]*?)@@/g,'<mark>$1</mark>').replace(/##([\s\S]*?)##/g,'<mark>$1</mark>').replace(/\*\*([\s\S]*?)\*\*/g,'<mark>$1</mark>');
+  var el=document.getElementById('msg');
+  el.innerHTML=html;
+  if(flash){el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');}
+  document.getElementById('notes').innerHTML=ann?NOTES.map(function(n){
+    return '<div class="note"><i>'+n[0]+'</i><span>'+n[1]+'</span></div>';}).join(''):'';
 }
-document.getElementById('t').addEventListener('input', render);
-document.getElementById('l').addEventListener('input', render);
-document.getElementById('ann').addEventListener('click', function(){
-  ann = !ann; this.setAttribute('aria-pressed', ann); render();
+document.getElementById('t').addEventListener('input',function(){OVERRIDE=null; render();});
+document.getElementById('l').addEventListener('input',function(){OVERRIDE=null; render();});
+document.getElementById('ann').addEventListener('click',function(){ann=!ann; this.setAttribute('aria-pressed',ann); render();});
+
+/* AI adjust */
+var EDITS=[
+ {k:['shorter','tighter','cut','trim','brief'],r:'Cut to four lines and dropped the setup.',
+  m:"Marcus — five-seat SMB floor turns reps into qualifiers.\n\n@@Ran that at Brightline. 112%.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Fifteen minutes?**"},
+ {k:['number','metric','specific','data','proof'],r:'Added two numbers and named the cycle change.',
+  m:"Marcus — you moved to seat-based pricing in the spring. SMB floor is 5 seats now, so reps stop selling and start qualifying.\n\n@@Same transition at Brightline: cycles went 30 to 70 days, 40% of the team washed out, $1.2M quota, finished 112%.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes, or should I stay in the queue?**"},
+ {k:['warm','friendly','human','casual','less stiff'],r:'Warmed the open and softened the ask.',
+  m:"Marcus — saw the move to seat-based pricing this spring. Five-seat floor on SMB is a real shift for a team.\n\n@@Been through it. At Brightline it cost us 40% of the roster before we rebuilt discovery. Finished 112% anyway.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Happy to trade fifteen minutes if it's useful — no hard feelings if not.**"},
+ {k:['funding','series b','raise','investor','growth'],r:'Worked the Series B into the opening line.',
+  m:"Marcus — Series B, 340 people, and a reprice in the same year. That combination usually lands hardest on the mid-market floor.\n\n@@I ran it at Brightline: 5-seat minimum, cycles doubled, 40% attrition, 112% anyway.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes, or should I stay in the queue?**"},
+ {k:['ramp','hiring','reqs','onboard','headcount'],r:'Reframed around ramp instead of pricing.',
+  m:"Marcus — six AE reqs open at once means ramp is the constraint, not headcount.\n\n@@I onboarded four AEs to quota in two quarters at Northwind while the motion was changing underneath them.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes on how I'd do it here?**"}
+];
+var SUGS=['Make it shorter','Add a specific number','Warmer','Mention the Series B'];
+document.getElementById('ai-sug').innerHTML=SUGS.map(function(s){return '<button type="button" class="sug">'+s+'</button>';}).join('');
+function aiSay(cls,txt){
+  var log=document.getElementById('ai-log');
+  log.insertAdjacentHTML('beforeend','<div class="ai-m '+cls+'">'+esc(txt)+'</div>');
+  log.scrollTop=log.scrollHeight;
+}
+function aiAsk(text){
+  if(!text.trim()) return;
+  aiSay('u',text);
+  var lc=text.toLowerCase();
+  var hit=EDITS.filter(function(e){return e.k.some(function(k){return lc.indexOf(k)>-1;});})[0]||EDITS[0];
+  aiSay('a','…');
+  setTimeout(function(){
+    var log=document.getElementById('ai-log');
+    log.lastElementChild.textContent=hit.r;
+    OVERRIDE=hit.m;
+    render(true);
+  },520);
+}
+document.getElementById('ai-sug').addEventListener('click',function(e){
+  var b=e.target.closest('.sug'); if(b) aiAsk(b.textContent);
+});
+document.getElementById('ai-form').addEventListener('submit',function(e){
+  e.preventDefault();
+  var inp=document.getElementById('ai-input');
+  aiAsk(inp.value); inp.value='';
 });
 render();
 
-/* ---------- toast ---------- */
-var tEl = document.getElementById('toast'), tT;
-function ping(){
-  tEl.classList.add('on');
-  clearTimeout(tT);
-  tT = setTimeout(function(){ tEl.classList.remove('on'); }, 3400);
+/* ---------- 7 page ---------- */
+function drawProof(){
+  document.getElementById('pg-proof').innerHTML=WINS.filter(function(w){return w.on;}).map(function(w){
+    return '<div><b>'+w.m+'</b><span>'+w.t.replace(/^(Finished|Carried and hit a|Grew|Ramped|Closed|Rebuilt)\s*/,'')+'</span></div>';
+  }).join('');
 }
+var EXP={
+ 'Senior AE, Mid-Market':{co:'Brightline · Chicago',yr:'2023–2026',b:['Carried $1.2M, finished 112% through a seat-based pricing change','Rebuilt discovery when cycles went 30 → 70 days','Held the team through 40% attrition without missing the year']},
+ 'Account Executive':{co:'Northwind · Chicago',yr:'2021–2023',b:['Grew territory ARR 41% YoY','Ramped 4 new AEs to quota in two quarters','Top 3 of 38 reps, two years running']},
+ 'SDR → AE':{co:'Cobalt · Remote',yr:'2018–2021',b:['Closed the largest deal in company history at $340k','Built the outbound motion from zero']}
+};
+function drawExp(){
+  document.getElementById('pg-exp').innerHTML=ROLES.filter(function(r){return r.on;}).map(function(r){
+    var e=EXP[r.t]; if(!e) return '';
+    return '<div class="job"><div class="hd"><b>'+r.t+'</b><em>'+e.yr+'</em></div>'+
+      '<p class="co">'+e.co+'</p><ul>'+e.b.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>';
+  }).join('');
+}
+drawProof(); drawExp();
+
+var SECS=[['hero','Header'],['why','Why Acme'],['proof','Proof'],['exp','Experience'],['plan','First 90 days'],['video','Video'],['quote','Reference'],['stack','Stack']];
+document.getElementById('secs').innerHTML=SECS.map(function(s){
+  return '<button class="sec-t" data-s="'+s[0]+'" aria-pressed="true"><span class="bx"></span>'+s[1]+'</button>';
+}).join('');
+document.getElementById('secs').addEventListener('click',function(e){
+  var b=e.target.closest('.sec-t'); if(!b) return;
+  var on=b.getAttribute('aria-pressed')!=='true';
+  b.setAttribute('aria-pressed',on);
+  document.querySelectorAll('[data-s="'+b.dataset.s+'"]').forEach(function(el){el.classList.toggle('hide',!on);});
+});
+
+/* ---------- toast ---------- */
+var tEl=document.getElementById('toast'),tT;
+function ping(){tEl.classList.add('on'); clearTimeout(tT); tT=setTimeout(function(){tEl.classList.remove('on');},3400);}
 go(1);
 </script>
