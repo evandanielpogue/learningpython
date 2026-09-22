@@ -1312,3 +1312,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 /* a chip never gets to be wider than what holds it */
 .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .rankrow .rr-tag-warn { color: var(--warn); background: var(--warn-wash); }
+.drop.busy { border-color: var(--ac); background: var(--ac-wash); cursor: progress; }
+.drop.busy .drop-ic { background: var(--ac); border-color: var(--ac); color: #fff; animation: pulse 1s var(--ease) infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }

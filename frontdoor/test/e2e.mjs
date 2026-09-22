@@ -3,12 +3,15 @@
    Run:  npx http-server -p 8899 -s .   then   node test/e2e.mjs
    ========================================================================== */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
 const BASE = process.env.BASE || 'http://127.0.0.1:8899/index.html';
 const errs = [];
 let pass = 0, fail = 0;
 
 const browser = await chromium.launch();
+let expect404 = false;
 
 async function group(name, fn) {
   console.log('\n' + name);
@@ -16,7 +19,9 @@ async function group(name, fn) {
   const page = await ctx.newPage();
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('console', m => {
-    if (m.type() === 'error' && !m.text().includes('ERR_CERT')) errs.push('console: ' + m.text());
+    /* the offline-fallback test asks for a parser that is not there on purpose */
+    const t = m.text();
+    if (m.type() === 'error' && !t.includes('ERR_CERT') && !expect404) errs.push('console: ' + t);
   });
   await fn(page);
   await ctx.close();
@@ -77,6 +82,80 @@ await group('Route guard', async (page) => {
     if (h !== '#/login') throw new Error('hash=' + h);
   });
 });
+
+/* --------------------------------------------------------------- pdf -- */
+/* The parser is fetched from a CDN at runtime. This container cannot reach
+   it, so tests point the loader at a local copy:
+     npm i pdfjs-dist@3.11.174 && cp .../build/pdf*.min.js test/vendor/ */
+const VENDOR = new URL('./vendor/pdf.min.js', import.meta.url);
+const FIXTURE = new URL('./fixtures/resume.pdf', import.meta.url);
+const hasPdfjs = existsSync(VENDOR);
+if (hasPdfjs && !existsSync(FIXTURE)) {
+  execFileSync('node', [new URL('./make-pdf.mjs', import.meta.url).pathname], { stdio: 'ignore' });
+}
+
+if (!hasPdfjs) {
+  console.log('\nPDF resumes\n  SKIP  no local pdf.js in test/vendor (see the note in e2e.mjs)');
+} else {
+  await group('PDF resumes', async (page) => {
+    await page.addInitScript(() => { window.PDFJS_BASE = '/test/vendor/'; });
+    await signIn(page, false);
+    await page.waitForSelector('#drop', { timeout: 5000 });
+    await step('a PDF is read without leaving the page', async () => {
+      await page.setInputFiles('#file-in', FIXTURE.pathname);
+      await page.waitForFunction(() => {
+        const m = document.querySelector('#file-msg');
+        return m && !m.classList.contains('hide') && !/Reading/.test(m.textContent);
+      }, { timeout: 25000 });
+      const m = await page.locator('#file-msg').textContent();
+      if (!/Read resume\.pdf/.test(m)) throw new Error('message was "' + m + '"');
+      if (!(await page.locator('#file-msg.ok').count())) throw new Error('flagged as a failure');
+    });
+    await step('the text comes out with its lines intact', async () => {
+      const t = await page.inputValue('#paste');
+      const lines = t.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines[0] !== 'Evan Pogue') throw new Error('first line: ' + lines[0]);
+      if (!lines.some(l => l === 'EXPERIENCE')) throw new Error('lost the section headings');
+      const bullets = lines.filter(l => /^-\s/.test(l));
+      if (bullets.length !== 8) throw new Error(bullets.length + ' bullets, expected 8');
+      if (!bullets[0].includes('$1.2M')) throw new Error('bullet mangled: ' + bullets[0]);
+    });
+    await step('a PDF parses to the same profile as the pasted text', async () => {
+      await page.click('#read');
+      await page.waitForSelector('#roles', { timeout: 8000 });
+      const pf = await page.evaluate(() => Store.state.profile);
+      if (pf.name !== 'Evan Pogue') throw new Error('name: ' + pf.name);
+      if (pf.email !== 'evan@example.com') throw new Error('email: ' + pf.email);
+      if (pf.roles.length !== 3) throw new Error(pf.roles.length + ' roles');
+      if (pf.wins.length !== 6) throw new Error(pf.wins.length + ' wins');
+      if (pf.years !== new Date().getFullYear() - 2018) throw new Error('years: ' + pf.years);
+    });
+  });
+
+  expect404 = true;
+  await group('PDF with no parser to be had', async (page) => {
+    await page.addInitScript(() => { window.PDFJS_BASE = '/test/nowhere/'; });
+    await signIn(page, false);
+    await page.waitForSelector('#drop', { timeout: 5000 });
+    await step('says so and points at the paste box', async () => {
+      await page.setInputFiles('#file-in', FIXTURE.pathname);
+      await page.waitForFunction(() => {
+        const m = document.querySelector('#file-msg');
+        return m && !m.classList.contains('hide') && !/Reading/.test(m.textContent);
+      }, { timeout: 20000 });
+      const m = await page.locator('#file-msg').textContent();
+      if (!/could not load|Paste the text/i.test(m)) throw new Error('message was "' + m + '"');
+      if (await page.locator('#file-msg.ok').count()) throw new Error('reported as success');
+      if (await page.locator('.drop.busy').count()) throw new Error('left spinning');
+    });
+    await step('pasting still works after a failed PDF', async () => {
+      await page.click('#use-example');
+      await page.click('#read');
+      await page.waitForSelector('#roles', { timeout: 6000 });
+    });
+  });
+  expect404 = false;
+}
 
 /* ---------------------------------------------------------- cold start -- */
 await group('Cold start, all the way through', async (page) => {

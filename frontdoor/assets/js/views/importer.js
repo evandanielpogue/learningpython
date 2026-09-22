@@ -9,6 +9,7 @@
   window.Views = window.Views || {};
 
   var TEXTY = /\.(txt|md|markdown|text|csv|json|rtf)$/i;
+  var PDF = /\.pdf$/i;
 
   window.Views.importer = function () {
     var pf = Store.state.profile;
@@ -34,7 +35,7 @@
           '<label class="drop" id="drop" for="file-in">' +
             '<span class="drop-ic">↑</span>' +
             '<b>Drop your resume here</b>' +
-            '<span class="hint">or click to choose a file</span>' +
+            '<span class="hint">PDF, or plain text. Or click to choose a file.</span>' +
             '<input type="file" id="file-in" accept=".txt,.md,.rtf,.pdf,.doc,.docx,text/plain" hidden>' +
           '</label>' +
           '<p class="lookup-msg hide" id="file-msg"></p>' +
@@ -60,12 +61,18 @@
       check();
       ta.addEventListener('input', function () { pending = ta.value; check(); });
 
+      function say(text, ok) {
+        msg.classList.remove('hide');
+        msg.classList.toggle('ok', !!ok);
+        msg.textContent = text;
+      }
+
       function take(file) {
         if (!file) return;
-        msg.classList.remove('hide', 'ok');
+        if (PDF.test(file.name) || file.type === 'application/pdf') return takePdf(file);
         if (!TEXTY.test(file.name) && !/^text\//.test(file.type)) {
-          msg.textContent = 'We cannot read ' + (file.name.split('.').pop() || 'that').toUpperCase() +
-            ' in the browser yet. Open it, select all, and paste it below.';
+          say('We cannot read ' + (file.name.split('.').pop() || 'that').toUpperCase() +
+            ' in the browser. Open it, select all, and paste it below.');
           ta.focus();
           return;
         }
@@ -74,11 +81,36 @@
           ta.value = String(fr.result).replace(/\u0000/g, '');
           pending = ta.value;
           check();
-          msg.classList.add('ok');
-          msg.textContent = 'Read ' + file.name + '. Have a look, then read it in.';
+          say('Read ' + file.name + '. Have a look, then read it in.', true);
         };
-        fr.onerror = function () { msg.textContent = 'Could not open that file.'; };
+        fr.onerror = function () { say('Could not open that file.'); };
         fr.readAsText(file);
+      }
+
+      /* The PDF parser is a few hundred KB, so it is only fetched when a PDF
+         actually turns up. No network, no parser, so we say so and fall back
+         to the box underneath rather than leaving a spinner running. */
+      function takePdf(file) {
+        drop.classList.add('busy');
+        say('Reading ' + file.name + '\u2026', true);
+        Doc.readPdf(file).then(function (text) {
+          drop.classList.remove('busy');
+          if (!text || text.replace(/\s/g, '').length < 40) {
+            say('That PDF has no text in it, only pictures of text. Paste it below instead.');
+            ta.focus();
+            return;
+          }
+          ta.value = text;
+          pending = text;
+          check();
+          say('Read ' + file.name + '. Check it reads properly, then read it in.', true);
+        }).catch(function (err) {
+          drop.classList.remove('busy');
+          say(err && err.message === 'offline'
+            ? 'The PDF reader could not load, so we are offline or it is blocked. Paste the text below instead.'
+            : 'Could not get the text out of that PDF. Paste it below instead.');
+          ta.focus();
+        });
       }
 
       v.querySelector('#file-in').addEventListener('change', function () { take(this.files && this.files[0]); });

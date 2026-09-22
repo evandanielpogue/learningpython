@@ -1415,6 +1415,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 /* a chip never gets to be wider than what holds it */
 .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .rankrow .rr-tag-warn { color: var(--warn); background: var(--warn-wash); }
+.drop.busy { border-color: var(--ac); background: var(--ac-wash); cursor: progress; }
+.drop.busy .drop-ic { background: var(--ac); border-color: var(--ac); color: #fff; animation: pulse 1s var(--ease) infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
 
 </style>
 </head>
@@ -2683,6 +2686,114 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 })(window, document);
 
 ;
+/* assets/js/pdf.js */
+/* ==========================================================================
+   pdf.js — pull the text out of a PDF resume.
+
+   The parser is fetched on demand from a CDN the first time someone hands us
+   a PDF, so the app stays a small file that works offline for everything
+   else. If the fetch fails, the caller falls back to asking for pasted text.
+   ========================================================================== */
+(function (window, document) {
+  'use strict';
+
+  var CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  var loading = null;
+
+  function base() { return window.PDFJS_BASE || CDN; }
+
+  function load() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (loading) return loading;
+
+    loading = new Promise(function (resolve, reject) {
+      var done = false;
+      var timer = setTimeout(function () {
+        if (!done) { done = true; loading = null; reject(new Error('timeout')); }
+      }, 12000);
+
+      var s = document.createElement('script');
+      s.src = base() + 'pdf.min.js';
+      s.onload = function () {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        if (!window.pdfjsLib) { loading = null; return reject(new Error('no pdfjsLib')); }
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = base() + 'pdf.worker.min.js';
+        resolve(window.pdfjsLib);
+      };
+      s.onerror = function () {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        loading = null;
+        reject(new Error('offline'));
+      };
+      document.head.appendChild(s);
+    });
+    return loading;
+  }
+
+  /* PDFs have no idea what a line is. Items come back with a position, so
+     group them by baseline and put the gaps back in by measuring them. */
+  function pageLines(page) {
+    return page.getTextContent().then(function (tc) {
+      var lines = [];
+      var cur = null;
+      var lastY = null;
+
+      tc.items.forEach(function (it) {
+        if (typeof it.str !== 'string') return;
+        var y = it.transform[5];
+        var x = it.transform[4];
+
+        if (cur === null || lastY === null || Math.abs(y - lastY) > 2.5) {
+          cur = { y: y, parts: [] };
+          lines.push(cur);
+        }
+        lastY = y;
+
+        var prev = cur.parts[cur.parts.length - 1];
+        if (prev && x - (prev.x + prev.w) > 1.2) cur.parts.push({ str: ' ', x: x, w: 0 });
+        cur.parts.push({ str: it.str, x: x, w: it.width || 0 });
+
+        if (it.hasEOL) { cur = null; lastY = null; }
+      });
+
+      return lines.map(function (l) {
+        return l.parts.map(function (p) { return p.str; }).join('').replace(/\s+$/, '');
+      });
+    });
+  }
+
+  window.Doc = {
+    /* true once the library is in memory */
+    ready: function () { return !!window.pdfjsLib; },
+
+    readPdf: function (file) {
+      return load().then(function (lib) {
+        return file.arrayBuffer().then(function (buf) {
+          return lib.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise;
+        }).then(function (doc) {
+          var pages = [];
+          for (var i = 1; i <= doc.numPages; i++) pages.push(i);
+          return pages.reduce(function (chain, n) {
+            return chain.then(function (acc) {
+              return doc.getPage(n).then(pageLines).then(function (lines) {
+                return acc.concat(lines);
+              });
+            });
+          }, Promise.resolve([]));
+        }).then(function (lines) {
+          /* a resume laid out in columns leaves runs of blanks behind */
+          return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+        });
+      });
+    }
+  };
+})(window, document);
+
+;
 /* assets/js/router.js */
 /* ==========================================================================
    router.js — hash router with an auth guard
@@ -3599,6 +3710,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   window.Views = window.Views || {};
 
   var TEXTY = /\.(txt|md|markdown|text|csv|json|rtf)$/i;
+  var PDF = /\.pdf$/i;
 
   window.Views.importer = function () {
     var pf = Store.state.profile;
@@ -3624,7 +3736,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '<label class="drop" id="drop" for="file-in">' +
             '<span class="drop-ic">↑</span>' +
             '<b>Drop your resume here</b>' +
-            '<span class="hint">or click to choose a file</span>' +
+            '<span class="hint">PDF, or plain text. Or click to choose a file.</span>' +
             '<input type="file" id="file-in" accept=".txt,.md,.rtf,.pdf,.doc,.docx,text/plain" hidden>' +
           '</label>' +
           '<p class="lookup-msg hide" id="file-msg"></p>' +
@@ -3650,12 +3762,18 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       check();
       ta.addEventListener('input', function () { pending = ta.value; check(); });
 
+      function say(text, ok) {
+        msg.classList.remove('hide');
+        msg.classList.toggle('ok', !!ok);
+        msg.textContent = text;
+      }
+
       function take(file) {
         if (!file) return;
-        msg.classList.remove('hide', 'ok');
+        if (PDF.test(file.name) || file.type === 'application/pdf') return takePdf(file);
         if (!TEXTY.test(file.name) && !/^text\//.test(file.type)) {
-          msg.textContent = 'We cannot read ' + (file.name.split('.').pop() || 'that').toUpperCase() +
-            ' in the browser yet. Open it, select all, and paste it below.';
+          say('We cannot read ' + (file.name.split('.').pop() || 'that').toUpperCase() +
+            ' in the browser. Open it, select all, and paste it below.');
           ta.focus();
           return;
         }
@@ -3664,11 +3782,36 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           ta.value = String(fr.result).replace(/\u0000/g, '');
           pending = ta.value;
           check();
-          msg.classList.add('ok');
-          msg.textContent = 'Read ' + file.name + '. Have a look, then read it in.';
+          say('Read ' + file.name + '. Have a look, then read it in.', true);
         };
-        fr.onerror = function () { msg.textContent = 'Could not open that file.'; };
+        fr.onerror = function () { say('Could not open that file.'); };
         fr.readAsText(file);
+      }
+
+      /* The PDF parser is a few hundred KB, so it is only fetched when a PDF
+         actually turns up. No network, no parser, so we say so and fall back
+         to the box underneath rather than leaving a spinner running. */
+      function takePdf(file) {
+        drop.classList.add('busy');
+        say('Reading ' + file.name + '\u2026', true);
+        Doc.readPdf(file).then(function (text) {
+          drop.classList.remove('busy');
+          if (!text || text.replace(/\s/g, '').length < 40) {
+            say('That PDF has no text in it, only pictures of text. Paste it below instead.');
+            ta.focus();
+            return;
+          }
+          ta.value = text;
+          pending = text;
+          check();
+          say('Read ' + file.name + '. Check it reads properly, then read it in.', true);
+        }).catch(function (err) {
+          drop.classList.remove('busy');
+          say(err && err.message === 'offline'
+            ? 'The PDF reader could not load, so we are offline or it is blocked. Paste the text below instead.'
+            : 'Could not get the text out of that PDF. Paste it below instead.');
+          ta.focus();
+        });
       }
 
       v.querySelector('#file-in').addEventListener('change', function () { take(this.files && this.files[0]); });
