@@ -38,7 +38,7 @@
             '<h3 class="mb3">Where does your history live?</h3>' +
             '<p class="dim mb5" style="font-size:var(--fs-sm)">We read it once. Every company you add after this pulls from it.</p>' +
             '<div class="grid cols-2">' +
-              '<button class="dropzone" data-src="linkedin.com/in/evanpogue"><span class="dz-ic">in</span><b>LinkedIn profile</b><span class="hint">Paste the URL</span></button>' +
+              '<button class="dropzone" data-src="linkedin.com/in/evanpogue"><span class="dz-ic dz-li">' + UI.liMark(18) + '</span><b>LinkedIn profile</b><span class="hint">Paste the URL</span></button>' +
               '<button class="dropzone" data-src="Evan_Pogue.pdf"><span class="dz-ic">↑</span><b>Résumé</b><span class="hint">PDF or Word</span></button>' +
             '</div>' +
             '<div class="hide mt5" id="scan-box"><p class="cap mb3" id="scan-src">Reading</p><div id="scan"></div></div>' +

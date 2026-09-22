@@ -467,6 +467,56 @@
       Store.save();
     },
 
+    /* ---- look someone up by their profile URL ----------------------------
+       Stands in for the server call. It resolves against everyone we already
+       know about; anything else comes back as a name and nothing more, which
+       is honest about what a URL alone can tell you. ------------------------ */
+    lookupLinkedIn: function (raw, cid) {
+      var s = String(raw || '').trim();
+      if (!s) return { ok: false, reason: 'Paste their LinkedIn URL first.' };
+      var m = s.match(/linkedin\.com\/(?:in|pub)\/([A-Za-z0-9\-_%]+)/i) ||
+              s.match(/^\/?in\/([A-Za-z0-9\-_%]+)/i) ||
+              s.match(/^([A-Za-z0-9\-_]{3,})$/);
+      if (!m) return { ok: false, reason: 'That does not look like a LinkedIn profile URL.' };
+
+      var slug = decodeURIComponent(m[1]).toLowerCase().replace(/-[0-9a-b]{6,}$/, '');
+      var c = Store.campaign(cid);
+
+      /* already on this list? */
+      var dupe = c && c.contacts.filter(function (p) {
+        return String(p.linkedin || '').toLowerCase().indexOf(slug) > -1;
+      })[0];
+      if (dupe) return { ok: false, reason: dupe.name + ' is already on your list.' };
+
+      /* everyone this workspace has ever seen */
+      var known = [];
+      state.campaigns.forEach(function (x) {
+        known = known.concat(x.contacts, x.suggested || []);
+      });
+      var hit = known.filter(function (p) {
+        return String(p.linkedin || '').toLowerCase().replace('in/', '') === slug;
+      })[0];
+
+      if (hit) {
+        return { ok: true, exact: true, person: {
+          name: hit.name, title: hit.title, persona: hit.persona, tenure: hit.tenure,
+          prev: hit.prev, mutuals: hit.mutuals, email: hit.email,
+          linkedin: 'in/' + slug, ask: hit.ask, activity: clone(hit.activity || [])
+        } };
+      }
+
+      var name = slug.split(/[-_]/)
+        .filter(function (w) { return w && !/^\d+$/.test(w); })
+        .slice(0, 3)
+        .map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); })
+        .join(' ');
+      if (!name) return { ok: false, reason: 'Could not read a name out of that URL.' };
+      return { ok: true, exact: false, person: {
+        name: name, title: '', persona: 'Other', tenure: '', prev: '', mutuals: 0,
+        email: '', linkedin: 'in/' + slug, ask: '', activity: []
+      } };
+    },
+
     /* ---- contacts -------------------------------------------------------- */
     colourFor: function (persona) {
       var p = PERSONAS.filter(function (x) { return x.key === persona; })[0];

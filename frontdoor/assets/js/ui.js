@@ -23,6 +23,17 @@
     });
   };
 
+  /* The real LinkedIn mark. A rounded square with two lowercase letters in
+     it is every social app's icon, so draw the actual glyph instead. */
+  UI.liMark = function (size) {
+    var n = size || 18;
+    return '<span class="li-mark" aria-hidden="true" style="width:' + n + 'px;height:' + n + 'px">' +
+      '<svg viewBox="0 0 24 24" fill="currentColor" focusable="false">' +
+      '<path d="M4.98 3.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM3.2 9.5h3.6v11H3.2v-11z' +
+      'M9.6 9.5h3.45v1.5h.05c.5-.92 1.75-1.9 3.63-1.9 3.88 0 4.6 2.4 4.6 5.55v5.85h-3.6v-5.19' +
+      'c0-1.24-.02-2.83-1.75-2.83-1.75 0-2.02 1.34-2.02 2.74v5.28H9.6v-11z"/></svg></span>';
+  };
+
   /* ---- toasts --------------------------------------------------------- */
   var toastHost;
   UI.toast = function (msg, kind) {

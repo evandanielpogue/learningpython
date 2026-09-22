@@ -195,11 +195,66 @@ await group('Contacts', async (page) => {
   });
   await step('adding a contact by hand works', async () => {
     await page.click('#add-top');
+    await page.locator('#n-manual > summary').click();
     await page.fill('#n-name', 'Jordan Rivera');
     await page.fill('#n-title', 'RevOps Manager');
     await page.click('#new-form button[type=submit]');
     await page.waitForTimeout(300);
     if (!(await page.locator('.rankrow', { hasText: 'Jordan Rivera' }).count())) throw new Error('not added');
+  });
+  await step('LinkedIn shows the real mark, not a lookalike tile', async () => {
+    await page.goto(BASE + '#/c/c_acme/sequence', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.stepcard', { timeout: 4000 });
+    const li = await page.locator('.sc-ch .li-mark').count();
+    if (!li) throw new Error('no LinkedIn mark on the LinkedIn steps');
+    const colour = await page.locator('.li-mark').first().evaluate(e => getComputedStyle(e).color);
+    if (colour !== 'rgb(10, 102, 194)') throw new Error('not LinkedIn blue: ' + colour);
+  });
+});
+
+/* ------------------------------------------------- contact from a URL -- */
+await group('Adding a contact from a profile URL', async (page) => {
+  await signIn(page);
+  await page.goto(BASE + '#/c/c_acme/people', { waitUntil: 'networkidle' });
+  await page.waitForSelector('#add-top', { timeout: 5000 });
+  await step('a profile URL fills the form in', async () => {
+    await page.click('#add-top');
+    await page.fill('#n-url', 'https://www.linkedin.com/in/inesokafor/');
+    await page.click('#n-find');
+    await page.waitForTimeout(260);
+    if ((await page.inputValue('#n-name')) !== 'Ines Okafor') throw new Error('name not filled');
+    if (!(await page.inputValue('#n-title'))) throw new Error('title not filled');
+    if (!(await page.locator('#n-msg.ok').count())) throw new Error('no confirmation');
+    if (!(await page.locator('#n-manual[open]').count())) throw new Error('manual fields stayed shut');
+  });
+  await step('the looked-up profile is kept on the contact', async () => {
+    await page.click('#new-form button[type=submit]');
+    await page.waitForTimeout(320);
+    const li = await page.evaluate(() =>
+      Store.campaign('c_acme').contacts.filter(p => p.name === 'Ines Okafor')[0].linkedin);
+    if (li !== 'in/inesokafor') throw new Error('linkedin lost: ' + li);
+  });
+  await step('an unknown URL still gives you a name to work from', async () => {
+    await page.click('#add-top');
+    await page.fill('#n-url', 'linkedin.com/in/dana-whitfield-8a2b91');
+    await page.click('#n-find');
+    await page.waitForTimeout(260);
+    if ((await page.inputValue('#n-name')) !== 'Dana Whitfield') throw new Error((await page.inputValue('#n-name')));
+  });
+  await step('rubbish in the URL box is called out', async () => {
+    await page.fill('#n-url', 'not a url');
+    await page.click('#n-find');
+    await page.waitForTimeout(220);
+    const m = await page.locator('#n-msg').textContent();
+    if (!/does not look like/.test(m)) throw new Error('message was "' + m + '"');
+    if (await page.locator('#n-msg.ok').count()) throw new Error('flagged as success');
+  });
+  await step('adding someone already on the list is refused', async () => {
+    await page.fill('#n-url', 'linkedin.com/in/marcusreed');
+    await page.click('#n-find');
+    await page.waitForTimeout(220);
+    if (!/already on your list/.test(await page.locator('#n-msg').textContent())) throw new Error('duplicate allowed');
+    await page.click('#cancel-add');
   });
 });
 

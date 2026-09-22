@@ -20,6 +20,7 @@
     var known = c.contacts.some(function (x) { return x.id === c.activeContact; });
     var selected = known ? c.activeContact : (c.contacts[0] ? c.contacts[0].id : null);
     var adding = false;
+    var found = null;
 
     var v = Shell.mount({
       nav: 'people',
@@ -78,25 +79,78 @@
         }).join('') +
         (adding ? addForm() : '<button class="addrow" id="add-inline">+ Add another contact</button>');
 
+      if (adding) wireLookup();
       paintDetail();
     }
 
     function addForm() {
-      return '<form class="card p5 mt3" id="new-form" style="display:grid;gap:var(--s-3)">' +
-        '<h3>New contact</h3>' +
-        '<div class="grid cols-2">' +
-          '<div class="field"><label for="n-name">Name</label><input class="input" id="n-name" placeholder="Jordan Rivera" autocomplete="off"></div>' +
-          '<div class="field"><label for="n-title">Title</label><input class="input" id="n-title" placeholder="RevOps Manager" autocomplete="off"></div>' +
+      return '<form class="card p5 mt3" id="new-form" style="display:grid;gap:var(--s-4)">' +
+        '<div><h3>Add someone</h3>' +
+        '<p class="dim" style="font-size:var(--fs-sm)">Paste their profile and we fill in what we can. Everything stays editable.</p></div>' +
+
+        '<div class="lookup">' +
+          UI.liMark(18) +
+          '<input class="lookup-in" id="n-url" placeholder="linkedin.com/in/marcusreed" autocomplete="off" spellcheck="false">' +
+          '<button class="btn btn-secondary btn-sm" type="button" id="n-find">Find them</button>' +
         '</div>' +
-        '<div class="grid cols-2">' +
-          '<div class="field"><label for="n-persona">How you know them</label>' +
-            '<select class="input" id="n-persona">' + personaOptions('Peer') + '</select></div>' +
-          '<div class="field"><label for="n-email">Email</label><input class="input" id="n-email" placeholder="jordan@acme.com" autocomplete="off"></div>' +
-        '</div>' +
-        '<div class="field"><label for="n-ask">What you want from them</label>' +
-          '<input class="input" id="n-ask" placeholder="Fifteen minutes about the team" autocomplete="off"></div>' +
-        '<div class="row g2"><button class="btn btn-primary btn-sm" type="submit">Add contact</button>' +
+        '<p class="lookup-msg hide" id="n-msg"></p>' +
+
+        '<details class="manual" id="n-manual">' +
+          '<summary>Or fill it in by hand</summary>' +
+          '<div class="manual-body">' +
+            '<div class="grid cols-2">' +
+              '<div class="field"><label for="n-name">Name</label><input class="input" id="n-name" placeholder="Jordan Rivera" autocomplete="off"></div>' +
+              '<div class="field"><label for="n-title">Title</label><input class="input" id="n-title" placeholder="RevOps Manager" autocomplete="off"></div>' +
+            '</div>' +
+            '<div class="grid cols-2">' +
+              '<div class="field"><label for="n-persona">How you know them</label>' +
+                '<select class="input" id="n-persona">' + personaOptions('Peer') + '</select></div>' +
+              '<div class="field"><label for="n-email">Email</label><input class="input" id="n-email" placeholder="jordan@acme.com" autocomplete="off"></div>' +
+            '</div>' +
+            '<div class="field"><label for="n-ask">What you want from them</label>' +
+              '<input class="input" id="n-ask" placeholder="Fifteen minutes about the team" autocomplete="off"></div>' +
+          '</div>' +
+        '</details>' +
+
+        '<div class="row g2 wrap"><button class="btn btn-primary btn-sm" type="submit">Add contact</button>' +
         '<button class="btn btn-ghost btn-sm" type="button" id="cancel-add">Cancel</button></div></form>';
+    }
+
+    /* fills the hand-written fields from whatever the lookup found */
+    function wireLookup() {
+      var find = v.querySelector('#n-find');
+      if (!find) return;
+      var url = v.querySelector('#n-url');
+      var msg = v.querySelector('#n-msg');
+      var manual = v.querySelector('#n-manual');
+
+      function run() {
+        var res = Store.lookupLinkedIn(url.value, c.id);
+        msg.classList.remove('hide', 'ok');
+        if (!res.ok) {
+          msg.textContent = res.reason;
+          url.classList.add('err');
+          return;
+        }
+        url.classList.remove('err');
+        var p = res.person;
+        v.querySelector('#n-name').value = p.name;
+        v.querySelector('#n-title').value = p.title;
+        v.querySelector('#n-persona').value = p.persona;
+        v.querySelector('#n-email').value = p.email;
+        v.querySelector('#n-ask').value = p.ask;
+        found = p;
+        manual.open = true;
+        msg.classList.add('ok');
+        msg.textContent = res.exact
+          ? 'Found ' + p.name + (p.title ? ', ' + p.title : '') + '. Check it over and add them.'
+          : 'Only the name came back from that URL. Fill in the rest below.';
+      }
+
+      find.addEventListener('click', run);
+      url.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); run(); }
+      });
     }
 
     function paintDetail() {
@@ -117,7 +171,8 @@
             (p.prev ? '<div><dt>History</dt><dd>' + esc(p.prev) + '</dd></div>' : '') +
             '<div><dt>Mutuals</dt><dd>' + p.mutuals + '</dd></div>' +
             (p.email ? '<div><dt>Email</dt><dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.email) + '</dd></div>' : '') +
-            (p.linkedin ? '<div><dt>LinkedIn</dt><dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.linkedin) + '</dd></div>' : '') +
+            (p.linkedin ? '<div><dt>' + UI.liMark(13) + ' LinkedIn</dt>' +
+              '<dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.linkedin) + '</dd></div>' : '') +
           '</dl>' +
           '<hr class="divider" style="margin:var(--s-4) 0">' +
           '<div class="field mb3"><label for="d-persona">How you know them</label>' +
@@ -158,7 +213,10 @@
       });
     }
 
-    function startAdd() { adding = true; paint(); setTimeout(function () { var n = v.querySelector('#n-name'); if (n) n.focus(); }, 40); }
+    function startAdd() {
+      adding = true; found = null; paint();
+      setTimeout(function () { var n = v.querySelector('#n-url'); if (n) n.focus(); }, 40);
+    }
 
     UI.on(v, 'click', '[data-pick]', function (e, el) {
       if (e.target.closest('button')) return;
@@ -183,14 +241,25 @@
     UI.on(v, 'submit', '#new-form', function (e) {
       e.preventDefault();
       var name = v.querySelector('#n-name').value.trim();
-      if (!name) { v.querySelector('#n-name').classList.add('err'); return; }
+      if (!name) {
+        v.querySelector('#n-manual').open = true;
+        v.querySelector('#n-name').classList.add('err');
+        v.querySelector('#n-name').focus();
+        return;
+      }
       var p = Store.addContact(c.id, {
         name: name,
         title: v.querySelector('#n-title').value.trim(),
         persona: v.querySelector('#n-persona').value,
         email: v.querySelector('#n-email').value.trim(),
-        ask: v.querySelector('#n-ask').value.trim()
+        ask: v.querySelector('#n-ask').value.trim(),
+        linkedin: found ? found.linkedin : '',
+        tenure: found ? found.tenure : '',
+        prev: found ? found.prev : '',
+        mutuals: found ? found.mutuals : 0,
+        activity: found ? found.activity : []
       });
+      found = null;
       Store.completeTask(c.id, 't3');
       adding = false; selected = p.id; paint();
       UI.toast(name + ' added. Drag them up if they matter more.');

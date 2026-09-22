@@ -10,7 +10,10 @@
   var esc = UI.esc;
   window.Views = window.Views || {};
 
-  var CH_ICON = { Email: '✉', LinkedIn: 'in', Call: '☏', Reply: '↩', ATS: '▤', Text: '💬' };
+  function chIcon(ch) {
+    if (ch === 'LinkedIn') return UI.liMark(11);
+    return { Email: '✉', Call: '☏', Reply: '↩', ATS: '▤', Text: '💬' }[ch] || '•';
+  }
 
   var EDITS = [
     { k: ['short', 'tight', 'cut', 'trim', 'brief'], reply: 'Cut the setup. Four lines.',
@@ -72,7 +75,7 @@
         out += '<button class="stepcard' + (s.id === c.activeStep ? ' on' : '') + '" data-step="' + s.id + '"' +
           ' style="--pc:var(' + col + ')">' +
           '<span class="sc-top"><span class="sc-n">' + (i + 1) + '</span>' +
-            '<span class="sc-ch">' + (CH_ICON[s.channel] || '•') + ' ' + esc(s.channel) + '</span>' +
+            '<span class="sc-ch">' + chIcon(s.channel) + ' ' + esc(s.channel) + '</span>' +
             '<span class="sc-dot ' + dot + '"></span></span>' +
           '<span class="sc-who">' + esc(p ? p.name : 'No contact') + '</span>' +
           '<span class="sc-note">' + esc(s.note) + '</span>' +
