@@ -1,0 +1,991 @@
+<title>Frontdoor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* ─────────────────────────  TOKENS  ───────────────────────── */
+:root{
+  /* neutrals: warm-leaning so the blue accent doesn't read cold */
+  --bg:#FAFAFB; --panel:#FFFFFF; --sunk:#F4F5F7; --raised:#FFFFFF;
+  --ink:#101114; --ink-2:#585E6B; --ink-3:#8A909D; --ink-4:#B4B9C4;
+  --edge:#E7E9ED; --edge-2:#D5D9E0;
+  /* one accent, used sparingly */
+  --ac:#2F6BFF; --ac-ink:#FFFFFF; --ac-wash:#EDF2FF; --ac-edge:#C5D6FF; --ac-deep:#1E4FD0;
+  /* semantic only */
+  --pos:#0E9F6E; --pos-wash:#E3F6EF;
+  --warn:#B4700A; --warn-wash:#FDF2DE;
+  --neg:#D3372E; --neg-wash:#FDEAE8;
+  /* people, assigned not decorative */
+  --c1:#2F6BFF; --c2:#7A4DD6; --c3:#0E9F6E; --c4:#B4700A; --c5:#C0455E;
+  /* 4pt scale */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s7:32px; --s8:40px; --s9:56px;
+  /* radii: cards small, overlays larger so elevation reads */
+  --r-xs:6px; --r-sm:8px; --r-md:10px; --r-lg:14px; --r-full:999px;
+  /* elevation: tight, downward, single direction */
+  --e1:0 1px 2px rgba(16,17,20,.05);
+  --e2:0 1px 3px rgba(16,17,20,.07), 0 1px 2px rgba(16,17,20,.04);
+  --e3:0 4px 12px rgba(16,17,20,.07), 0 1px 3px rgba(16,17,20,.05);
+  --e4:0 16px 44px rgba(16,17,20,.16), 0 3px 10px rgba(16,17,20,.07);
+  /* motion */
+  --t-fast:120ms; --t:180ms; --t-slow:260ms;
+  --ease:cubic-bezier(.2,.8,.3,1);
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --ui:'Figtree',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D0E11; --panel:#15171C; --sunk:#1B1E24; --raised:#1B1E24;
+    --ink:#F0F1F4; --ink-2:#A4AAB6; --ink-3:#787F8C; --ink-4:#575D68;
+    --edge:#23262D; --edge-2:#31353E;
+    --ac:#5B8BFF; --ac-ink:#08101F; --ac-wash:#141C2E; --ac-edge:#2B3F66; --ac-deep:#87ABFF;
+    --pos:#2FC48E; --pos-wash:#0F2A22; --warn:#E0A33A; --warn-wash:#2B2113; --neg:#F0645A; --neg-wash:#2C1615;
+    --c1:#5B8BFF; --c2:#A17BEE; --c3:#2FC48E; --c4:#E0A33A; --c5:#E0778C;
+    --e1:0 1px 2px rgba(0,0,0,.5);
+    --e2:0 1px 3px rgba(0,0,0,.55), 0 1px 2px rgba(0,0,0,.4);
+    --e3:0 4px 12px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.4);
+    --e4:0 16px 44px rgba(0,0,0,.7), 0 3px 10px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D0E11; --panel:#15171C; --sunk:#1B1E24; --raised:#1B1E24;
+  --ink:#F0F1F4; --ink-2:#A4AAB6; --ink-3:#787F8C; --ink-4:#575D68;
+  --edge:#23262D; --edge-2:#31353E;
+  --ac:#5B8BFF; --ac-ink:#08101F; --ac-wash:#141C2E; --ac-edge:#2B3F66; --ac-deep:#87ABFF;
+  --pos:#2FC48E; --pos-wash:#0F2A22; --warn:#E0A33A; --warn-wash:#2B2113; --neg:#F0645A; --neg-wash:#2C1615;
+  --c1:#5B8BFF; --c2:#A17BEE; --c3:#2FC48E; --c4:#E0A33A; --c5:#E0778C;
+  --e1:0 1px 2px rgba(0,0,0,.5);
+  --e2:0 1px 3px rgba(0,0,0,.55), 0 1px 2px rgba(0,0,0,.4);
+  --e3:0 4px 12px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.4);
+  --e4:0 16px 44px rgba(0,0,0,.7), 0 3px 10px rgba(0,0,0,.5);
+}
+
+/* ─────────────────────────  BASE  ───────────────────────── */
+*{box-sizing:border-box}
+body{background:var(--bg); color:var(--ink); font-family:var(--ui); font-size:14.5px; line-height:1.55;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility}
+h1,h2,h3,h4{margin:0; letter-spacing:-.022em; font-weight:650; line-height:1.2}
+h1{font-size:24px; letter-spacing:-.03em; font-weight:700}
+h2{font-size:18px}
+h3{font-size:15px}
+p{margin:0}
+button,input{font-family:inherit; font-size:inherit}
+::selection{background:var(--ac-wash); color:var(--ink)}
+.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+.cap{font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3)}
+.dim{color:var(--ink-2)}
+.hide{display:none !important}
+
+/* focus: one visible treatment everywhere */
+:where(button,input,a,[tabindex]):focus-visible{outline:2px solid var(--ac); outline-offset:2px; border-radius:var(--r-xs)}
+
+/* ─────────────────────────  SHELL  ───────────────────────── */
+.app{display:grid; grid-template-columns:236px 1fr; min-height:100%}
+@media (max-width:860px){ .app{grid-template-columns:1fr} }
+
+.side{background:var(--panel); border-right:1px solid var(--edge); padding:var(--s4) var(--s3);
+  display:flex; flex-direction:column; gap:var(--s5); position:sticky; top:env(safe-area-inset-top,0px);
+  align-self:start; max-height:100vh; overflow:auto}
+@media (max-width:860px){
+  .side{position:sticky; z-index:40; border-right:none; border-bottom:1px solid var(--edge);
+    flex-direction:row; align-items:center; gap:var(--s3); max-height:none; overflow-x:auto; padding:var(--s2) var(--s3)}
+  .side .sect, .side .you{display:none}
+}
+.mark{display:flex; align-items:center; gap:var(--s2); padding:0 var(--s2); flex:none}
+.mark .g{width:24px; height:24px; border-radius:var(--r-xs); background:var(--ac); position:relative; flex:none}
+.mark .g::after{content:""; position:absolute; inset:7px 7px auto auto; width:10px; height:10px;
+  border-radius:2px; background:var(--panel)}
+.mark b{font-size:15px; font-weight:700; letter-spacing:-.03em}
+
+.kbtn{display:flex; align-items:center; gap:var(--s2); width:100%; padding:7px var(--s3);
+  border:1px solid var(--edge); background:var(--sunk); border-radius:var(--r-sm); color:var(--ink-3);
+  font-size:13px; cursor:pointer; transition:border-color var(--t) var(--ease), background var(--t) var(--ease)}
+.kbtn:hover{border-color:var(--edge-2); background:var(--panel)}
+.kbtn kbd{margin-left:auto; font-family:var(--mono); font-size:10.5px; padding:2px 5px; border-radius:4px;
+  background:var(--panel); border:1px solid var(--edge); color:var(--ink-3)}
+@media (max-width:860px){ .kbtn{width:auto; min-width:120px} .kbtn kbd{display:none} }
+
+.sect{display:flex; flex-direction:column; gap:1px}
+.nav{display:flex; flex-direction:column; gap:1px}
+@media (max-width:860px){ .nav{flex-direction:row; gap:var(--s1)} }
+.nv{display:flex; align-items:center; gap:var(--s3); padding:7px var(--s3); border-radius:var(--r-sm);
+  border:none; background:none; color:var(--ink-2); cursor:pointer; text-align:left; width:100%;
+  font-size:13.5px; font-weight:500; white-space:nowrap;
+  transition:background var(--t-fast) var(--ease), color var(--t-fast) var(--ease)}
+.nv:hover{background:var(--sunk); color:var(--ink)}
+.nv[aria-current="true"]{background:var(--sunk); color:var(--ink); font-weight:600}
+.nv .ic{width:16px; display:grid; place-items:center; color:var(--ink-3); flex:none}
+.nv[aria-current="true"] .ic{color:var(--ac)}
+.nv .pip{margin-left:auto; width:6px; height:6px; border-radius:var(--r-full); background:var(--ac); opacity:0;
+  transform:scale(.4); transition:opacity var(--t) var(--ease), transform var(--t) var(--spring)}
+.nv[aria-current="true"] .pip{opacity:1; transform:scale(1)}
+@media (max-width:860px){ .nv .lb{display:none} .nv{padding:8px 10px} }
+
+.you{margin-top:auto; display:flex; align-items:center; gap:var(--s2); padding:var(--s2);
+  border-top:1px solid var(--edge); padding-top:var(--s3)}
+.you .av{width:26px; height:26px; border-radius:var(--r-full); background:var(--c2); color:#fff;
+  display:grid; place-items:center; font-size:11px; font-weight:600; flex:none}
+.you span{font-size:12.5px; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+/* topbar */
+.main{min-width:0}
+.top{position:sticky; top:env(safe-area-inset-top,0px); z-index:30; background:color-mix(in srgb,var(--bg) 82%, transparent);
+  backdrop-filter:blur(10px); border-bottom:1px solid var(--edge); padding:var(--s3) var(--s6);
+  display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap}
+@media (max-width:860px){ .top{position:static; padding:var(--s3) var(--s4)} }
+.crumb{display:flex; align-items:center; gap:var(--s2); font-size:13px; color:var(--ink-3); margin-right:auto}
+.crumb b{color:var(--ink); font-weight:600}
+.crumb .sl{color:var(--ink-4)}
+
+.view{padding:var(--s7) var(--s6) var(--s9); max-width:1060px}
+@media (max-width:860px){ .view{padding:var(--s6) var(--s4) var(--s8)} }
+.page{display:none}
+.page.on{display:block; animation:enter var(--t-slow) var(--ease)}
+@keyframes enter{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+
+.ph{margin-bottom:var(--s6)}
+.ph h1{margin-bottom:var(--s1)}
+.ph p{color:var(--ink-2); max-width:62ch}
+
+/* ─────────────────────────  PRIMITIVES  ───────────────────────── */
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:var(--s2);
+  font-weight:600; font-size:13.5px; padding:9px 16px; border-radius:var(--r-sm);
+  border:1px solid transparent; cursor:pointer; white-space:nowrap;
+  transition:background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+             transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease)}
+.btn:active{transform:scale(.975)}
+.btn-pri{background:var(--ac); color:var(--ac-ink); box-shadow:var(--e1)}
+.btn-pri:hover{background:var(--ac-deep); box-shadow:var(--e2)}
+.btn-sec{background:var(--panel); color:var(--ink); border-color:var(--edge-2); box-shadow:var(--e1)}
+.btn-sec:hover{border-color:var(--ink-4); background:var(--sunk)}
+.btn-qt{background:none; color:var(--ink-2)}
+.btn-qt:hover{background:var(--sunk); color:var(--ink)}
+.btn-sm{padding:6px 11px; font-size:12.5px}
+.btn .ar{transition:transform var(--t) var(--ease)}
+.btn:hover .ar{transform:translateX(2px)}
+
+.card{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r-md); box-shadow:var(--e1)}
+.card.lift{transition:box-shadow var(--t) var(--ease), border-color var(--t) var(--ease), transform var(--t) var(--ease)}
+.card.lift:hover{box-shadow:var(--e3); border-color:var(--edge-2); transform:translateY(-1px)}
+.p4{padding:var(--s4)} .p5{padding:var(--s5)} .p6{padding:var(--s6)}
+.row{display:flex; align-items:center; gap:var(--s3)}
+.col{display:flex; flex-direction:column}
+.gap2{gap:var(--s2)} .gap3{gap:var(--s3)} .gap4{gap:var(--s4)} .gap5{gap:var(--s5)} .gap6{gap:var(--s6)}
+.grid{display:grid; gap:var(--s3)}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(196px,1fr))}
+.wrapx{display:flex; flex-wrap:wrap; gap:var(--s2)}
+
+.chip{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:var(--r-full);
+  background:var(--sunk); border:1px solid var(--edge); font-size:12.5px; color:var(--ink-2)}
+.chip b{color:var(--ink); font-weight:600}
+.chip.acc{background:var(--ac-wash); border-color:var(--ac-edge); color:var(--ac)}
+.chip.pos{background:var(--pos-wash); border-color:transparent; color:var(--pos)}
+
+/* ── activation checklist: endowed progress ── */
+.ring{width:42px; height:42px; flex:none; transform:rotate(-90deg)}
+.ring circle{fill:none; stroke-width:4; stroke-linecap:round}
+.ring .bg{stroke:var(--edge)}
+.ring .fg{stroke:var(--ac); transition:stroke-dashoffset 700ms var(--ease)}
+.task{display:grid; grid-template-columns:22px 1fr auto; gap:var(--s3); align-items:center;
+  padding:var(--s3) var(--s4); border:none; background:none; width:100%; text-align:left; cursor:pointer;
+  border-radius:var(--r-sm); transition:background var(--t-fast) var(--ease)}
+.task:hover{background:var(--sunk)}
+.task:active{transform:scale(.995)}
+.tick{width:20px; height:20px; border-radius:var(--r-full); border:1.5px solid var(--edge-2);
+  display:grid; place-items:center; font-size:11px; color:transparent;
+  transition:background var(--t) var(--spring), border-color var(--t) var(--ease), transform var(--t) var(--spring)}
+.task[aria-pressed="true"] .tick{background:var(--pos); border-color:var(--pos); color:#fff; transform:scale(1.1)}
+.task[aria-pressed="true"] .tick::after{content:"✓"}
+.task[aria-pressed="true"] .tl{color:var(--ink-3); text-decoration:line-through; text-decoration-color:var(--ink-4)}
+.tl{font-size:13.5px; font-weight:500; transition:color var(--t) var(--ease)}
+.tl em{font-style:normal; display:block; font-size:12.5px; color:var(--ink-3); font-weight:400}
+
+/* ── empty state ── */
+.empty{display:grid; place-items:center; text-align:center; padding:var(--s9) var(--s5); gap:var(--s4)}
+.empty .art{width:64px; height:64px; border-radius:var(--r-lg); background:var(--sunk); border:1px solid var(--edge);
+  display:grid; place-items:center; color:var(--ink-4); box-shadow:var(--e1)}
+.empty h2{max-width:22ch}
+.empty p{color:var(--ink-2); max-width:44ch}
+
+/* ── option rows ── */
+.opt{display:grid; grid-template-columns:20px 1fr auto; gap:var(--s3); align-items:start; text-align:left; width:100%;
+  background:var(--panel); border:1px solid var(--edge); border-radius:var(--r-sm); padding:var(--s3) var(--s4);
+  cursor:pointer; transition:border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease)}
+.opt:hover{border-color:var(--edge-2)}
+.opt:active{transform:scale(.995)}
+.opt[aria-pressed="true"]{border-color:var(--ac); background:var(--ac-wash)}
+.opt .bx{width:18px; height:18px; border-radius:5px; border:1.5px solid var(--edge-2); display:grid; place-items:center;
+  font-size:10px; color:transparent; margin-top:2px;
+  transition:background var(--t) var(--spring), border-color var(--t) var(--ease), transform var(--t) var(--spring)}
+.opt[aria-pressed="true"] .bx{background:var(--ac); border-color:var(--ac); color:#fff; transform:scale(1.08)}
+.opt[aria-pressed="true"] .bx::after{content:"✓"}
+.opt .tx{font-size:13.5px; font-weight:500; line-height:1.45}
+.opt .tx em{font-style:normal; display:block; font-size:12.5px; color:var(--ink-3); font-weight:400; margin-top:1px}
+.opt .mt{font-family:var(--mono); font-size:12.5px; color:var(--ac); font-weight:500}
+.opt.dis{opacity:.45; pointer-events:none}
+
+/* ── drop ── */
+.drop{border:1.5px dashed var(--edge-2); border-radius:var(--r-md); padding:var(--s7) var(--s5);
+  background:var(--panel); cursor:pointer; display:grid; place-items:center; gap:var(--s2); width:100%;
+  transition:border-color var(--t) var(--ease), background var(--t) var(--ease), transform var(--t) var(--ease)}
+.drop:hover{border-color:var(--ac); background:var(--ac-wash)}
+.drop:active{transform:scale(.995)}
+.drop .ic{width:34px; height:34px; border-radius:var(--r-sm); background:var(--sunk); display:grid; place-items:center;
+  color:var(--ink-3); transition:background var(--t) var(--ease), color var(--t) var(--ease)}
+.drop:hover .ic{background:var(--ac); color:#fff}
+.drop b{font-size:14px; font-weight:600}
+
+/* ── skeleton ── */
+.sk{height:11px; border-radius:var(--r-xs); background:linear-gradient(90deg,var(--sunk) 25%,var(--edge) 50%,var(--sunk) 75%);
+  background-size:200% 100%; animation:sh 1.3s linear infinite}
+@keyframes sh{from{background-position:200% 0} to{background-position:-200% 0}}
+.scanln{display:grid; grid-template-columns:18px 1fr auto; gap:var(--s3); align-items:center;
+  padding:var(--s2) 0; font-size:13.5px; color:var(--ink-3); transition:color var(--t) var(--ease)}
+.scanln.done{color:var(--ink)}
+.scanln .d{width:18px; height:18px; border-radius:var(--r-full); border:1.5px solid var(--edge-2);
+  display:grid; place-items:center; font-size:9px; color:transparent;
+  transition:background var(--t) var(--spring), border-color var(--t) var(--ease), transform var(--t) var(--spring)}
+.scanln.done .d{background:var(--pos); border-color:var(--pos); color:#fff; transform:scale(1.12)}
+.scanln.done .d::after{content:"✓"}
+.scanln em{font-style:normal; font-family:var(--mono); font-size:12px; color:var(--ink-3)}
+
+/* ── people ── */
+.pmap{display:grid; grid-template-columns:184px 1fr; gap:var(--s6); align-items:center}
+@media (max-width:760px){ .pmap{grid-template-columns:1fr; gap:var(--s3)} }
+.anchor{background:var(--ink); color:var(--bg); border-radius:var(--r-md); padding:var(--s4); display:grid; gap:2px}
+.anchor .cap{color:var(--ink-4)}
+.plist{display:grid; gap:var(--s2); position:relative}
+@media (min-width:761px){ .plist::before{content:""; position:absolute; left:-12px; top:10%; bottom:10%; width:1px; background:var(--edge-2)} }
+.prow{display:grid; grid-template-columns:32px 1fr auto; gap:var(--s3); align-items:center; text-align:left; width:100%;
+  background:var(--panel); border:1px solid var(--edge); border-radius:var(--r-sm); padding:10px var(--s4);
+  cursor:pointer; position:relative; transition:border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease)}
+@media (min-width:761px){ .prow::before{content:""; position:absolute; left:-12px; top:50%; width:12px; height:1px; background:var(--edge-2)} }
+.prow:hover{transform:translateX(2px); box-shadow:var(--e2)}
+.prow[aria-pressed="true"]{border-color:var(--pc); box-shadow:0 0 0 1px var(--pc)}
+.prow .av{width:32px; height:32px; border-radius:var(--r-full); background:var(--pc); color:#fff;
+  display:grid; place-items:center; font-size:11.5px; font-weight:600}
+.prow .nm{font-size:13.5px; font-weight:600; line-height:1.3}
+.prow .rl{font-size:12px; color:var(--ink-3)}
+.prow .tg{font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.07em;
+  color:var(--pc); background:var(--sunk); padding:3px 8px; border-radius:var(--r-xs)}
+
+/* ── sequence ── */
+.seq{display:grid; gap:var(--s2); padding-left:28px; position:relative}
+.seq::before{content:""; position:absolute; left:9px; top:16px; bottom:16px; width:1px; background:var(--edge)}
+.tch{display:grid; grid-template-columns:46px 1fr auto; gap:var(--s3); align-items:center; text-align:left; width:100%;
+  background:var(--panel); border:1px solid var(--edge); border-radius:var(--r-sm); padding:10px var(--s4);
+  cursor:pointer; position:relative; transition:border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease)}
+.tch::before{content:""; position:absolute; left:-24px; top:50%; translate:0 -50%; width:9px; height:9px;
+  border-radius:var(--r-full); background:var(--pc); box-shadow:0 0 0 3px var(--bg)}
+.tch:hover{transform:translateX(2px); box-shadow:var(--e2)}
+.tch[aria-pressed="true"]{border-color:var(--pc); box-shadow:0 0 0 1px var(--pc)}
+.tch .dy{font-family:var(--mono); font-size:11.5px; color:var(--ink-3)}
+.tch .wh{font-size:13.5px; font-weight:600}
+.tch .wh em{font-style:normal; display:block; font-size:12px; color:var(--ink-3); font-weight:400}
+.tch .cn{font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3)}
+
+/* ── composer ── */
+.comp{display:grid; grid-template-columns:1fr 264px; gap:var(--s4); align-items:start}
+@media (max-width:900px){ .comp{grid-template-columns:1fr} }
+.letter{font-family:var(--mono); font-size:13px; line-height:1.85; white-space:pre-wrap; color:var(--ink);
+  background:var(--panel); border:1px solid var(--edge); border-radius:var(--r-md); padding:var(--s6); box-shadow:var(--e1)}
+.letter mark{background:var(--ac-wash); color:inherit; border-radius:3px; padding:1px 3px; box-decoration-break:clone}
+.letter.pulse{animation:pl 600ms var(--ease)}
+@keyframes pl{0%{background:var(--ac-wash)} 100%{background:var(--panel)}}
+.why{display:grid; gap:var(--s2); margin-top:var(--s3)}
+.wl{display:grid; grid-template-columns:18px 1fr; gap:var(--s3); font-size:12.5px; color:var(--ink-2); align-items:start}
+.wl i{width:18px; height:18px; border-radius:var(--r-full); background:var(--ac-wash); color:var(--ac);
+  display:grid; place-items:center; font-style:normal; font-size:10px; font-weight:700; font-family:var(--mono)}
+.ctl label{display:grid; gap:7px}
+.ctl .hd{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; font-weight:600}
+.ctl .hd span{font-family:var(--mono); font-size:11.5px; color:var(--ink-3); font-weight:400}
+input[type=range]{width:100%; -webkit-appearance:none; appearance:none; background:none; height:20px; cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:4px; border-radius:var(--r-full); background:var(--edge)}
+input[type=range]::-moz-range-track{height:4px; border-radius:var(--r-full); background:var(--edge)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:16px; height:16px; border-radius:var(--r-full);
+  background:var(--panel); border:1.5px solid var(--ac); box-shadow:var(--e2); margin-top:-6px;
+  transition:transform var(--t-fast) var(--spring)}
+input[type=range]::-moz-range-thumb{width:16px; height:16px; border-radius:var(--r-full);
+  background:var(--panel); border:1.5px solid var(--ac); box-shadow:var(--e2)}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.2)}
+.sw{width:36px; height:21px; border-radius:var(--r-full); background:var(--edge-2); border:none; cursor:pointer;
+  position:relative; flex:none; transition:background var(--t) var(--ease)}
+.sw::after{content:""; position:absolute; top:3px; left:3px; width:15px; height:15px; border-radius:var(--r-full);
+  background:#fff; box-shadow:var(--e1); transition:transform var(--t) var(--spring)}
+.sw[aria-pressed="true"]{background:var(--ac)}
+.sw[aria-pressed="true"]::after{transform:translateX(15px)}
+
+.ask{margin-top:var(--s3); background:var(--panel); border:1px solid var(--edge); border-radius:var(--r-md);
+  box-shadow:var(--e1); overflow:hidden}
+.ask-log{display:grid; gap:var(--s2); padding:var(--s4) var(--s4) 0; max-height:150px; overflow:auto}
+.ask-log:empty{display:none}
+.bub{font-size:13px; line-height:1.5; padding:8px 12px; border-radius:var(--r-md); max-width:86%; animation:enter var(--t) var(--ease)}
+.bub.u{background:var(--ink); color:var(--bg); justify-self:end; border-bottom-right-radius:4px}
+.bub.a{background:var(--sunk); color:var(--ink-2); justify-self:start; border-bottom-left-radius:4px}
+.ask-sug{display:flex; gap:var(--s2); flex-wrap:wrap; padding:var(--s4) var(--s4) 0}
+.sug{padding:5px 11px; border-radius:var(--r-full); border:1px solid var(--edge-2); background:var(--panel);
+  font-size:12.5px; color:var(--ink-2); cursor:pointer;
+  transition:border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease)}
+.sug:hover{border-color:var(--ac); color:var(--ac)}
+.sug:active{transform:scale(.96)}
+.ask-in{display:flex; gap:var(--s2); align-items:center; padding:var(--s3) var(--s4); border-top:1px solid var(--edge); margin-top:var(--s4)}
+.ask-in input{flex:1; border:none; background:none; color:var(--ink); outline:none; min-width:0; font-size:13.5px}
+.ask-in input::placeholder{color:var(--ink-4)}
+.ask-in button{width:30px; height:30px; border-radius:var(--r-sm); border:none; background:var(--ac); color:var(--ac-ink);
+  cursor:pointer; flex:none; transition:background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease)}
+.ask-in button:hover{background:var(--ac-deep)}
+.ask-in button:active{transform:scale(.92)}
+
+/* ── public page ── */
+.pane{display:grid; grid-template-columns:196px 1fr; gap:var(--s4); align-items:start}
+@media (max-width:900px){ .pane{grid-template-columns:1fr} }
+.toglist{display:grid; gap:1px; position:sticky; top:84px}
+@media (max-width:900px){ .toglist{position:static; grid-auto-flow:column; grid-auto-columns:max-content; overflow-x:auto; padding-bottom:var(--s2)} }
+.tg{display:flex; align-items:center; gap:var(--s2); padding:7px var(--s3); border-radius:var(--r-sm);
+  border:none; background:none; cursor:pointer; font-size:13px; font-weight:500; color:var(--ink-2);
+  width:100%; text-align:left; white-space:nowrap; transition:background var(--t-fast) var(--ease)}
+.tg:hover{background:var(--sunk); color:var(--ink)}
+.tg .bx{width:15px; height:15px; border-radius:4px; border:1.5px solid var(--edge-2); display:grid; place-items:center;
+  font-size:9px; color:transparent; flex:none; transition:background var(--t) var(--spring), border-color var(--t) var(--ease)}
+.tg[aria-pressed="true"] .bx{background:var(--pos); border-color:var(--pos); color:#fff}
+.tg[aria-pressed="true"] .bx::after{content:"✓"}
+
+.frame{border:1px solid var(--edge); border-radius:var(--r-md); overflow:hidden; box-shadow:var(--e3); background:var(--panel)}
+.chrome{display:flex; align-items:center; gap:7px; padding:9px var(--s4); background:var(--sunk); border-bottom:1px solid var(--edge)}
+.chrome i{width:8px; height:8px; border-radius:var(--r-full); background:var(--edge-2)}
+.chrome .u{flex:1; text-align:center; font-family:var(--mono); font-size:11px; color:var(--ink-3);
+  background:var(--panel); border-radius:var(--r-xs); padding:4px 10px}
+.pub{padding:var(--s7); display:grid; gap:var(--s7)}
+@media (max-width:640px){ .pub{padding:var(--s5)} }
+.pub section{display:grid; gap:var(--s3)}
+.pub .hero h2{font-size:clamp(22px,3.4vw,32px); font-weight:700; letter-spacing:-.03em}
+.pub .hero .th{font-size:15.5px; color:var(--ink-2); max-width:52ch}
+.stats{display:grid; gap:var(--s2); grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.stats div{background:var(--sunk); border-radius:var(--r-sm); padding:var(--s4)}
+.stats b{display:block; font-size:22px; font-weight:700; letter-spacing:-.03em; color:var(--ac); font-variant-numeric:tabular-nums}
+.stats span{font-size:12.5px; color:var(--ink-2); line-height:1.4}
+.take{border-left:2px solid var(--ac); padding-left:var(--s4); font-size:15px; line-height:1.55}
+.hist{display:grid; padding-left:var(--s5); position:relative}
+.hist::before{content:""; position:absolute; left:4px; top:12px; bottom:12px; width:1px; background:var(--edge)}
+.jb{padding:var(--s3) 0; position:relative; display:grid; gap:5px}
+.jb::before{content:""; position:absolute; left:-21px; top:18px; width:9px; height:9px; border-radius:var(--r-full);
+  background:var(--panel); border:2px solid var(--ac)}
+.jb .t{display:flex; justify-content:space-between; gap:var(--s3); flex-wrap:wrap; align-items:baseline}
+.jb .t b{font-size:14.5px; font-weight:600}
+.jb .t em{font-style:normal; font-family:var(--mono); font-size:11.5px; color:var(--ink-3)}
+.jb .w{font-size:13px; color:var(--ink-2)}
+.jb ul{margin:3px 0 0; padding-left:16px; display:grid; gap:4px; font-size:13px; color:var(--ink-2)}
+.days{display:grid; gap:var(--s2)}
+.days div{display:grid; grid-template-columns:44px 1fr; gap:var(--s3); font-size:13.5px; color:var(--ink-2); align-items:start}
+.days span{font-family:var(--mono); font-size:11px; color:var(--ac); background:var(--ac-wash);
+  padding:4px 6px; border-radius:var(--r-xs); text-align:center}
+.reel{aspect-ratio:16/9; border-radius:var(--r-sm); background:var(--ink); display:grid; place-items:center; cursor:pointer}
+.reel b{width:46px; height:46px; border-radius:var(--r-full); background:var(--ac); color:#fff; display:grid; place-items:center;
+  transition:transform var(--t) var(--spring)}
+.reel:hover b{transform:scale(1.12)}
+.said{background:var(--sunk); border-radius:var(--r-sm); padding:var(--s5); display:grid; gap:var(--s3)}
+.said p{font-size:15px; line-height:1.5}
+.said .by{display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--ink-2)}
+.said .by i{width:30px; height:30px; border-radius:var(--r-full); background:var(--c5); color:#fff;
+  display:grid; place-items:center; font-style:normal; font-weight:600; font-size:11px}
+.foot{border-top:1px solid var(--edge); padding-top:var(--s5); display:flex; gap:var(--s3); flex-wrap:wrap;
+  align-items:center; justify-content:space-between}
+
+/* ── command palette ── */
+.scrim{position:fixed; inset:0; z-index:90; background:rgba(16,17,20,.32); backdrop-filter:blur(3px);
+  display:grid; place-items:start center; padding:12vh var(--s4) var(--s4); opacity:0; pointer-events:none;
+  transition:opacity var(--t) var(--ease)}
+.scrim.on{opacity:1; pointer-events:auto}
+.pal{width:100%; max-width:520px; background:var(--panel); border:1px solid var(--edge); border-radius:var(--r-lg);
+  box-shadow:var(--e4); overflow:hidden; transform:translateY(-8px) scale(.98); transition:transform var(--t) var(--spring)}
+.scrim.on .pal{transform:none}
+.pal-in{display:flex; align-items:center; gap:var(--s3); padding:var(--s4); border-bottom:1px solid var(--edge)}
+.pal-in input{flex:1; border:none; background:none; color:var(--ink); outline:none; font-size:15px; min-width:0}
+.pal-in input::placeholder{color:var(--ink-4)}
+.pal-list{max-height:min(46vh,340px); overflow:auto; padding:var(--s2)}
+.pal-it{display:flex; align-items:center; gap:var(--s3); padding:9px var(--s3); border-radius:var(--r-sm);
+  cursor:pointer; font-size:13.5px; border:none; background:none; width:100%; text-align:left; color:var(--ink)}
+.pal-it:hover,.pal-it.sel{background:var(--sunk)}
+.pal-it .ic{width:18px; color:var(--ink-3); display:grid; place-items:center}
+.pal-it kbd{margin-left:auto; font-family:var(--mono); font-size:10.5px; color:var(--ink-4)}
+.pal-empty{padding:var(--s6); text-align:center; color:var(--ink-3); font-size:13.5px}
+
+/* ── toast ── */
+.toast{position:fixed; right:var(--s5); bottom:var(--s5); z-index:95; display:flex; align-items:center; gap:10px;
+  background:var(--ink); color:var(--bg); padding:11px var(--s4); border-radius:var(--r-sm); box-shadow:var(--e4);
+  font-size:13px; font-weight:500; opacity:0; transform:translateY(10px) scale(.96); pointer-events:none;
+  transition:opacity var(--t) var(--ease), transform var(--t) var(--spring)}
+.toast.on{opacity:1; transform:none}
+.toast i{width:7px; height:7px; border-radius:var(--r-full); background:var(--pos); flex:none}
+@media (max-width:640px){ .toast{left:var(--s4); right:var(--s4); bottom:var(--s4)} }
+
+@media (prefers-reduced-motion:reduce){ *{transition-duration:1ms !important; animation-duration:1ms !important} }
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="mark"><span class="g"></span><b>Frontdoor</b></div>
+    <button class="kbtn" id="open-pal">Search<kbd>⌘K</kbd></button>
+    <div class="sect">
+      <p class="cap" style="padding:0 12px 6px">Campaign</p>
+      <nav class="nav" id="nav" aria-label="Sections"></nav>
+    </div>
+    <div class="you"><span class="av">EP</span><span>Evan Pogue</span></div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <div class="crumb"><b>Acme</b><span class="sl">/</span><span id="crumb">Overview</span></div>
+      <span class="chip pos" id="live">Day 3 of 14</span>
+      <button class="btn btn-sec btn-sm" onclick="ping('Marcus opened your page. About a minute ago.')">Preview alert</button>
+    </header>
+
+    <div class="view">
+
+      <!-- OVERVIEW -->
+      <section class="page on" id="v-home">
+        <div class="ph">
+          <h1>Good morning, Evan</h1>
+          <p>One company at a time. Five people, ten touches, fourteen days. Here is where Acme stands.</p>
+        </div>
+
+        <div class="card p5" style="margin-bottom:var(--s4)">
+          <div class="row gap4" style="align-items:flex-start">
+            <svg class="ring" viewBox="0 0 42 42" aria-hidden="true">
+              <circle class="bg" cx="21" cy="21" r="17"></circle>
+              <circle class="fg" id="ring" cx="21" cy="21" r="17" stroke-dasharray="106.8" stroke-dashoffset="64"></circle>
+            </svg>
+            <div class="col gap2" style="flex:1; min-width:0">
+              <div class="row" style="justify-content:space-between; flex-wrap:wrap">
+                <h3>Getting Acme off the ground</h3>
+                <span class="cap" id="ring-lbl">2 of 5 done</span>
+              </div>
+              <p class="dim" style="font-size:13px">We filled in the first two from your résumé. The rest take about twenty minutes.</p>
+            </div>
+          </div>
+          <div style="margin-top:var(--s3); display:grid; gap:1px" id="tasks"></div>
+        </div>
+
+        <div class="grid g3" style="margin-bottom:var(--s4)">
+          <div class="card lift p5"><p class="cap" style="margin-bottom:6px">Touches sent</p><h2 class="mono">3</h2><p class="dim" style="font-size:12.5px">of 10 planned</p></div>
+          <div class="card lift p5"><p class="cap" style="margin-bottom:6px">Replies</p><h2 class="mono">1</h2><p class="dim" style="font-size:12.5px">Dana, on day 1</p></div>
+          <div class="card lift p5"><p class="cap" style="margin-bottom:6px">Page opens</p><h2 class="mono">4</h2><p class="dim" style="font-size:12.5px">Last one 2 hours ago</p></div>
+        </div>
+
+        <div class="card p5">
+          <div class="row" style="justify-content:space-between; margin-bottom:var(--s4)">
+            <h3>Up next</h3>
+            <button class="btn btn-qt btn-sm" onclick="show('v-seq')">See all<span class="ar">→</span></button>
+          </div>
+          <div class="seq" id="seq-mini"></div>
+        </div>
+      </section>
+
+      <!-- SETUP -->
+      <section class="page" id="v-setup">
+        <div class="ph"><h1>Set up the campaign</h1><p>Two things to hand over. Everything after this is built from them.</p></div>
+
+        <div id="step-import">
+          <p class="cap" style="margin-bottom:var(--s3)">1. Where your history lives</p>
+          <div class="grid g2" style="margin-bottom:var(--s6)">
+            <button class="drop" id="imp-li"><span class="ic">in</span><b>LinkedIn profile</b><span class="dim" style="font-size:12.5px">Paste the URL</span></button>
+            <button class="drop" id="imp-cv"><span class="ic">↑</span><b>Résumé</b><span class="dim" style="font-size:12.5px">PDF or Word</span></button>
+          </div>
+        </div>
+
+        <div class="card p5 hide" id="scan-card" style="margin-bottom:var(--s6)">
+          <p class="cap" style="margin-bottom:var(--s3)" id="scan-src">Reading</p>
+          <div id="scan"></div>
+        </div>
+
+        <div class="hide" id="step-wins">
+          <div class="row" style="justify-content:space-between; margin-bottom:var(--s3)">
+            <p class="cap">2. The wins worth leading with</p>
+            <span class="cap" id="wincount">3 of 3 picked</span>
+          </div>
+          <p class="dim" style="font-size:13px; margin-bottom:var(--s3); max-width:60ch">Seven came out of your résumé. Three go on the page. Pick the ones a sales leader would actually care about, not the ones you are proudest of.</p>
+          <div class="grid" style="gap:var(--s2); margin-bottom:var(--s6)" id="wins"></div>
+
+          <p class="cap" style="margin-bottom:var(--s3)">3. The job</p>
+          <div id="jd-drop"><button class="drop" id="jd-btn"><span class="ic">⌘</span><b>Paste the listing</b><span class="dim" style="font-size:12.5px">A link works too</span></button></div>
+
+          <div class="hide" id="jd-out">
+            <div class="grid g2" style="margin-bottom:var(--s5)">
+              <div class="card p5">
+                <p class="cap" style="margin-bottom:10px">The role</p>
+                <h3 style="margin-bottom:3px">Mid-Market Account Executive</h3>
+                <p class="dim" style="font-size:13px; margin-bottom:var(--s3)">Acme, Chicago, hybrid, req 4821</p>
+                <div class="wrapx"><span class="chip">5+ yrs SaaS</span><span class="chip">$80 to 150k ACV</span><span class="chip">RevOps buyers</span></div>
+              </div>
+              <div class="card p5">
+                <p class="cap" style="margin-bottom:10px">What we found</p>
+                <div class="wrapx" style="margin-bottom:var(--s3)"><span class="chip">Series B</span><span class="chip">340 people</span><span class="chip">Repriced in Q2</span><span class="chip">6 AE reqs open</span></div>
+                <p class="dim" style="font-size:13px">Seat pricing shipped in the spring. The SMB floor moved to five seats.</p>
+              </div>
+            </div>
+            <p class="cap" style="margin-bottom:var(--s3)">4. Your angle</p>
+            <p class="dim" style="font-size:13px; margin-bottom:var(--s3); max-width:60ch">Three ways in. Whichever you pick becomes the first line of every message and the opening of your page.</p>
+            <div class="grid" style="gap:var(--s2)" id="angles"></div>
+            <div class="row" style="margin-top:var(--s6)"><button class="btn btn-pri" onclick="show('v-people')">Find the people<span class="ar">→</span></button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PEOPLE -->
+      <section class="page" id="v-people">
+        <div class="ph"><h1>Five people at Acme</h1><p>You would not open an account by calling the CEO. Same rule here. Start with the peer, finish with the VP.</p></div>
+        <div class="pmap" style="margin-bottom:var(--s5)">
+          <div class="anchor"><p class="cap">Target</p><h3 style="font-size:16px">Acme</h3><p style="font-size:13px; opacity:.65">Mid-Market AE</p></div>
+          <div class="plist" id="plist"></div>
+        </div>
+        <div class="grid g3" id="pdetail"></div>
+        <div class="row" style="margin-top:var(--s6)"><button class="btn btn-pri" onclick="show('v-seq')">Build the sequence<span class="ar">→</span></button></div>
+      </section>
+
+      <!-- SEQUENCE -->
+      <section class="page" id="v-seq">
+        <div class="ph"><h1>Fourteen days</h1><p>Ten touches, two per person. The cap is the point. Nothing here sends on its own, you send it from your own inbox.</p></div>
+        <div class="seq" id="seq"></div>
+        <div class="wrapx" style="margin-top:var(--s5)"><span class="chip"><b>5</b> people</span><span class="chip"><b>10</b> touches</span><span class="chip"><b>0</b> sent for you</span></div>
+        <div class="row" style="margin-top:var(--s6)"><button class="btn btn-pri" onclick="show('v-msg')">Write day 3<span class="ar">→</span></button></div>
+      </section>
+
+      <!-- MESSAGE -->
+      <section class="page" id="v-msg">
+        <div class="ph"><h1>Day 3, to Marcus</h1><p>He decides. This is the one that has to be about his business before it is about you.</p></div>
+        <div class="comp">
+          <div>
+            <div class="letter" id="letter"></div>
+            <div class="why" id="why"></div>
+            <div class="ask">
+              <div class="ask-log" id="ask-log"></div>
+              <div class="ask-sug" id="ask-sug"></div>
+              <form class="ask-in" id="ask-form">
+                <input id="ask-input" placeholder="Ask for a change" autocomplete="off" aria-label="Ask for a change">
+                <button type="submit" aria-label="Send">↑</button>
+              </form>
+            </div>
+          </div>
+          <div class="card p5 col gap5 ctl">
+            <label><span class="hd">Tone<span id="t-val">Peer</span></span><input type="range" id="t" min="0" max="2" value="0" step="1" aria-label="Tone"></label>
+            <label><span class="hd">Length<span id="l-val">Short</span></span><input type="range" id="l" min="0" max="1" value="0" step="1" aria-label="Length"></label>
+            <div class="row" style="justify-content:space-between"><span style="font-size:13px; font-weight:600">Show the reasoning</span><button class="sw" id="ann" aria-pressed="true" aria-label="Show the reasoning"></button></div>
+            <hr style="border:none; border-top:1px solid var(--edge); margin:0">
+            <div class="col gap2">
+              <p class="cap">How this one does</p>
+              <div class="wrapx"><span class="chip acc"><b>34%</b> reply</span><span class="chip">812 sent</span></div>
+            </div>
+            <button class="btn btn-sec" id="copy-btn" style="width:100%">Copy to clipboard</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:var(--s6)"><button class="btn btn-pri" onclick="show('v-page')">Look at the page<span class="ar">→</span></button></div>
+      </section>
+
+      <!-- PAGE -->
+      <section class="page" id="v-page">
+        <div class="ph"><h1>What Marcus sees</h1><p>One page, written for one company. Turn a section off if it is not earning its place.</p></div>
+        <div class="pane">
+          <div><p class="cap" style="padding:0 12px var(--s2)">Sections</p><div class="toglist" id="toglist"></div></div>
+          <div class="frame">
+            <div class="chrome"><i></i><i></i><i></i><span class="u">frontdoor.app/p/evan-acme</span></div>
+            <div class="pub">
+              <section class="hero" data-sec="hero">
+                <p class="cap">Written for Acme, Mid-Market AE</p>
+                <h2>Evan Pogue</h2>
+                <p class="th">I have already run the change Acme is in the middle of. Seat pricing, longer cycles, and a team that has to relearn how to open a deal.</p>
+                <div class="wrapx" style="margin-top:2px"><span class="chip">Chicago</span><span class="chip">8 years in SaaS</span><span class="chip">Mid-market and SMB</span></div>
+              </section>
+
+              <section data-sec="why">
+                <h3 class="cap">Why Acme</h3>
+                <p class="take" id="pub-take">Seat pricing moved your SMB floor to five seats. Reps stop selling and start qualifying, and anyone who cannot run a two call close gets found out fast.</p>
+              </section>
+
+              <section data-sec="proof">
+                <h3 class="cap">The short version</h3>
+                <div class="stats" id="pub-stats"></div>
+              </section>
+
+              <section data-sec="exp">
+                <h3 class="cap">Where I have been</h3>
+                <div class="hist" id="pub-hist"></div>
+              </section>
+
+              <section data-sec="plan">
+                <h3 class="cap">First 90 days at Acme</h3>
+                <div class="days">
+                  <div><span>30</span>Sit on twenty calls. Find out where mid-market deals actually stall against the five seat floor.</div>
+                  <div><span>60</span>Rewrite discovery for a two call close and hand the team a working script, not a deck.</div>
+                  <div><span>90</span>Two closed won on the new motion, and a written teardown of what moved the number.</div>
+                </div>
+              </section>
+
+              <section data-sec="video"><h3 class="cap">Ninety seconds</h3><div class="reel"><b>▶</b></div></section>
+
+              <section data-sec="said">
+                <h3 class="cap">Someone who worked with me</h3>
+                <div class="said">
+                  <p>"Evan rebuilt our discovery script in the middle of a pricing change and we still made the year. He is who you want in the room when the motion breaks."</p>
+                  <div class="by"><i>DN</i><span>Dev Nair, VP Sales at Brightline</span></div>
+                </div>
+              </section>
+
+              <section data-sec="stack">
+                <h3 class="cap">Tools I live in</h3>
+                <div class="wrapx"><span class="chip">Salesforce</span><span class="chip">HubSpot</span><span class="chip">Outreach</span><span class="chip">Gong</span><span class="chip">Clay</span><span class="chip">Sales Navigator</span><span class="chip">MEDDPICC</span></div>
+              </section>
+
+              <div class="foot">
+                <div class="wrapx"><span class="chip">evan@example.com</span><span class="chip">312 555 0148</span></div>
+                <button class="btn btn-sec btn-sm">Download résumé</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim">
+  <div class="pal" role="dialog" aria-label="Search">
+    <div class="pal-in"><span style="color:var(--ink-3)">⌕</span><input id="pal-input" placeholder="Jump to, or run something" autocomplete="off"></div>
+    <div class="pal-list" id="pal-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i></i><span id="toast-txt"></span></div>
+
+<script>
+/* ── nav ── */
+var VIEWS=[
+ {id:'v-home', ic:'◉', lb:'Overview', cr:'Overview'},
+ {id:'v-setup',ic:'◧', lb:'Setup',    cr:'Setup'},
+ {id:'v-people',ic:'◎',lb:'People',   cr:'People'},
+ {id:'v-seq',  ic:'≡', lb:'Sequence', cr:'Sequence'},
+ {id:'v-msg',  ic:'✎', lb:'Messages', cr:'Day 3, Marcus'},
+ {id:'v-page', ic:'▤', lb:'Page',     cr:'Public page'}
+];
+document.getElementById('nav').innerHTML=VIEWS.map(function(v){
+  return '<button class="nv" data-v="'+v.id+'"><span class="ic">'+v.ic+'</span><span class="lb">'+v.lb+'</span><span class="pip"></span></button>';
+}).join('');
+function show(id){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.toggle('on',p.id===id);});
+  document.querySelectorAll('.nv').forEach(function(b){b.setAttribute('aria-current',b.dataset.v===id?'true':'false');});
+  var v=VIEWS.filter(function(x){return x.id===id;})[0];
+  document.getElementById('crumb').textContent=v?v.cr:'';
+  window.scrollTo({top:0});
+}
+document.getElementById('nav').addEventListener('click',function(e){
+  var b=e.target.closest('.nv'); if(b) show(b.dataset.v);
+});
+
+/* ── checklist ── */
+var TASKS=[
+ {t:'Add your résumé',      s:'Pulled 3 roles and 7 wins',        on:true},
+ {t:'Pick your three wins',  s:'Numbers a sales leader cares about',on:true},
+ {t:'Paste the job listing', s:'Acme, Mid-Market AE',              on:false},
+ {t:'Find five people',      s:'Peer, recruiter, manager, VP, tie',on:false},
+ {t:'Send the first message',s:'Dana, then everyone else',         on:false}
+];
+function drawTasks(){
+  document.getElementById('tasks').innerHTML=TASKS.map(function(t,i){
+    return '<button class="task" data-i="'+i+'" aria-pressed="'+t.on+'"><span class="tick"></span>'+
+      '<span class="tl">'+t.t+'<em>'+t.s+'</em></span>'+
+      '<span class="cap">'+(t.on?'Done':'Open')+'</span></button>';
+  }).join('');
+  var n=TASKS.filter(function(t){return t.on;}).length;
+  var C=2*Math.PI*17;
+  document.getElementById('ring').setAttribute('stroke-dashoffset',C-(n/TASKS.length)*C);
+  document.getElementById('ring-lbl').textContent=n+' of '+TASKS.length+' done';
+}
+drawTasks();
+document.getElementById('tasks').addEventListener('click',function(e){
+  var b=e.target.closest('.task'); if(!b) return;
+  var i=+b.dataset.i; TASKS[i].on=!TASKS[i].on; drawTasks();
+  if(TASKS[i].on) ping('Nice. '+TASKS.filter(function(t){return t.on;}).length+' of 5.');
+});
+
+/* ── import ── */
+var SCAN=[['Name and where you are','Chicago'],['Roles','3'],['Wins with a number in them','7'],['Tools and methodology','8'],['How you write','from your summary']];
+function runScan(src){
+  document.getElementById('step-import').classList.add('hide');
+  var card=document.getElementById('scan-card');
+  card.classList.remove('hide');
+  document.getElementById('scan-src').textContent='Reading '+src;
+  document.getElementById('scan').innerHTML=SCAN.map(function(s,i){
+    return '<div class="scanln" id="sl'+i+'"><span class="d"></span><span>'+s[0]+'</span><em><span class="sk" style="display:block;width:44px"></span></em></div>';
+  }).join('');
+  SCAN.forEach(function(s,i){
+    setTimeout(function(){
+      var ln=document.getElementById('sl'+i); if(!ln) return;
+      ln.classList.add('done');
+      ln.querySelector('em').textContent=s[1];
+      if(i===SCAN.length-1){ document.getElementById('step-wins').classList.remove('hide'); ping('Got it. Seven wins to choose from.'); }
+    },300*(i+1));
+  });
+}
+document.getElementById('imp-li').addEventListener('click',function(){runScan('linkedin.com/in/evanpogue');});
+document.getElementById('imp-cv').addEventListener('click',function(){runScan('Evan_Pogue.pdf');});
+
+/* ── wins ── */
+var WINS=[
+ {t:'Finished at 112% through a pricing change',s:'Brightline, FY25',m:'112%',on:true},
+ {t:'Carried a $1.2M quota and hit it',s:'Brightline, FY25',m:'$1.2M',on:true},
+ {t:'Rebuilt discovery when cycles went 30 to 70 days',s:'Brightline, Q2',m:'30→70',on:true},
+ {t:'Grew territory ARR 41% year over year',s:'Northwind, FY23',m:'41%',on:false},
+ {t:'Ramped four new AEs to quota in two quarters',s:'Northwind, FY23',m:'4 AEs',on:false},
+ {t:'Top 3 of 38 reps, two years running',s:'Northwind',m:'Top 3',on:false},
+ {t:'Closed the biggest deal the company had done',s:'Cobalt, FY21',m:'$340k',on:false}
+];
+function drawWins(){
+  var n=WINS.filter(function(w){return w.on;}).length;
+  document.getElementById('wins').innerHTML=WINS.map(function(w,i){
+    var full=(!w.on&&n>=3);
+    return '<button class="opt'+(full?' dis':'')+'" data-i="'+i+'" aria-pressed="'+w.on+'"><span class="bx"></span>'+
+      '<span class="tx">'+w.t+'<em>'+w.s+'</em></span><span class="mt">'+w.m+'</span></button>';
+  }).join('');
+  document.getElementById('wincount').textContent=n+' of 3 picked';
+  drawStats();
+}
+document.getElementById('wins').addEventListener('click',function(e){
+  var b=e.target.closest('.opt'); if(!b||b.classList.contains('dis')) return;
+  WINS[+b.dataset.i].on=!WINS[+b.dataset.i].on; drawWins();
+});
+
+/* ── angles ── */
+var ANGLES=[
+ {t:'Seat pricing moved the SMB floor to five seats',s:'Reps turn into qualifiers overnight',on:true,
+  take:'Seat pricing moved your SMB floor to five seats. Reps stop selling and start qualifying, and anyone who cannot run a two call close gets found out fast.'},
+ {t:'Six AE reqs open at the same time',s:'Ramp is the constraint, not headcount',on:false,
+  take:'Six AE reqs open at once means ramp is the constraint, not headcount. The team that gets people productive in 45 days instead of 90 makes the number.'},
+ {t:'Series B, 340 people, repriced in Q2',s:'Forecasting breaks after a reprice',on:false,
+  take:'You repriced in Q2 at 340 people. Every forecast built on the old motion is guesswork now, and that lands on the front line first.'}
+];
+function drawAngles(){
+  document.getElementById('angles').innerHTML=ANGLES.map(function(a,i){
+    return '<button class="opt" data-i="'+i+'" aria-pressed="'+a.on+'"><span class="bx"></span>'+
+      '<span class="tx">'+a.t+'<em>'+a.s+'</em></span><span></span></button>';
+  }).join('');
+}
+drawAngles();
+document.getElementById('angles').addEventListener('click',function(e){
+  var b=e.target.closest('.opt'); if(!b) return;
+  var i=+b.dataset.i;
+  ANGLES.forEach(function(a,j){a.on=(i===j);});
+  drawAngles();
+  document.getElementById('pub-take').textContent=ANGLES[i].take;
+  ping('Angle changed. Your page updated too.');
+});
+document.getElementById('jd-btn').addEventListener('click',function(){
+  document.getElementById('jd-drop').classList.add('hide');
+  document.getElementById('jd-out').classList.remove('hide');
+  TASKS[2].on=true; drawTasks();
+});
+
+/* ── people ── */
+var PEOPLE=[
+ {i:'DK',n:'Dana Koh',r:'Mid-Market AE',t:'Peer',c:'--c3',eq:'Your coach',ask:'Just information',why:'Cheapest thing to ask a stranger for'},
+ {i:'PS',n:'Priya Shah',r:'Talent Partner',t:'Recruiter',c:'--c2',eq:'Runs the process',ask:'Where it stands',why:'Can tell you if the req is real'},
+ {i:'MR',n:'Marcus Reed',r:'Director, Mid-Market',t:'Hiring manager',c:'--c1',eq:'Makes the call',ask:'Fifteen minutes',why:'The only yes that counts'},
+ {i:'DW',n:'Diane Walsh',r:'VP Sales',t:'Skip level',c:'--c4',eq:'Signs off',ask:'A point of view',why:'Can create a seat that did not exist'},
+ {i:'SL',n:'Sam Lowe',r:'Left Acme in 2024',t:'Shared tie',c:'--c5',eq:'The warm path',ask:'An introduction',why:'No politics, no downside to helping'}
+];
+document.getElementById('plist').innerHTML=PEOPLE.map(function(p,i){
+  return '<button class="prow" data-i="'+i+'" aria-pressed="'+(i===0)+'" style="--pc:var('+p.c+')">'+
+    '<span class="av">'+p.i+'</span><span><span class="nm">'+p.n+'</span><span class="rl">'+p.r+'</span></span>'+
+    '<span class="tg">'+p.t+'</span></button>';
+}).join('');
+function pickPerson(i){
+  var p=PEOPLE[i];
+  document.querySelectorAll('.prow').forEach(function(b,j){b.setAttribute('aria-pressed',i===j);});
+  document.getElementById('pdetail').innerHTML=
+   '<div class="card p5"><p class="cap" style="margin-bottom:5px">In sales terms</p><h3>'+p.eq+'</h3></div>'+
+   '<div class="card p5"><p class="cap" style="margin-bottom:5px">Why bother</p><h3 style="font-weight:600; font-size:14px; line-height:1.4">'+p.why+'</h3></div>'+
+   '<div class="card p5" style="border-color:var('+p.c+')"><p class="cap" style="margin-bottom:5px">What you ask for</p><h3 style="color:var('+p.c+')">'+p.ask+'</h3></div>';
+}
+document.getElementById('plist').addEventListener('click',function(e){
+  var b=e.target.closest('.prow'); if(b) pickPerson(+b.dataset.i);
+});
+pickPerson(0);
+
+/* ── sequence ── */
+var SEQ=[
+ {d:'Day 0',w:'Apply anyway',s:'You still have to be in the system',ch:'ATS',c:'--edge-2'},
+ {d:'Day 0',w:'Dana Koh',s:'Ask about the team, nothing else',ch:'LinkedIn',c:'--c3'},
+ {d:'Day 2',w:'Priya Shah',s:'Name the req, ask one question',ch:'Email',c:'--c2'},
+ {d:'Day 3',w:'Marcus Reed',s:'Your angle, then the page',ch:'Email',c:'--c1'},
+ {d:'Day 5',w:'Sam Lowe',s:'Ask for the intro, write it for him',ch:'LinkedIn',c:'--c5'},
+ {d:'Day 7',w:'Dana Koh',s:'Now you can ask for the referral',ch:'Reply',c:'--c3'},
+ {d:'Day 8',w:'Marcus Reed',s:'Bring something new or do not write',ch:'Email',c:'--c1'},
+ {d:'Day 10',w:'Diane Walsh',s:'Eighty words, business first',ch:'Email',c:'--c4'},
+ {d:'Day 12',w:'Priya Shah',s:'Pick up the phone',ch:'Call',c:'--c2'},
+ {d:'Day 14',w:'Whoever went quiet',s:'Say you are stopping, leave the door open',ch:'Email',c:'--edge-2'}
+];
+function seqHTML(list,off){
+  return list.map(function(t,i){
+    return '<button class="tch" data-i="'+(i+(off||0))+'" aria-pressed="'+((i+(off||0))===3)+'" style="--pc:var('+t.c+')">'+
+      '<span class="dy">'+t.d+'</span><span class="wh">'+t.w+'<em>'+t.s+'</em></span><span class="cn">'+t.ch+'</span></button>';
+  }).join('');
+}
+document.getElementById('seq').innerHTML=seqHTML(SEQ);
+document.getElementById('seq-mini').innerHTML=seqHTML(SEQ.slice(3,6),3);
+function seqClick(e){
+  var b=e.target.closest('.tch'); if(!b) return;
+  if(+b.dataset.i===3){ show('v-msg'); return; }
+  document.querySelectorAll('.tch').forEach(function(x){x.setAttribute('aria-pressed','false');});
+  b.setAttribute('aria-pressed','true');
+}
+document.getElementById('seq').addEventListener('click',seqClick);
+document.getElementById('seq-mini').addEventListener('click',seqClick);
+
+/* ── composer ── */
+var TONES=['Peer','Neutral','Formal'],LENS=['Short','Standard'];
+var M={
+ '0-0':"Marcus, you moved to seat pricing in the spring and the SMB floor is five seats now. Reps stop selling and start qualifying.\n\n@@Ran that exact change at Brightline. Lost 40% of the team. Rebuilt discovery and finished at 112%.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes, or should I stay in the queue?**",
+ '0-1':"Marcus, you moved to seat pricing in the spring and the SMB tier starts at five seats now. That usually means reps stop selling and start qualifying, and anyone who cannot run a two call close gets found out fast.\n\n@@I ran that exact change at Brightline last year. We lost 40% of the team, rebuilt the discovery script, and still finished at 112%.@@\n\nI applied for the mid-market role. The 30-60-90 is here:\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes, or should I stay in the queue?**",
+ '1-0':"Marcus, I saw the move to seat pricing this spring, with the SMB tier starting at five seats. That tends to turn reps into qualifiers.\n\n@@I led the same change at Brightline and finished the year at 112%.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Would fifteen minutes be useful, or should I stay in the queue?**",
+ '1-1':"Marcus, I saw that Acme moved to seat pricing this spring, with the SMB tier starting at five seats. In my experience that turns reps from sellers into qualifiers, and it finds out anyone who cannot run a two call close.\n\n@@I led the same change at Brightline last year. We lost 40% of the team, rebuilt the discovery script around longer cycles, and finished at 112%.@@\n\nI applied for the mid-market role and put a 30-60-90 together here:\n##frontdoor.app/p/evan-acme##\n\n**Would fifteen minutes be useful, or should I stay in the queue?**",
+ '2-0':"Marcus, I am writing about Acme's move to seat pricing and what it does to the mid-market motion.\n\n@@I managed a comparable change at Brightline and finished the year at 112% of quota.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Would you be open to a short conversation?**",
+ '2-1':"Marcus, I am writing about Acme's move to seat pricing and the effect a five seat minimum tends to have on a mid-market team.\n\n@@I managed a comparable change at Brightline last year. Attrition ran close to 40%, we rebuilt discovery around longer cycles, and the team finished at 112% of quota.@@\n\nI have applied for the mid-market role and prepared a 30-60-90 plan here:\n##frontdoor.app/p/evan-acme##\n\n**Would you be open to a short conversation, or should I remain in the queue?**"
+};
+var OVR=null, ann=true;
+var WHY=[['1','Opens on his business, not yours'],['2','One number, tied to the problem you named'],['3','The page does the work a résumé would'],['4','One ask, and an easy way to say no']];
+function strip(s){return s.replace(/@@|##|\*\*/g,'');}
+function esc(s){return s.replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+function draw(flash){
+  var t=+document.getElementById('t').value,l=+document.getElementById('l').value;
+  document.getElementById('t-val').textContent=TONES[t];
+  document.getElementById('l-val').textContent=LENS[l];
+  var raw=OVR||M[t+'-'+l];
+  var html=esc(ann?raw:strip(raw));
+  if(ann) html=html.replace(/@@([\s\S]*?)@@/g,'<mark>$1</mark>').replace(/##([\s\S]*?)##/g,'<mark>$1</mark>').replace(/\*\*([\s\S]*?)\*\*/g,'<mark>$1</mark>');
+  var el=document.getElementById('letter');
+  el.innerHTML=html;
+  if(flash){el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');}
+  document.getElementById('why').innerHTML=ann?WHY.map(function(w){return '<div class="wl"><i>'+w[0]+'</i><span>'+w[1]+'</span></div>';}).join(''):'';
+}
+document.getElementById('t').addEventListener('input',function(){OVR=null; draw();});
+document.getElementById('l').addEventListener('input',function(){OVR=null; draw();});
+document.getElementById('ann').addEventListener('click',function(){ann=!ann; this.setAttribute('aria-pressed',ann); draw();});
+
+var EDITS=[
+ {k:['short','tight','cut','trim','brief'],r:'Cut it to four lines and dropped the setup.',
+  m:"Marcus, a five seat SMB floor turns reps into qualifiers.\n\n@@Ran that at Brightline. 112%.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Fifteen minutes?**"},
+ {k:['number','metric','specific','data','proof'],r:'Added two numbers and named the cycle change.',
+  m:"Marcus, you moved to seat pricing in the spring and the SMB floor is five seats now. Reps stop selling and start qualifying.\n\n@@Same change at Brightline. Cycles went 30 to 70 days, 40% of the team washed out, $1.2M quota, finished at 112%.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes, or should I stay in the queue?**"},
+ {k:['warm','friendly','human','casual','stiff','softer'],r:'Warmed the opening and softened the ask.',
+  m:"Marcus, saw the move to seat pricing this spring. A five seat floor on SMB is a real shift for a team.\n\n@@Been through it. At Brightline it cost us 40% of the roster before we rebuilt discovery. Finished at 112% anyway.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Happy to trade fifteen minutes if it helps. No hard feelings if not.**"},
+ {k:['funding','series b','raise','investor','growth'],r:'Worked the Series B into the opening.',
+  m:"Marcus, Series B, 340 people, and a reprice in the same year. That combination lands hardest on the mid-market floor.\n\n@@I ran it at Brightline. Five seat minimum, cycles doubled, 40% attrition, 112% anyway.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes, or should I stay in the queue?**"},
+ {k:['ramp','hiring','reqs','onboard','headcount'],r:'Reframed it around ramp instead of pricing.',
+  m:"Marcus, six AE reqs open at once means ramp is the constraint, not headcount.\n\n@@I got four AEs to quota in two quarters at Northwind while the motion was changing underneath them.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes on how I would do it here?**"}
+];
+document.getElementById('ask-sug').innerHTML=['Shorter','Add a number','Warmer','Use the Series B'].map(function(s){
+  return '<button type="button" class="sug">'+s+'</button>';}).join('');
+function say(c,t){var l=document.getElementById('ask-log'); l.insertAdjacentHTML('beforeend','<div class="bub '+c+'">'+esc(t)+'</div>'); l.scrollTop=l.scrollHeight;}
+function askFor(txt){
+  if(!txt.trim()) return;
+  say('u',txt);
+  var lc=txt.toLowerCase();
+  var hit=EDITS.filter(function(e){return e.k.some(function(k){return lc.indexOf(k)>-1;});})[0]||EDITS[0];
+  say('a','Working on it');
+  setTimeout(function(){
+    document.getElementById('ask-log').lastElementChild.textContent=hit.r;
+    OVR=hit.m; draw(true);
+  },480);
+}
+document.getElementById('ask-sug').addEventListener('click',function(e){var b=e.target.closest('.sug'); if(b) askFor(b.textContent);});
+document.getElementById('ask-form').addEventListener('submit',function(e){
+  e.preventDefault(); var i=document.getElementById('ask-input'); askFor(i.value); i.value='';
+});
+document.getElementById('copy-btn').addEventListener('click',function(){
+  var b=this;
+  try{ navigator.clipboard.writeText(strip(OVR||M[document.getElementById('t').value+'-'+document.getElementById('l').value])); }catch(err){}
+  b.textContent='Copied'; ping('Copied. Send it from your own inbox.');
+  setTimeout(function(){b.textContent='Copy to clipboard';},1700);
+});
+draw();
+
+/* ── public page ── */
+function drawStats(){
+  var el=document.getElementById('pub-stats'); if(!el) return;
+  el.innerHTML=WINS.filter(function(w){return w.on;}).map(function(w){
+    return '<div><b>'+w.m+'</b><span>'+w.t.replace(/^(Finished at |Carried a |Grew territory |Ramped |Closed the |Rebuilt )/,'')+'</span></div>';
+  }).join('');
+}
+var HIST=[
+ {t:'Senior AE, Mid-Market',w:'Brightline, Chicago',y:'2023 to now',b:['Carried $1.2M and finished at 112% through a seat pricing change','Rebuilt discovery when cycles went from 30 days to 70','Held the team together through 40% attrition and still made the year']},
+ {t:'Account Executive',w:'Northwind, Chicago',y:'2021 to 2023',b:['Grew territory ARR 41% year over year','Got four new AEs to quota in two quarters','Top 3 of 38 reps, two years running']},
+ {t:'SDR, then AE',w:'Cobalt, remote',y:'2018 to 2021',b:['Closed the biggest deal the company had done at $340k','Built the outbound motion from nothing']}
+];
+document.getElementById('pub-hist').innerHTML=HIST.map(function(j){
+  return '<div class="jb"><div class="t"><b>'+j.t+'</b><em>'+j.y+'</em></div><p class="w">'+j.w+'</p>'+
+    '<ul>'+j.b.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>';
+}).join('');
+drawWins();
+
+var SECS=[['hero','Header'],['why','Why Acme'],['proof','The short version'],['exp','Where I have been'],['plan','First 90 days'],['video','Video'],['said','Reference'],['stack','Tools']];
+document.getElementById('toglist').innerHTML=SECS.map(function(s){
+  return '<button class="tg" data-s="'+s[0]+'" aria-pressed="true"><span class="bx"></span>'+s[1]+'</button>';}).join('');
+document.getElementById('toglist').addEventListener('click',function(e){
+  var b=e.target.closest('.tg'); if(!b) return;
+  var on=b.getAttribute('aria-pressed')!=='true';
+  b.setAttribute('aria-pressed',on);
+  document.querySelectorAll('[data-sec="'+b.dataset.s+'"]').forEach(function(el){el.classList.toggle('hide',!on);});
+});
+
+/* ── command palette ── */
+var CMDS=[
+ {ic:'◉',t:'Overview',go:'v-home',k:'G then O'},
+ {ic:'◧',t:'Set up the campaign',go:'v-setup',k:'G then S'},
+ {ic:'◎',t:'People at Acme',go:'v-people',k:'G then P'},
+ {ic:'≡',t:'The fourteen day sequence',go:'v-seq',k:''},
+ {ic:'✎',t:'Write day 3 to Marcus',go:'v-msg',k:''},
+ {ic:'▤',t:'Your public page',go:'v-page',k:''},
+ {ic:'+',t:'Start another campaign',go:'v-setup',k:''},
+ {ic:'⧉',t:'Copy the current message',act:function(){document.getElementById('copy-btn').click();},k:''}
+];
+var scrim=document.getElementById('scrim'), pinp=document.getElementById('pal-input'), sel=0, shown=CMDS;
+function paint(){
+  var list=document.getElementById('pal-list');
+  if(!shown.length){ list.innerHTML='<div class="pal-empty">Nothing matches that.</div>'; return; }
+  list.innerHTML=shown.map(function(c,i){
+    return '<button class="pal-it'+(i===sel?' sel':'')+'" data-i="'+i+'"><span class="ic">'+c.ic+'</span><span>'+c.t+'</span>'+(c.k?'<kbd>'+c.k+'</kbd>':'')+'</button>';
+  }).join('');
+}
+function openPal(){ scrim.classList.add('on'); pinp.value=''; shown=CMDS; sel=0; paint(); setTimeout(function(){pinp.focus();},60); }
+function closePal(){ scrim.classList.remove('on'); }
+function runCmd(c){ if(!c) return; closePal(); if(c.act) c.act(); else show(c.go); }
+document.getElementById('open-pal').addEventListener('click',openPal);
+scrim.addEventListener('click',function(e){ if(e.target===scrim) closePal(); });
+pinp.addEventListener('input',function(){
+  var q=this.value.toLowerCase();
+  shown=CMDS.filter(function(c){return c.t.toLowerCase().indexOf(q)>-1;});
+  sel=0; paint();
+});
+pinp.addEventListener('keydown',function(e){
+  if(e.key==='ArrowDown'){e.preventDefault(); sel=Math.min(sel+1,shown.length-1); paint();}
+  else if(e.key==='ArrowUp'){e.preventDefault(); sel=Math.max(sel-1,0); paint();}
+  else if(e.key==='Enter'){e.preventDefault(); runCmd(shown[sel]);}
+});
+document.getElementById('pal-list').addEventListener('click',function(e){
+  var b=e.target.closest('.pal-it'); if(b) runCmd(shown[+b.dataset.i]);
+});
+document.addEventListener('keydown',function(e){
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){ e.preventDefault(); scrim.classList.contains('on')?closePal():openPal(); }
+  if(e.key==='Escape') closePal();
+});
+paint();
+
+/* ── toast ── */
+var tE=document.getElementById('toast'), tT;
+function ping(msg){
+  document.getElementById('toast-txt').textContent=msg||'Marcus opened your page. About a minute ago.';
+  tE.classList.add('on'); clearTimeout(tT);
+  tT=setTimeout(function(){tE.classList.remove('on');},3200);
+}
+show('v-home');
+</script>
