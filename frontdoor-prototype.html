@@ -1,0 +1,607 @@
+<title>Frontdoor Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#F3F4F7; --surface:#FFFFFF; --surface-2:#EDEFF3; --surface-3:#E3E7ED;
+    --ink:#101319; --ink-2:#565F6E; --ink-3:#8A93A2;
+    --line:#DFE3EA; --line-2:#C9D0DA;
+    --brand:#E8502B; --brand-tint:#FDEAE4; --brand-deep:#B93A1B;
+    --ok:#0B8A7C; --ok-tint:#DBF2EF;
+    --p1:#E8502B; --p2:#7B5BD6; --p3:#0B8A7C; --p4:#C48A00; --p5:#2A6FD6;
+    --radius:16px; --r-sm:10px;
+    --sh:0 1px 2px rgba(16,19,25,.05), 0 6px 16px -10px rgba(16,19,25,.22);
+    --sh-lg:0 2px 5px rgba(16,19,25,.06), 0 26px 50px -26px rgba(16,19,25,.4);
+    --ui:'Instrument Sans',system-ui,-apple-system,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#0B0D11; --surface:#14171E; --surface-2:#1B1F28; --surface-3:#242935;
+      --ink:#EAEDF2; --ink-2:#A2ABBA; --ink-3:#737D8C;
+      --line:#242935; --line-2:#333A48;
+      --brand:#FF7351; --brand-tint:#2C1510; --brand-deep:#FF9070;
+      --ok:#2FC3B0; --ok-tint:#0E2E2A;
+      --p1:#FF7351; --p2:#A98BFF; --p3:#2FC3B0; --p4:#E8B33D; --p5:#5C9BFF;
+      --sh:0 1px 2px rgba(0,0,0,.5), 0 6px 16px -10px rgba(0,0,0,.7);
+      --sh-lg:0 2px 5px rgba(0,0,0,.55), 0 26px 50px -26px rgba(0,0,0,.95);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0B0D11; --surface:#14171E; --surface-2:#1B1F28; --surface-3:#242935;
+    --ink:#EAEDF2; --ink-2:#A2ABBA; --ink-3:#737D8C;
+    --line:#242935; --line-2:#333A48;
+    --brand:#FF7351; --brand-tint:#2C1510; --brand-deep:#FF9070;
+    --ok:#2FC3B0; --ok-tint:#0E2E2A;
+    --p1:#FF7351; --p2:#A98BFF; --p3:#2FC3B0; --p4:#E8B33D; --p5:#5C9BFF;
+    --sh:0 1px 2px rgba(0,0,0,.5), 0 6px 16px -10px rgba(0,0,0,.7);
+    --sh-lg:0 2px 5px rgba(0,0,0,.55), 0 26px 50px -26px rgba(0,0,0,.95);
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--ground); color:var(--ink); font-family:var(--ui); font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased}
+  h1,h2,h3{margin:0; line-height:1.12; letter-spacing:-.028em; font-weight:600}
+  h1{font-size:1.85rem; font-weight:700}
+  h2{font-size:1.3rem}
+  h3{font-size:1rem}
+  p{margin:0}
+  button{font-family:inherit}
+  .mono{font-family:var(--mono)}
+  .lbl{font-family:var(--mono); font-size:.66rem; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3)}
+
+  /* shell */
+  .shell{display:grid; grid-template-columns:232px 1fr; min-height:100%;}
+  @media (max-width:900px){ .shell{grid-template-columns:1fr} }
+
+  .rail{
+    border-right:1px solid var(--line); background:var(--surface); padding:20px 16px;
+    display:flex; flex-direction:column; gap:22px;
+    position:sticky; top:env(safe-area-inset-top,0px); align-self:start; max-height:100vh; overflow:auto;
+  }
+  @media (max-width:900px){
+    .rail{position:sticky; top:env(safe-area-inset-top,0px); z-index:30; border-right:none; border-bottom:1px solid var(--line);
+      flex-direction:row; align-items:center; gap:14px; overflow-x:auto; max-height:none; padding:12px 16px}
+    .rail .brand small{display:none}
+  }
+  .brand{display:flex; align-items:center; gap:10px; flex:none}
+  .brand .m{width:26px; height:26px; border-radius:8px; background:var(--brand); flex:none; position:relative}
+  .brand .m::after{content:""; position:absolute; left:7px; top:7px; width:12px; height:12px; border-radius:3px; background:var(--surface)}
+  .brand b{font-size:.98rem; font-weight:700; letter-spacing:-.03em; line-height:1.1}
+  .brand small{display:block; font-size:.64rem; color:var(--ink-3); letter-spacing:.06em; font-family:var(--mono)}
+
+  .steps{display:flex; flex-direction:column; gap:2px}
+  @media (max-width:900px){ .steps{flex-direction:row; gap:6px} }
+  .step{
+    display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:var(--r-sm);
+    background:none; border:none; cursor:pointer; color:var(--ink-2); text-align:left; width:100%;
+    font-size:.88rem; font-weight:500; white-space:nowrap; transition:background .15s ease, color .15s ease;
+  }
+  .step:hover{background:var(--surface-2); color:var(--ink)}
+  .step[aria-current="true"]{background:var(--ink); color:var(--ground); font-weight:600}
+  .step:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
+  .step .n{
+    width:21px; height:21px; border-radius:99px; flex:none; display:grid; place-items:center;
+    font-family:var(--mono); font-size:.65rem; border:1.5px solid var(--line-2); color:var(--ink-3);
+  }
+  .step[aria-current="true"] .n{border-color:var(--ground); color:var(--ground)}
+  .step.done .n{background:var(--ok); border-color:var(--ok); color:#fff}
+  .step.done .n::after{content:"✓"; font-size:.7rem}
+  .step.done .n span{display:none}
+  @media (max-width:900px){ .step .t{display:none} .step{padding:8px} }
+
+  .rail-foot{margin-top:auto; font-size:.72rem; color:var(--ink-3); font-family:var(--mono)}
+  @media (max-width:900px){ .rail-foot{display:none} }
+
+  /* canvas */
+  .canvas{padding:clamp(20px,3.5vw,40px) clamp(16px,3.5vw,44px) 90px; max-width:1080px; width:100%}
+  .head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:24px}
+  .head .lbl{margin-bottom:7px}
+  .panel{display:none}
+  .panel.on{display:block; animation:in .32s cubic-bezier(.2,.8,.3,1)}
+  @keyframes in{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion:reduce){ .panel.on{animation:none} }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    font-weight:600; font-size:.92rem; padding:12px 20px; border-radius:99px;
+    border:1.5px solid transparent; cursor:pointer; transition:transform .14s ease, background .14s ease;
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn-p{background:var(--brand); color:#fff}
+  .btn-p:hover{background:var(--brand-deep)}
+  .btn-g{background:var(--surface); color:var(--ink); border-color:var(--line-2)}
+  .btn-g:hover{border-color:var(--brand); color:var(--brand)}
+  .btn-sm{padding:8px 15px; font-size:.84rem}
+  .btn:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
+  .next{margin-top:26px; display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--sh)}
+  .pad{padding:22px}
+  .grid{display:grid; gap:14px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+
+  /* 1 — chat */
+  .chat{display:flex; flex-direction:column; gap:12px; padding:22px; min-height:330px}
+  .bub{max-width:80%; padding:12px 16px; border-radius:16px; font-size:.95rem; line-height:1.5; animation:in .3s ease}
+  .bub.a{background:var(--surface-2); border-bottom-left-radius:5px; align-self:flex-start}
+  .bub.u{background:var(--ink); color:var(--ground); border-bottom-right-radius:5px; align-self:flex-end}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px}
+  .chip{
+    padding:9px 15px; border-radius:99px; border:1.5px solid var(--line-2); background:var(--surface);
+    font-size:.87rem; font-weight:500; color:var(--ink-2); cursor:pointer; transition:all .14s ease;
+  }
+  .chip:hover{border-color:var(--brand); color:var(--brand); transform:translateY(-1px)}
+  .chip:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
+  .vp{display:grid; gap:10px}
+  .vp .row{display:grid; grid-template-columns:96px 1fr; gap:12px; align-items:start; font-size:.92rem}
+  .vp .row span{color:var(--ink-3); font-family:var(--mono); font-size:.68rem; text-transform:uppercase; letter-spacing:.09em; padding-top:4px}
+  .meter{height:6px; border-radius:99px; background:var(--surface-3); overflow:hidden}
+  .meter i{display:block; height:100%; background:var(--brand); border-radius:99px; transition:width .5s cubic-bezier(.2,.8,.3,1)}
+
+  /* 2 — campaign */
+  .drop{
+    border:2px dashed var(--line-2); border-radius:var(--radius); padding:34px 22px; text-align:center;
+    cursor:pointer; background:var(--surface); transition:all .16s ease;
+  }
+  .drop:hover{border-color:var(--brand); background:var(--brand-tint)}
+  .drop:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
+  .jd{font-family:var(--mono); font-size:.8rem; color:var(--ink-2); text-align:left; line-height:1.7; white-space:pre-wrap}
+  .kv{display:flex; gap:8px; flex-wrap:wrap}
+  .pill{
+    display:inline-flex; align-items:center; gap:6px; padding:6px 13px; border-radius:99px;
+    background:var(--surface-2); border:1px solid var(--line); font-size:.82rem; color:var(--ink-2);
+  }
+  .pill b{color:var(--ink); font-weight:600}
+  .pov{border-left:3px solid var(--brand); padding-left:16px; font-size:1.02rem; line-height:1.55}
+
+  /* 3 — org map */
+  .map{display:grid; grid-template-columns:200px 1fr; gap:26px; align-items:center}
+  @media (max-width:760px){ .map{grid-template-columns:1fr; gap:14px} }
+  .target{
+    background:var(--ink); color:var(--ground); border-radius:var(--radius); padding:20px; display:grid; gap:7px;
+    position:relative;
+  }
+  .target .lbl{color:var(--ink-3)}
+  .people{display:grid; gap:9px; position:relative}
+  @media (min-width:761px){
+    .people::before{
+      content:""; position:absolute; left:-14px; top:8%; bottom:8%; width:1.5px; background:var(--line-2);
+    }
+  }
+  .person{
+    display:grid; grid-template-columns:38px 1fr auto; gap:13px; align-items:center;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm);
+    padding:13px 15px; cursor:pointer; position:relative; transition:all .16s ease; text-align:left; width:100%;
+  }
+  @media (min-width:761px){
+    .person::before{content:""; position:absolute; left:-14px; top:50%; width:14px; height:1.5px; background:var(--line-2)}
+  }
+  .person:hover{transform:translateX(3px); border-color:var(--line-2); box-shadow:var(--sh)}
+  .person[aria-pressed="true"]{border-color:var(--c); box-shadow:0 0 0 1px var(--c), var(--sh)}
+  .person:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
+  .av{width:38px; height:38px; border-radius:99px; display:grid; place-items:center; font-weight:600; font-size:.85rem; color:#fff; background:var(--c); flex:none}
+  .person .nm{font-weight:600; font-size:.94rem; line-height:1.25}
+  .person .ro{font-size:.79rem; color:var(--ink-3)}
+  .person .tag{font-family:var(--mono); font-size:.64rem; text-transform:uppercase; letter-spacing:.08em; color:var(--c); background:var(--surface-2); padding:4px 9px; border-radius:6px}
+  .detail{margin-top:16px; display:grid; gap:12px}
+  .detail .grid{gap:12px}
+
+  /* 4 — sequence */
+  .seq{position:relative; display:grid; gap:7px; padding-left:34px}
+  .seq::before{content:""; position:absolute; left:11px; top:14px; bottom:14px; width:1.5px; background:var(--line)}
+  .touch{
+    position:relative; display:grid; grid-template-columns:52px 1fr auto; gap:13px; align-items:center;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); padding:12px 15px;
+    cursor:pointer; transition:all .16s ease; text-align:left; width:100%;
+  }
+  .touch::before{
+    content:""; position:absolute; left:-29px; top:50%; translate:0 -50%;
+    width:11px; height:11px; border-radius:99px; background:var(--c); box-shadow:0 0 0 3.5px var(--ground);
+  }
+  .touch:hover{transform:translateX(3px); box-shadow:var(--sh)}
+  .touch[aria-pressed="true"]{border-color:var(--c); box-shadow:0 0 0 1px var(--c), var(--sh)}
+  .touch:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
+  .touch .d{font-family:var(--mono); font-size:.76rem; color:var(--ink-3)}
+  .touch .w{font-weight:600; font-size:.92rem}
+  .touch .w em{font-style:normal; color:var(--ink-3); font-weight:400; font-size:.82rem; display:block}
+  .touch .ch{font-family:var(--mono); font-size:.66rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3)}
+  .cap{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:16px; font-size:.86rem; color:var(--ink-2)}
+  .cap b{color:var(--ink)}
+
+  /* 5 — composer */
+  .comp{display:grid; grid-template-columns:1fr 268px; gap:16px; align-items:start}
+  @media (max-width:860px){ .comp{grid-template-columns:1fr} }
+  .msg{
+    font-family:var(--mono); font-size:.87rem; line-height:1.8; white-space:pre-wrap; color:var(--ink);
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:22px; box-shadow:var(--sh);
+  }
+  .msg mark{background:var(--brand-tint); color:inherit; border-radius:3px; padding:1px 2px; box-decoration-break:clone}
+  .notes{display:grid; gap:9px; margin-top:14px}
+  .note{display:grid; grid-template-columns:20px 1fr; gap:10px; font-size:.85rem; color:var(--ink-2); align-items:start}
+  .note i{width:20px; height:20px; border-radius:99px; background:var(--brand-tint); color:var(--brand); display:grid; place-items:center; font-style:normal; font-size:.7rem; font-weight:700; font-family:var(--mono)}
+  .ctrl{display:grid; gap:18px}
+  .ctrl label{display:grid; gap:8px}
+  .ctrl .lbl{display:flex; justify-content:space-between; align-items:baseline}
+  .ctrl .lbl b{color:var(--ink); font-family:var(--ui); font-size:.85rem; letter-spacing:0; text-transform:none; font-weight:600}
+  input[type=range]{width:100%; -webkit-appearance:none; appearance:none; background:none; height:22px; cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:5px; border-radius:99px; background:var(--surface-3)}
+  input[type=range]::-moz-range-track{height:5px; border-radius:99px; background:var(--surface-3)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:19px; height:19px; border-radius:99px; background:var(--brand); border:3px solid var(--surface); box-shadow:var(--sh); margin-top:-7px}
+  input[type=range]::-moz-range-thumb{width:19px; height:19px; border-radius:99px; background:var(--brand); border:3px solid var(--surface); box-shadow:var(--sh)}
+  input[type=range]:focus-visible{outline:3px solid var(--brand); outline-offset:2px; border-radius:99px}
+  .tog{display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:.88rem; font-weight:500}
+  .sw{width:40px; height:23px; border-radius:99px; background:var(--surface-3); border:none; cursor:pointer; position:relative; transition:background .18s ease; flex:none}
+  .sw::after{content:""; position:absolute; top:3px; left:3px; width:17px; height:17px; border-radius:99px; background:var(--surface); box-shadow:var(--sh); transition:transform .18s cubic-bezier(.2,.8,.3,1)}
+  .sw[aria-pressed="true"]{background:var(--brand)}
+  .sw[aria-pressed="true"]::after{transform:translateX(17px)}
+  .sw:focus-visible{outline:3px solid var(--brand); outline-offset:2px}
+
+  /* 6 — page */
+  .browser{border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--sh-lg); background:var(--surface)}
+  .bar{display:flex; align-items:center; gap:9px; padding:11px 15px; background:var(--surface-2); border-bottom:1px solid var(--line)}
+  .bar i{width:9px; height:9px; border-radius:99px; background:var(--line-2); display:block}
+  .bar .url{flex:1; text-align:center; font-family:var(--mono); font-size:.72rem; color:var(--ink-3); background:var(--surface); border-radius:6px; padding:5px 12px}
+  .pg{padding:clamp(22px,3.5vw,40px); display:grid; gap:24px}
+  .pg-hero{display:grid; gap:9px}
+  .pg-hero h2{font-size:clamp(1.5rem,3.4vw,2.1rem); font-weight:700}
+  .pg-sec{display:grid; gap:9px}
+  .pg-sec h3{font-size:.7rem; font-family:var(--mono); text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:500}
+  .proof{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .proof div{background:var(--surface-2); border-radius:var(--r-sm); padding:15px}
+  .proof b{display:block; font-size:1.45rem; font-weight:700; letter-spacing:-.03em; color:var(--brand)}
+  .proof span{font-size:.82rem; color:var(--ink-2)}
+  .plan{display:grid; gap:8px}
+  .plan div{display:grid; grid-template-columns:62px 1fr; gap:13px; font-size:.92rem; color:var(--ink-2); align-items:start}
+  .plan span{font-family:var(--mono); font-size:.68rem; color:var(--brand); background:var(--brand-tint); padding:4px 8px; border-radius:6px; text-align:center}
+  .vid{aspect-ratio:16/9; border-radius:var(--r-sm); background:linear-gradient(140deg,var(--ink) 0%, #2C3444 100%); display:grid; place-items:center}
+  .vid b{width:52px; height:52px; border-radius:99px; background:var(--brand); display:grid; place-items:center; color:#fff; font-size:.9rem}
+
+  .toast{
+    position:fixed; right:18px; bottom:18px; z-index:60; display:flex; align-items:center; gap:11px;
+    background:var(--ink); color:var(--ground); padding:13px 18px; border-radius:99px; box-shadow:var(--sh-lg);
+    font-size:.88rem; font-weight:500; opacity:0; transform:translateY(10px); pointer-events:none;
+    transition:opacity .3s ease, transform .3s cubic-bezier(.2,.8,.3,1);
+  }
+  .toast.on{opacity:1; transform:none}
+  .toast i{width:8px; height:8px; border-radius:99px; background:var(--ok); flex:none}
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important; animation:none!important} }
+</style>
+
+<div class="shell">
+  <aside class="rail">
+    <a class="brand" href="#" onclick="return false"><span class="m"></span><b>Frontdoor<small>PROTOTYPE</small></b></a>
+    <nav class="steps" id="steps" aria-label="Steps"></nav>
+    <p class="rail-foot">Acme · Mid-Market AE</p>
+  </aside>
+
+  <main class="canvas">
+
+    <!-- 1 ─ ONBOARDING -->
+    <section class="panel on" id="p1">
+      <div class="head"><div><p class="lbl">Step 1</p><h1>Onboarding</h1></div><p class="lbl" id="chat-count">1 / 4</p></div>
+      <div class="grid g2">
+        <div class="card chat" id="chat"></div>
+        <div class="card pad">
+          <p class="lbl" style="margin-bottom:14px">Voice profile</p>
+          <div class="vp" id="vp">
+            <div class="row"><span>Tone</span><div><div class="meter"><i id="m1" style="width:8%"></i></div></div></div>
+            <div class="row"><span>Proof</span><div><div class="meter"><i id="m2" style="width:8%"></i></div></div></div>
+            <div class="row"><span>Edge</span><div><div class="meter"><i id="m3" style="width:8%"></i></div></div></div>
+            <div class="row"><span>Sample</span><div><div class="meter"><i id="m4" style="width:8%"></i></div></div></div>
+          </div>
+          <div id="vp-out" style="margin-top:18px; display:none">
+            <div class="kv" style="margin-bottom:12px">
+              <span class="pill"><b>Peer</b></span><span class="pill"><b>Short</b></span><span class="pill"><b>Numbers-first</b></span>
+            </div>
+            <p style="font-size:.9rem; color:var(--ink-2)">Writes like: direct, lowercase energy, leads with a number, one ask.</p>
+          </div>
+        </div>
+      </div>
+      <div class="next"><button class="btn btn-p" onclick="go(2)">Continue →</button></div>
+    </section>
+
+    <!-- 2 ─ CAMPAIGN -->
+    <section class="panel" id="p2">
+      <div class="head"><div><p class="lbl">Step 2</p><h1>New campaign</h1></div></div>
+      <div id="drop-wrap">
+        <button class="drop" id="drop" style="width:100%">
+          <p style="font-weight:600; font-size:1.02rem">Paste a job listing</p>
+          <p class="lbl" style="margin-top:7px">URL or text</p>
+        </button>
+      </div>
+      <div id="jd-out" style="display:none">
+        <div class="grid g2">
+          <div class="card pad">
+            <p class="lbl" style="margin-bottom:12px">Parsed</p>
+            <div class="jd">Acme · Mid-Market Account Executive
+Chicago, IL · Hybrid · Req #4821
+
+— 5+ yrs closing SaaS
+— $80–150k ACV, 60–90 day cycles
+— Ops &amp; RevOps buyers
+— Seat-based pricing, 5-seat floor</div>
+          </div>
+          <div class="card pad">
+            <p class="lbl" style="margin-bottom:12px">Company brief</p>
+            <div class="kv" style="margin-bottom:16px">
+              <span class="pill">Series B</span><span class="pill">~340 people</span><span class="pill">Repricing Q2</span>
+            </div>
+            <p class="lbl" style="margin-bottom:9px">Your angle</p>
+            <p class="pov">Seat-based pricing pushed the SMB floor to 5 seats — reps stop selling and start qualifying.</p>
+          </div>
+        </div>
+        <div class="next"><button class="btn btn-p" onclick="go(3)">Build org map →</button></div>
+      </div>
+    </section>
+
+    <!-- 3 ─ ORG MAP -->
+    <section class="panel" id="p3">
+      <div class="head"><div><p class="lbl">Step 3</p><h1>Org map</h1></div><p class="lbl">5 of 5</p></div>
+      <div class="map">
+        <div class="target">
+          <p class="lbl">Target</p>
+          <h3 style="font-size:1.1rem">Acme</h3>
+          <p style="font-size:.86rem; opacity:.7">Mid-Market AE</p>
+        </div>
+        <div class="people" id="people"></div>
+      </div>
+      <div class="detail" id="pdetail"></div>
+      <div class="next"><button class="btn btn-p" onclick="go(4)">Build sequence →</button></div>
+    </section>
+
+    <!-- 4 ─ SEQUENCE -->
+    <section class="panel" id="p4">
+      <div class="head"><div><p class="lbl">Step 4</p><h1>Sequence</h1></div><p class="lbl">14 days</p></div>
+      <div class="seq" id="seq"></div>
+      <div class="cap">
+        <span class="pill"><b>5</b> people</span>
+        <span class="pill"><b>10</b> touches</span>
+        <span class="pill"><b>0</b> auto-sent</span>
+      </div>
+      <div class="next"><button class="btn btn-p" onclick="go(5)">Open composer →</button></div>
+    </section>
+
+    <!-- 5 ─ COMPOSER -->
+    <section class="panel" id="p5">
+      <div class="head"><div><p class="lbl">Step 5 · S03 HM Cold Open</p><h1>Composer</h1></div><p class="lbl" id="wc">—</p></div>
+      <div class="comp">
+        <div>
+          <div class="msg" id="msg"></div>
+          <div class="notes" id="notes"></div>
+        </div>
+        <div class="card pad ctrl">
+          <label>
+            <span class="lbl"><b>Tone</b><span id="t-val">Peer</span></span>
+            <input type="range" id="t" min="0" max="2" value="0" step="1" aria-label="Tone">
+          </label>
+          <label>
+            <span class="lbl"><b>Length</b><span id="l-val">Short</span></span>
+            <input type="range" id="l" min="0" max="1" value="0" step="1" aria-label="Length">
+          </label>
+          <div class="tog"><span>Why this works</span><button class="sw" id="ann" aria-pressed="true" aria-label="Toggle annotations"></button></div>
+          <hr style="border:none; border-top:1px solid var(--line)">
+          <div class="kv"><span class="pill"><b>34%</b> reply</span><span class="pill">n=812</span></div>
+        </div>
+      </div>
+      <div class="next"><button class="btn btn-p" onclick="go(6)">See the page →</button></div>
+    </section>
+
+    <!-- 6 ─ PAGE -->
+    <section class="panel" id="p6">
+      <div class="head"><div><p class="lbl">Step 6</p><h1>Account plan</h1></div><button class="btn btn-g btn-sm" onclick="ping()">Simulate view</button></div>
+      <div class="browser">
+        <div class="bar"><i></i><i></i><i></i><span class="url">frontdoor.app/p/evan-acme</span></div>
+        <div class="pg">
+          <div class="pg-hero">
+            <p class="lbl">For Acme · Mid-Market AE</p>
+            <h2>Evan Pogue</h2>
+            <p style="color:var(--ink-2)">I've run the transition you're in the middle of.</p>
+          </div>
+          <div class="pg-sec">
+            <h3>Why Acme</h3>
+            <p class="pov">Seat-based pricing moved your SMB floor to 5 seats. That turns reps from sellers into qualifiers — and exposes anyone who can't run a two-call close.</p>
+          </div>
+          <div class="pg-sec">
+            <h3>Proof</h3>
+            <div class="proof">
+              <div><b>112%</b><span>through the transition</span></div>
+              <div><b>$1.2M</b><span>quota carried</span></div>
+              <div><b>30→70</b><span>day cycles, rebuilt</span></div>
+            </div>
+          </div>
+          <div class="pg-sec">
+            <h3>First 90 days</h3>
+            <div class="plan">
+              <div><span>30</span>Ride 20 calls. Map where mid-market stalls.</div>
+              <div><span>60</span>Rewrite discovery for the 5-seat floor.</div>
+              <div><span>90</span>Two closed-won on the new motion.</div>
+            </div>
+          </div>
+          <div class="pg-sec">
+            <h3>90 seconds</h3>
+            <div class="vid"><b>▶</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="next">
+        <button class="btn btn-g" onclick="go(1)">↺ Restart</button>
+        <span class="lbl">Prototype · no backend</span>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"><i></i><span>Marcus opened your page · just now</span></div>
+
+<script>
+/* ---------- steps ---------- */
+var STEPS = ['Onboarding','Campaign','Org map','Sequence','Composer','Page'];
+var cur = 1, maxSeen = 1;
+var railEl = document.getElementById('steps');
+railEl.innerHTML = STEPS.map(function(s,i){
+  return '<button class="step" data-s="'+(i+1)+'"><span class="n"><span>'+(i+1)+'</span></span><span class="t">'+s+'</span></button>';
+}).join('');
+function go(n){
+  cur = n; maxSeen = Math.max(maxSeen, n);
+  document.querySelectorAll('.panel').forEach(function(p,i){ p.classList.toggle('on', i+1 === n); });
+  document.querySelectorAll('.step').forEach(function(b,i){
+    b.setAttribute('aria-current', i+1 === n ? 'true' : 'false');
+    b.classList.toggle('done', i+1 < maxSeen);
+  });
+  window.scrollTo({top:0});
+  if (n === 6) setTimeout(ping, 1200);
+}
+railEl.addEventListener('click', function(e){
+  var b = e.target.closest('.step'); if (b) go(+b.dataset.s);
+});
+
+/* ---------- 1 chat ---------- */
+var Q = [
+  {q:"What role are you going after?", a:["Mid-Market AE","Enterprise AE","Sales Manager"]},
+  {q:"Proudest win?", a:["112% through a pricing change","Built a team from 2 to 11"]},
+  {q:"What do you do that most AEs don't?", a:["I rebuild the discovery script","I sell to ops, not champions"]},
+  {q:"Paste a message you were proud of.", a:["📋 Paste from clipboard"]}
+];
+var qi = 0, chat = document.getElementById('chat');
+function ask(){
+  if (qi >= Q.length){
+    chat.insertAdjacentHTML('beforeend','<div class="bub a">Got it. Here\'s how I\'ll write as you →</div>');
+    document.getElementById('vp-out').style.display='block';
+    chat.scrollTop = chat.scrollHeight;
+    return;
+  }
+  var q = Q[qi];
+  chat.insertAdjacentHTML('beforeend','<div class="bub a">'+q.q+'</div><div class="chips" id="c'+qi+'">'+
+    q.a.map(function(a){return '<button class="chip">'+a+'</button>';}).join('')+'</div>');
+  document.getElementById('c'+qi).addEventListener('click', function(e){
+    var b = e.target.closest('.chip'); if (!b) return;
+    this.remove();
+    chat.insertAdjacentHTML('beforeend','<div class="bub u">'+b.textContent+'</div>');
+    document.getElementById('m'+(qi+1)).style.width = '100%';
+    qi++;
+    document.getElementById('chat-count').textContent = Math.min(qi+1,4)+' / 4';
+    setTimeout(ask, 380);
+    chat.scrollTop = chat.scrollHeight;
+  });
+  chat.scrollTop = chat.scrollHeight;
+}
+ask();
+
+/* ---------- 2 campaign ---------- */
+document.getElementById('drop').addEventListener('click', function(){
+  document.getElementById('drop-wrap').style.display = 'none';
+  document.getElementById('jd-out').style.display = 'block';
+  document.getElementById('jd-out').style.animation = 'in .35s cubic-bezier(.2,.8,.3,1)';
+});
+
+/* ---------- 3 org map ---------- */
+var PEOPLE = [
+  {i:'MR', n:'Marcus Reed',  r:'Director, Mid-Market', t:'Hiring mgr', c:'--p1', eq:'Economic buyer', ask:'15 minutes', why:'Decides'},
+  {i:'PS', n:'Priya Shah',   r:'Talent Partner',        t:'Recruiter',  c:'--p2', eq:'Gatekeeper',     ask:'Process clarity', why:'Owns the process'},
+  {i:'DK', n:'Dana Koh',     r:'Mid-Market AE',         t:'Peer',       c:'--p3', eq:'Coach',          ask:'Information', why:'Lowest-risk ask, best intel'},
+  {i:'DW', n:'Diane Walsh',  r:'VP Sales',              t:'Skip-level', c:'--p4', eq:'Exec sponsor',   ask:'A point of view', why:'Can push a req'},
+  {i:'SL', n:'Sam Lowe',     r:'Ex-Acme · Brightline',  t:'Connector',  c:'--p5', eq:'Warm path',      ask:'An intro', why:'Shared tie'}
+];
+document.getElementById('people').innerHTML = PEOPLE.map(function(p,i){
+  return '<button class="person" data-i="'+i+'" aria-pressed="'+(i===0)+'" style="--c:var('+p.c+')">'+
+    '<span class="av">'+p.i+'</span>'+
+    '<span><span class="nm">'+p.n+'</span><span class="ro">'+p.r+'</span></span>'+
+    '<span class="tag">'+p.t+'</span></button>';
+}).join('');
+function showPerson(i){
+  var p = PEOPLE[i];
+  document.querySelectorAll('.person').forEach(function(b,j){ b.setAttribute('aria-pressed', i===j); });
+  document.getElementById('pdetail').innerHTML =
+    '<div class="grid g3">'+
+      '<div class="card pad"><p class="lbl" style="margin-bottom:6px">Sales equivalent</p><h3>'+p.eq+'</h3></div>'+
+      '<div class="card pad"><p class="lbl" style="margin-bottom:6px">Why</p><h3>'+p.why+'</h3></div>'+
+      '<div class="card pad" style="border-color:var('+p.c+')"><p class="lbl" style="margin-bottom:6px">The ask</p><h3 style="color:var('+p.c+')">'+p.ask+'</h3></div>'+
+    '</div>';
+}
+document.getElementById('people').addEventListener('click', function(e){
+  var b = e.target.closest('.person'); if (b) showPerson(+b.dataset.i);
+});
+showPerson(0);
+
+/* ---------- 4 sequence ---------- */
+var SEQ = [
+  {d:'Day 0',  w:'Apply',        s:'ATS',        ch:'—',        c:'--line-2'},
+  {d:'Day 0',  w:'Dana Koh',     s:'Peer intel', ch:'LinkedIn', c:'--p3'},
+  {d:'Day 2',  w:'Priya Shah',   s:'Intro',      ch:'Email',    c:'--p2'},
+  {d:'Day 3',  w:'Marcus Reed',  s:'Cold open',  ch:'Email',    c:'--p1'},
+  {d:'Day 5',  w:'Sam Lowe',     s:'Warm ask',   ch:'LinkedIn', c:'--p5'},
+  {d:'Day 7',  w:'Dana Koh',     s:'Referral',   ch:'Reply',    c:'--p3'},
+  {d:'Day 8',  w:'Marcus Reed',  s:'POV follow', ch:'Email',    c:'--p1'},
+  {d:'Day 10', w:'Diane Walsh',  s:'Skip-level', ch:'Email',    c:'--p4'},
+  {d:'Day 12', w:'Priya Shah',   s:'Call',       ch:'Phone',    c:'--p2'},
+  {d:'Day 14', w:'Anyone silent',s:'Breakup',    ch:'Email',    c:'--line-2'}
+];
+document.getElementById('seq').innerHTML = SEQ.map(function(t,i){
+  return '<button class="touch" data-i="'+i+'" aria-pressed="'+(i===3)+'" style="--c:var('+t.c+')">'+
+    '<span class="d">'+t.d+'</span>'+
+    '<span class="w">'+t.w+'<em>'+t.s+'</em></span>'+
+    '<span class="ch">'+t.ch+'</span></button>';
+}).join('');
+document.getElementById('seq').addEventListener('click', function(e){
+  var b = e.target.closest('.touch'); if (!b) return;
+  document.querySelectorAll('.touch').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+  b.setAttribute('aria-pressed','true');
+  if (+b.dataset.i === 3) go(5);
+});
+
+/* ---------- 5 composer ---------- */
+var TONES = ['Peer','Neutral','Formal'], LENS = ['Short','Standard'];
+var M = {
+ '0-0': "Marcus — you moved to seat-based pricing in the spring. SMB floor is 5 seats now, so reps stop selling and start qualifying.\n\n@@Ran that exact transition at Brightline. 40% washed out. We rebuilt discovery and landed 112%.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes, or should I stay in the queue?**",
+ '0-1': "Marcus — you moved to seat-based pricing in the spring and the SMB tier starts at 5 seats now. That usually means reps stop selling and start qualifying, and anyone who can't run a two-call close gets exposed fast.\n\n@@I ran that exact transition at Brightline last year — 40% of the team washed out, we rebuilt the discovery script, and landed at 112% for the year.@@\n\nI applied for the Mid-Market role. Put a 30-60-90 for it here:\n##frontdoor.app/p/evan-acme##\n\n**Worth fifteen minutes, or should I stay in the queue?**",
+ '1-0': "Marcus — noticed the move to seat-based pricing this spring, with the SMB tier now starting at five seats. That shift tends to turn reps into qualifiers.\n\n@@I led the same transition at Brightline and finished the year at 112%.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Would fifteen minutes be useful, or should I stay in the queue?**",
+ '1-1': "Marcus — I noticed Acme moved to seat-based pricing this spring, with the SMB tier now starting at five seats. In my experience that shift turns reps from sellers into qualifiers, and it exposes anyone who can't run a two-call close.\n\n@@I led the same transition at Brightline last year. We lost 40% of the team, rebuilt the discovery script around longer cycles, and finished at 112%.@@\n\nI've applied for the Mid-Market role and put a 30-60-90 together here:\n##frontdoor.app/p/evan-acme##\n\n**Would fifteen minutes be useful, or should I stay in the queue?**",
+ '2-0': "Marcus — I'm writing regarding Acme's recent move to seat-based pricing and its effect on the mid-market motion.\n\n@@I managed a comparable transition at Brightline, finishing the year at 112% of quota.@@\n\n##frontdoor.app/p/evan-acme##\n\n**Would you be open to a brief conversation?**",
+ '2-1': "Marcus — I'm writing regarding Acme's recent move to seat-based pricing and the effect a five-seat minimum tends to have on a mid-market team's selling motion.\n\n@@I managed a comparable transition at Brightline last year. Attrition ran near 40%, we rebuilt the discovery process around longer cycles, and the team finished at 112% of quota.@@\n\nI have applied for the Mid-Market Account Executive role and prepared a 30-60-90 plan here:\n##frontdoor.app/p/evan-acme##\n\n**Would you be open to a brief conversation, or should I remain in the queue?**"
+};
+var NOTES = [
+  ['1','Opens on their business, not yours'],
+  ['2','One proof point, mapped to the problem'],
+  ['3','Page replaces the résumé'],
+  ['4','One ask, with an easy out']
+];
+var ann = true;
+function render(){
+  var t = +document.getElementById('t').value, l = +document.getElementById('l').value;
+  document.getElementById('t-val').textContent = TONES[t];
+  document.getElementById('l-val').textContent = LENS[l];
+  var raw = M[t+'-'+l];
+  var plain = raw.replace(/@@|##|\*\*/g,'');
+  document.getElementById('wc').textContent = plain.trim().split(/\s+/).length + ' words';
+  var html = plain.replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
+  if (ann){
+    html = raw
+      .replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; })
+      .replace(/@@([\s\S]*?)@@/g,'<mark>$1</mark>')
+      .replace(/##([\s\S]*?)##/g,'<mark>$1</mark>')
+      .replace(/\*\*([\s\S]*?)\*\*/g,'<mark>$1</mark>');
+  }
+  document.getElementById('msg').innerHTML = html;
+  document.getElementById('notes').innerHTML = ann ? NOTES.map(function(n){
+    return '<div class="note"><i>'+n[0]+'</i><span>'+n[1]+'</span></div>';
+  }).join('') : '';
+}
+document.getElementById('t').addEventListener('input', render);
+document.getElementById('l').addEventListener('input', render);
+document.getElementById('ann').addEventListener('click', function(){
+  ann = !ann; this.setAttribute('aria-pressed', ann); render();
+});
+render();
+
+/* ---------- toast ---------- */
+var tEl = document.getElementById('toast'), tT;
+function ping(){
+  tEl.classList.add('on');
+  clearTimeout(tT);
+  tT = setTimeout(function(){ tEl.classList.remove('on'); }, 3400);
+}
+go(1);
+</script>
