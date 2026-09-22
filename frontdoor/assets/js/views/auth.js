@@ -74,6 +74,7 @@
       err.classList.add('hide');
       UI.busy(btn, 750).then(function () {
         Store.signIn(email.value.trim());
+        if (signup) { UI.toast('Welcome. Start with your resume.'); Router.go('/import'); return; }
         Store.createSeedCampaign();
         UI.toast('Signed in. Acme is waiting for you.');
         Router.go('/');
@@ -92,6 +93,7 @@
       var b = this;
       UI.busy(b, 850).then(function () {
         Store.signIn(email.value.trim());
+        if (signup) { UI.toast('Welcome. Start with your resume.'); Router.go('/import'); return; }
         Store.createSeedCampaign();
         UI.toast('Signed in with Google.');
         Router.go('/');

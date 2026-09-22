@@ -10,9 +10,10 @@
      collapsed rail, where the label is hidden and an icon alone is a guess. */
   var NAV = [
     { group: 'Workspace', items: [
-      { key: 'home', icon: '◉', label: 'Overview', href: '/', hint: 'where the campaign stands today', sc: 'G then O' }
+      { key: 'home', icon: '◉', label: 'Overview', href: '/', hint: 'every company you are working', sc: 'G then O' }
     ] },
-    { group: 'Campaign', needsCampaign: true, items: [
+    { group: 'company', needsCampaign: true, items: [
+      { key: 'opp',      icon: '◆', label: 'Summary',  href: '/c/:id', hint: 'the checklist and the numbers', sc: 'G then C' },
       { key: 'people',   icon: '◎', label: 'Contacts', href: '/c/:id/people',   count: 'contacts', hint: 'the people you are working, ranked', sc: 'G then P' },
       { key: 'research', icon: '◈', label: 'Research', href: '/c/:id/research', hint: 'what they said recently, in public', sc: 'G then R' },
       { key: 'sequence', icon: '≡', label: 'Sequence', href: '/c/:id/sequence', count: 'steps', hint: 'the touches and the days between them', sc: 'G then S' },
@@ -20,7 +21,7 @@
     ] },
     { group: 'Library', items: [
       { key: 'templates', icon: '❏', label: 'Templates', href: '/templates', hint: 'messages you reuse across steps', sc: 'G then T' },
-      { key: 'settings',  icon: '⚙', label: 'Settings',  href: '/settings', hint: 'your name, role and wins' }
+      { key: 'settings',  icon: '⚙', label: 'Settings',  href: '/settings', hint: 'your name, photo and history' }
     ] }
   ];
 
@@ -31,7 +32,12 @@
     return t;
   }
 
+  /* the campaign group follows the route you are on, then the last one you
+     opened, so the nav never points at a company you are not looking at */
   function activeCampaignId() {
+    var m = (location.hash || '').match(/#\/c\/([^\/]+)/);
+    if (m && Store.campaign(m[1])) return m[1];
+    if (Store.campaign(Store.state.lastCampaign)) return Store.state.lastCampaign;
     var cs = Store.campaigns();
     return cs.length ? cs[0].id : null;
   }
@@ -95,7 +101,8 @@
           '<span class="nav-label">' + esc(n.label) + '</span>' +
           (count ? '<span class="nav-count">' + count + '</span>' : '') + '</a>';
       }).join('');
-      return '<div class="nav-group"><p class="cap nav-group-label">' + esc(g.group) + '</p>' + items + '</div>';
+      var label = g.needsCampaign && c ? c.company : g.group;
+      return '<div class="nav-group"><p class="cap nav-group-label">' + esc(label) + '</p>' + items + '</div>';
     }).join('');
   }
 

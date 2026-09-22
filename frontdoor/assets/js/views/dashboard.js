@@ -1,129 +1,117 @@
 /* ==========================================================================
-   views/dashboard.js — overview, campaign list, empty state, settings
+   views/dashboard.js — the overview (every opportunity you are running)
+   and settings. One company per row, each with its own checklist.
    ========================================================================== */
 (function (window, document) {
   'use strict';
 
   var esc = UI.esc;
-
-  function ringSVG(done, total) {
-    var C = 2 * Math.PI * 17;
-    var off = C - (done / total) * C;
-    return '<svg class="ring" width="42" height="42" viewBox="0 0 42 42" aria-hidden="true">' +
-      '<circle class="track" cx="21" cy="21" r="17"></circle>' +
-      '<circle class="fill" cx="21" cy="21" r="17" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"></circle></svg>';
-  }
-
-  function taskList() {
-    return Store.state.tasks.map(function (t) {
-      return '<button class="task" data-task="' + t.id + '" aria-pressed="' + t.on + '">' +
-        '<span class="tick"></span>' +
-        '<span class="tt">' + esc(t.text) + '<em>' + esc(t.sub) + '</em></span>' +
-        '<span class="cap">' + (t.on ? 'Done' : 'Open') + '</span></button>';
-    }).join('');
-  }
-
-  function stepRow(c, s) {
-    var p = c.contacts.filter(function (x) { return x.id === s.contact; })[0];
-    var cls = 'touch' + (s.status === 'sent' || s.status === 'replied' ? ' sent' : '');
-    var badge = s.status === 'replied' ? '<span class="chip chip-pos">Replied</span>'
-              : s.status === 'due'     ? '<span class="chip chip-accent">Due today</span>'
-              : s.status === 'sent'    ? '<span class="chip">Sent</span>'
-              : '<span class="chip">Queued</span>';
-    return '<button class="' + cls + '" data-step="' + s.id + '" style="--pc:var(' + (p ? p.colour : '--line-3') + ')">' +
-      '<span class="td">Day ' + s.day + '</span>' +
-      '<span class="tw">' + esc(p ? p.name : 'No contact') + '<em>' + esc(s.note) + '</em></span>' +
-      badge + '<span class="tc">' + esc(s.channel) + '</span></button>';
-  }
-
-  /* ---- empty state ---------------------------------------------------- */
-  function emptyHome() {
-    return '<div class="card" style="overflow:hidden">' +
-      '<div class="empty">' +
-        '<span class="art">◎</span>' +
-        '<h2>No campaign yet</h2>' +
-        '<p>Pick one company you actually want to work at. Five people, ten touches, fourteen days, and a page written for them.</p>' +
-        '<button class="btn btn-primary btn-lg" id="start-campaign">Start a campaign <span class="arr">→</span></button>' +
-      '</div></div>';
-  }
-
-  /* ---- overview ------------------------------------------------------- */
   window.Views = window.Views || {};
 
+  function ringSVG(done, total, size) {
+    var s = size || 42, r = (s / 2) - 4;
+    var C = 2 * Math.PI * r;
+    var off = C - (total ? done / total : 0) * C;
+    return '<svg class="ring" width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + ' ' + s + '" aria-hidden="true">' +
+      '<circle class="track" cx="' + s / 2 + '" cy="' + s / 2 + '" r="' + r + '"></circle>' +
+      '<circle class="fill" cx="' + s / 2 + '" cy="' + s / 2 + '" r="' + r + '" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"></circle></svg>';
+  }
+  window.Views.ringSVG = ringSVG;
+
+  function nextUp(c) {
+    var s = c.steps.filter(function (x) { return x.status === 'due'; })[0] ||
+            c.steps.filter(function (x) { return x.status === 'queued'; })[0];
+    if (!s) return c.steps.length ? 'Everything is sent' : 'No sequence yet';
+    var p = c.contacts.filter(function (x) { return x.id === s.contact; })[0];
+    return (p ? p.name : 'Nobody yet') + ' · ' + s.note;
+  }
+
+  /* ---- overview -------------------------------------------------------- */
   window.Views.home = function () {
-    var c = Store.campaigns()[0];
-
-    if (!c) {
-      var v0 = Shell.mount({ nav: 'home', crumbs: [{ label: 'Overview' }], html: emptyHome() });
-      v0.querySelector('#start-campaign').addEventListener('click', function () {
-        Store.createSeedCampaign();
-        UI.toast('Acme campaign created.');
-        Router.go('/c/c_acme/people');
-      });
-      return;
-    }
-
-    var p = Store.taskProgress();
+    var list = Store.campaigns();
     var hour = new Date().getHours();
     var greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
     var name = (Store.state.user && Store.state.user.name || 'there').split(' ')[0];
-    var upNext = c.steps.filter(function (s) { return s.status === 'due' || s.status === 'queued'; }).slice(0, 3);
+    var imported = Store.state.profile.imported;
+
+    function oppCard(c) {
+      var pr = Store.taskProgress(c);
+      var due = c.steps.filter(function (s) { return s.status === 'due'; }).length;
+      return '<a class="opp" href="#/c/' + c.id + '">' +
+        '<div class="opp-ring">' + ringSVG(pr.done, pr.total, 44) +
+          '<span class="opp-pct">' + pr.done + '/' + pr.total + '</span></div>' +
+        '<div class="opp-main">' +
+          '<div class="row g2 wrap" style="align-items:baseline">' +
+            '<b class="opp-co">' + esc(c.company) + '</b>' +
+            '<span class="opp-role">' + esc(c.role) + '</span>' +
+          '</div>' +
+          '<p class="opp-next">' + esc(nextUp(c)) + '</p>' +
+        '</div>' +
+        '<div class="opp-nums">' +
+          '<span><b>' + c.contacts.length + '</b>people</span>' +
+          '<span><b>' + c.sent + '</b>sent</span>' +
+          '<span><b>' + c.replies + '</b>replies</span>' +
+          '<span><b>' + c.views + '</b>opens</span>' +
+        '</div>' +
+        '<div class="opp-end">' +
+          (due ? '<span class="chip chip-accent">' + due + ' due</span>'
+               : '<span class="chip">Day ' + c.day + '</span>') +
+          '<span class="arr">→</span>' +
+        '</div></a>';
+    }
 
     var html =
       '<div class="page-head">' +
         '<h1>' + esc(greet) + ', ' + esc(name) + '</h1>' +
-        '<p>One company at a time. Here is where ' + esc(c.company) + ' stands on day ' + c.day + '.</p>' +
-      '</div>' +
-
-      '<div class="card p5 mb4">' +
-        '<div class="row g4" style="align-items:flex-start">' +
-          ringSVG(p.done, p.total) +
-          '<div class="col g2 grow">' +
-            '<div class="row between wrap"><h3>Getting ' + esc(c.company) + ' off the ground</h3>' +
-            '<span class="cap" id="ring-label">' + p.done + ' of ' + p.total + ' done</span></div>' +
-            '<p class="dim" style="font-size:var(--fs-sm)">We filled the first two in from your résumé. The rest take about twenty minutes.</p>' +
-          '</div>' +
-        '</div>' +
-        '<div class="mt3" id="tasks" style="display:grid;gap:1px">' + taskList() + '</div>' +
-      '</div>' +
-
-      '<div class="grid cols-3 mb4">' +
-        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><h2 class="mono">3</h2><p class="dimmer" style="font-size:var(--fs-sm)">of ' + c.steps.length + ' planned</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Replies</p><h2 class="mono">1</h2><p class="dimmer" style="font-size:var(--fs-sm)">Dana, on day 1</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Page opens</p><h2 class="mono">' + c.views + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div>' +
-      '</div>' +
-
-      '<div class="card p5">' +
-        '<div class="row between mb4"><h3>Up next</h3>' +
-        '<a class="btn btn-ghost btn-sm" href="#/c/' + c.id + '/sequence">See all <span class="arr">→</span></a></div>' +
-        '<div class="seq">' + upNext.map(function (s) { return stepRow(c, s); }).join('') + '</div>' +
+        '<p>' + (list.length
+          ? 'Every company you are working, and what each one is waiting on.'
+          : 'Start with the company you actually want. Everything else is built from the listing.') + '</p>' +
       '</div>';
+
+    if (!imported) {
+      html += '<div class="card" style="overflow:hidden"><div class="empty">' +
+        '<span class="art">↑</span><h2>Start with your résumé</h2>' +
+        '<p>We read it once. Every company you add after that gets its wins picked from it, matched to the listing.</p>' +
+        '<button class="btn btn-primary btn-lg" id="go-import">Add your résumé <span class="arr">→</span></button>' +
+        '</div></div>';
+    } else if (!list.length) {
+      html += '<div class="card" style="overflow:hidden"><div class="empty">' +
+        '<span class="art">◎</span><h2>Add your first company</h2>' +
+        '<p>Paste the job listing. We pull the role apart, pick the three wins that answer it, and go looking for the people behind the req.</p>' +
+        '<button class="btn btn-primary btn-lg" id="go-new">Paste a job listing <span class="arr">→</span></button>' +
+        '</div></div>';
+    } else {
+      html += '<div class="opps">' + list.map(oppCard).join('') +
+        '<button class="addrow addrow-lg" id="go-new">+ Add a company</button></div>';
+
+      var totals = list.reduce(function (a, c) {
+        a.sent += c.sent; a.rep += c.replies; a.views += c.views;
+        a.due += c.steps.filter(function (s) { return s.status === 'due'; }).length;
+        return a;
+      }, { sent: 0, rep: 0, views: 0, due: 0 });
+
+      html += '<div class="grid cols-4 mt5">' +
+        '<div class="card hover p5"><p class="cap mb3">Companies</p><h2 class="mono">' + list.length + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">running at once</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Due today</p><h2 class="mono">' + totals.due + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">across all of them</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Replies</p><h2 class="mono">' + totals.rep + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">of ' + totals.sent + ' sent</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Page opens</p><h2 class="mono">' + totals.views + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">people reading</p></div>' +
+        '</div>';
+    }
 
     var v = Shell.mount({
       nav: 'home',
-      crumbs: [{ label: c.company, href: '/' }, { label: 'Overview' }],
-      actions: '<span class="chip chip-pos">Day ' + c.day + ' of 14</span>' +
-               '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/page">View page</a>',
+      crumbs: [{ label: 'Overview' }],
+      actions: imported ? '<button class="btn btn-primary btn-sm" id="new-top">Add a company</button>' : '',
       html: html
     });
 
-    UI.on(v, 'click', '[data-task]', function (e, el) {
-      var t = Store.toggleTask(el.dataset.task);
-      var pr = Store.taskProgress();
-      el.setAttribute('aria-pressed', t.on);
-      el.querySelector('.cap').textContent = t.on ? 'Done' : 'Open';
-      var C = 2 * Math.PI * 17;
-      v.querySelector('.ring .fill').setAttribute('stroke-dashoffset', (C - (pr.done / pr.total) * C).toFixed(1));
-      v.querySelector('#ring-label').textContent = pr.done + ' of ' + pr.total + ' done';
-      if (t.on) UI.toast(pr.done === pr.total ? 'That is all of them. Go send the first message.' : 'Nice. ' + pr.done + ' of ' + pr.total + '.');
-    });
-    UI.on(v, 'click', '[data-step]', function (e, el) {
-      c.activeStep = el.dataset.step; Store.save();
-      Router.go('/c/' + c.id + '/sequence');
-    });
+    UI.on(v, 'click', '#go-import', function () { Router.go('/import'); });
+    UI.on(v, 'click', '#go-new', function () { Router.go('/new'); });
+    var top = document.getElementById('new-top');
+    if (top) top.addEventListener('click', function () { Router.go('/new'); });
   };
 
-  /* ---- settings ------------------------------------------------------- */
+  /* ---- settings -------------------------------------------------------- */
   window.Views.settings = function () {
     var pf = Store.state.profile;
     var u = Store.state.user;
@@ -132,13 +120,25 @@
       '<div class="page-head"><h1>Settings</h1><p>Your profile feeds every message and every page. Change it here and it changes everywhere.</p></div>' +
 
       '<div class="card p5 mb4">' +
-        '<h3 class="mb4">Account</h3>' +
-        '<div class="grid cols-2">' +
-          '<div class="field"><label for="s-name">Name</label><input class="input" id="s-name" value="' + esc(pf.name) + '"></div>' +
-          '<div class="field"><label for="s-email">Email</label><input class="input" id="s-email" value="' + esc(u ? u.email : pf.email) + '"></div>' +
+        '<h3 class="mb4">You</h3>' +
+        '<div class="row g4 wrap" style="align-items:flex-start">' +
+          '<div class="photo-set">' +
+            '<div class="photo-ring" id="photo-prev">' + Views.photoHTML(88) + '</div>' +
+            '<label class="btn btn-secondary btn-sm" for="photo-in">' + (pf.photo ? 'Replace' : 'Add a photo') + '</label>' +
+            '<input type="file" id="photo-in" accept="image/*" hidden>' +
+            (pf.photo ? '<button class="btn btn-ghost btn-sm" id="photo-clear">Remove</button>' : '') +
+          '</div>' +
+          '<div class="grow" style="min-width:260px">' +
+            '<div class="grid cols-2">' +
+              '<div class="field"><label for="s-name">Name</label><input class="input" id="s-name" value="' + esc(pf.name) + '"></div>' +
+              '<div class="field"><label for="s-email">Email</label><input class="input" id="s-email" value="' + esc(u ? u.email : pf.email) + '"></div>' +
+              '<div class="field"><label for="s-phone">Phone</label><input class="input" id="s-phone" value="' + esc(pf.phone) + '"></div>' +
+              '<div class="field"><label for="s-loc">Where you are</label><input class="input" id="s-loc" value="' + esc(pf.location) + '"></div>' +
+            '</div>' +
+            '<div class="row mt4"><button class="btn btn-primary btn-sm" id="s-save">Save changes</button>' +
+            '<span class="hint" id="s-saved" style="opacity:0;transition:opacity var(--t-2)">Saved</span></div>' +
+          '</div>' +
         '</div>' +
-        '<div class="row mt4"><button class="btn btn-primary btn-sm" id="s-save">Save changes</button>' +
-        '<span class="hint" id="s-saved" style="opacity:0;transition:opacity var(--t-2)">Saved</span></div>' +
       '</div>' +
 
       '<div class="card p5 mb4">' +
@@ -152,7 +152,7 @@
         '<h3 class="mb3">Where your history came from</h3>' +
         '<div class="row between wrap g3">' +
           '<span class="dim" style="font-size:var(--fs-sm)">' +
-            (pf.imported ? esc(pf.source) : 'Nothing imported yet') + '</span>' +
+            (pf.imported ? esc(pf.source) + ' · ' + pf.roles.length + ' roles, ' + pf.wins.length + ' wins' : 'Nothing imported yet') + '</span>' +
           '<button class="btn btn-secondary btn-sm" id="s-reimport">Import again</button>' +
         '</div>' +
       '</div>' +
@@ -166,18 +166,50 @@
     var v = Shell.mount({ nav: 'settings', crumbs: [{ label: 'Settings' }], html: html });
 
     v.querySelector('#s-save').addEventListener('click', function () {
-      Store.state.profile.name = v.querySelector('#s-name').value.trim() || pf.name;
-      if (Store.state.user) Store.state.user.email = v.querySelector('#s-email').value.trim();
+      var pfx = Store.state.profile;
+      pfx.name = v.querySelector('#s-name').value.trim() || pfx.name;
+      pfx.phone = v.querySelector('#s-phone').value.trim();
+      pfx.location = v.querySelector('#s-loc').value.trim();
+      if (Store.state.user) {
+        Store.state.user.email = v.querySelector('#s-email').value.trim();
+        Store.state.user.name = pfx.name;
+        Store.state.user.initials = Store.initials(pfx.name);
+      }
       Store.save();
       var f = v.querySelector('#s-saved');
       f.style.opacity = 1;
       setTimeout(function () { f.style.opacity = 0; }, 1600);
       UI.toast('Saved.');
     });
+
+    v.querySelector('#photo-in').addEventListener('change', function () {
+      var file = this.files && this.files[0];
+      if (!file) return;
+      if (file.size > 900000) { UI.toast('That one is too big. Try something under 900KB.'); return; }
+      var fr = new FileReader();
+      fr.onload = function () {
+        Store.setPhoto(fr.result);
+        UI.toast('Photo added. It shows up on your page.');
+        Views.settings();
+      };
+      fr.onerror = function () { UI.toast('Could not read that file.'); };
+      fr.readAsDataURL(file);
+    });
+    var clear = v.querySelector('#photo-clear');
+    if (clear) clear.addEventListener('click', function () { Store.setPhoto(null); Views.settings(); });
+
     v.querySelector('#s-reimport').addEventListener('click', function () { Router.go('/import'); });
     v.querySelector('#s-reset').addEventListener('click', function () {
-      UI.confirm({ title: 'Clear all data?', body: 'The campaign, the profile and the sign in all go. You will land back at the login screen.', confirm: 'Clear it', danger: true })
+      UI.confirm({ title: 'Clear all data?', body: 'Every company, the profile and the sign in all go. You will land back at the login screen.', confirm: 'Clear it', danger: true })
         .then(function (ok) { if (ok) { Store.reset(); Router.go('/login'); location.reload(); } });
     });
+  };
+
+  /* a portrait if there is one, initials if there is not */
+  window.Views.photoHTML = function (size) {
+    var pf = Store.state.profile;
+    if (pf.photo) return '<img class="portrait" src="' + pf.photo + '" alt="' + esc(pf.name) + '" style="width:' + size + 'px;height:' + size + 'px">';
+    return '<span class="portrait portrait-mono" style="width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size / 2.6) + 'px">' +
+      esc(Store.initials(pf.name)) + '</span>';
   };
 })(window, document);

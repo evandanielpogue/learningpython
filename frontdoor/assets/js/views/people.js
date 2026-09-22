@@ -16,23 +16,52 @@
   window.Views.people = function (params) {
     var c = Store.campaign(params.id);
     if (!c) return Router.go('/', true);
+    Store.touch(c.id);
     var known = c.contacts.some(function (x) { return x.id === c.activeContact; });
     var selected = known ? c.activeContact : (c.contacts[0] ? c.contacts[0].id : null);
     var adding = false;
 
     var v = Shell.mount({
       nav: 'people',
-      crumbs: [{ label: c.company, href: '/' }, { label: 'Contacts' }],
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Contacts' }],
       actions: '<button class="btn btn-primary btn-sm" id="add-top">Add contact</button>',
       html:
         '<div class="page-head"><h1>Who you are working</h1>' +
         '<p>Ranked top to bottom. The order is the order you reach out in, so put the person with the least to lose from helping you at the top.</p></div>' +
+        '<div id="found"></div>' +
         '<div class="split"><div id="list"></div><div id="detail"></div></div>'
     });
+
+    /* people we went looking for on this req but have not added yet */
+    function paintFound() {
+      var box = v.querySelector('#found');
+      var sug = c.suggested || [];
+      if (!sug.length) { box.innerHTML = ''; return; }
+      box.innerHTML =
+        '<div class="card p5 mb4 found">' +
+          '<div class="row between wrap g3 mb2"><h3>People we found on this req</h3>' +
+          '<span class="cap">' + sug.length + ' to look at</span></div>' +
+          '<p class="dim mb4" style="font-size:var(--fs-sm)">We go after three on every listing: whoever owns the number, whoever posted the req, and anyone already in your history who can forward you along.</p>' +
+          '<div class="foundgrid">' + sug.map(function (g) {
+            return '<div class="foundcard" style="--pc:var(' + Store.colourFor(g.persona) + ')">' +
+              '<div class="row g3" style="align-items:flex-start">' +
+                '<span class="avatar avatar-md" style="background:var(' + Store.colourFor(g.persona) + ')">' + esc(Store.initials(g.name)) + '</span>' +
+                '<span class="grow" style="min-width:0"><b>' + esc(g.name) + '</b>' +
+                '<em>' + esc(g.title) + '</em></span>' +
+              '</div>' +
+              '<p class="fc-why">' + esc(g.why) + '</p>' +
+              '<p class="fc-found">' + esc(g.found) + '</p>' +
+              '<div class="row g2 mt3">' +
+                '<button class="btn btn-primary btn-sm" data-take="' + g.id + '">Add them</button>' +
+                '<button class="btn btn-ghost btn-sm" data-skip="' + g.id + '">Not this one</button>' +
+              '</div></div>';
+          }).join('') + '</div></div>';
+    }
 
     function paint() {
       c.activeContact = selected;
       Store.save();
+      paintFound();
       var list = v.querySelector('#list');
       list.innerHTML =
         c.contacts.map(function (p, i) {
@@ -135,6 +164,16 @@
       if (e.target.closest('button')) return;
       selected = el.dataset.pick; paint();
     });
+    UI.on(v, 'click', '[data-take]', function (e, el) {
+      var p = Store.acceptSuggestion(c.id, el.dataset.take);
+      if (!p) return;
+      Store.completeTask(c.id, 't3');
+      selected = p.id; paint();
+      UI.toast(p.name + ' added. Rank them where they belong.');
+    });
+    UI.on(v, 'click', '[data-skip]', function (e, el) {
+      Store.dismissSuggestion(c.id, el.dataset.skip); paint();
+    });
     UI.on(v, 'click', '[data-up]',   function (e, el) { Store.moveContact(c.id, el.dataset.up, -1); paint(); });
     UI.on(v, 'click', '[data-down]', function (e, el) { Store.moveContact(c.id, el.dataset.down, 1); paint(); });
     UI.on(v, 'click', '#add-inline', startAdd);
@@ -152,7 +191,7 @@
         email: v.querySelector('#n-email').value.trim(),
         ask: v.querySelector('#n-ask').value.trim()
       });
-      Store.completeTask('t4');
+      Store.completeTask(c.id, 't3');
       adding = false; selected = p.id; paint();
       UI.toast(name + ' added. Drag them up if they matter more.');
     });

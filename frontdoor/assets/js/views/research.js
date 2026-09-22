@@ -11,11 +11,12 @@
   window.Views.research = function (params) {
     var c = Store.campaign(params.id);
     if (!c) return Router.go('/', true);
+    Store.touch(c.id);
     var tab = 'company';
 
     var v = Shell.mount({
       nav: 'research',
-      crumbs: [{ label: c.company, href: '/' }, { label: 'Research' }],
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Research' }],
       actions: '<button class="btn btn-secondary btn-sm" id="refresh">Refresh</button>',
       html:
         '<div class="page-head"><h1>What they said, recently, in public</h1>' +
@@ -64,7 +65,7 @@
     UI.on(v, 'click', '[data-sub]', function (e, el) { tab = el.dataset.sub; paint(); });
     UI.on(v, 'click', '[data-use]', function (e, el) {
       c.pendingInsert = el.dataset.use;
-      Store.completeTask('t5');
+      Store.completeTask(c.id, 't4');
       Store.save();
       UI.toast('Dropped into your draft.');
       Router.go('/c/' + c.id + '/sequence');

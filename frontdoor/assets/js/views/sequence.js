@@ -1,7 +1,8 @@
 /* ==========================================================================
    views/sequence.js — the sequence builder
    Step rail on the left with wait-day connectors, editor on the right.
-   Copy lives here, so this is the only place a message gets written.
+   One message per step, written to one person. No variants, because you
+   cannot A/B test a single email to a single human being.
    ========================================================================== */
 (function (window, document) {
   'use strict';
@@ -10,7 +11,6 @@
   window.Views = window.Views || {};
 
   var CH_ICON = { Email: '✉', LinkedIn: 'in', Call: '☏', Reply: '↩', ATS: '▤', Text: '💬' };
-  var FIELDS = ['{first}', '{name}', '{title}', '{company}', '{role}', '{angle}', '{slug}', '{me}'];
 
   var EDITS = [
     { k: ['short', 'tight', 'cut', 'trim', 'brief'], reply: 'Cut the setup. Four lines.',
@@ -26,6 +26,8 @@
   window.Views.sequence = function (params) {
     var c = Store.campaign(params.id);
     if (!c) return Router.go('/', true);
+    Store.touch(c.id);
+    Store.materialise(c.id);
     if (!c.steps.some(function (s) { return s.id === c.activeStep; })) {
       c.activeStep = c.steps[0] ? c.steps[0].id : null;
     }
@@ -33,18 +35,14 @@
     /* a line handed over from Research goes to the top of the open step */
     if (c.pendingInsert) {
       var target = c.steps.filter(function (s) { return s.id === c.activeStep; })[0];
-      if (target) {
-        var tv = target.variants[target.activeVariant] || target.variants[0];
-        var current = Store.bodyFor(c, target);
-        tv.body = c.pendingInsert + '\n\n' + current;
-      }
+      if (target) target.body = c.pendingInsert + '\n\n' + Store.bodyFor(c, target);
       c.pendingInsert = null;
       Store.save();
     }
 
     var v = Shell.mount({
       nav: 'sequence',
-      crumbs: [{ label: c.company, href: '/' }, { label: 'Sequence' }],
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Sequence' }],
       actions: '<span class="chip" id="cap-chip"></span>' +
                '<button class="btn btn-secondary btn-sm" id="preview">Preview</button>',
       html: '<div class="page-head"><h1>Sequence</h1>' +
@@ -54,7 +52,6 @@
 
     function step() { return c.steps.filter(function (s) { return s.id === c.activeStep; })[0] || c.steps[0]; }
     function contactOf(s) { return c.contacts.filter(function (x) { return x.id === s.contact; })[0] || null; }
-    function variant(s) { return s.variants[s.activeVariant] || s.variants[0]; }
     function hasSubject(s) { return s.channel === 'Email'; }
 
     /* ---------------- rail ---------------- */
@@ -71,6 +68,7 @@
         var p = contactOf(s);
         var col = p ? p.colour : '--line-3';
         var dot = s.status === 'replied' ? 'ok' : s.status === 'sent' ? 'done' : s.status === 'due' ? 'due' : '';
+        var t = Store.template(s.template);
         out += '<button class="stepcard' + (s.id === c.activeStep ? ' on' : '') + '" data-step="' + s.id + '"' +
           ' style="--pc:var(' + col + ')">' +
           '<span class="sc-top"><span class="sc-n">' + (i + 1) + '</span>' +
@@ -79,7 +77,7 @@
           '<span class="sc-who">' + esc(p ? p.name : 'No contact') + '</span>' +
           '<span class="sc-note">' + esc(s.note) + '</span>' +
           '<span class="sc-foot"><span class="sc-day">Day ' + s.day + '</span>' +
-            (s.variants.length > 1 ? '<span class="sc-var">' + s.variants.length + ' variants</span>' : '') +
+            (t ? '<span class="sc-tpl">' + esc(t.stage) + '</span>' : '') +
           '</span></button>';
       });
       out += '<button class="addrow mt3" id="add-step">+ Add a step</button>';
@@ -89,9 +87,9 @@
     /* ---------------- editor ---------------- */
     function editorHTML() {
       var s = step();
-      if (!s) return '<div class="card p6"><p class="dim">No steps yet.</p></div>';
+      if (!s) return '<div class="card p6"><p class="dim">No steps yet. Add one on the left.</p></div>';
       var p = contactOf(s);
-      var vr = variant(s);
+      var t = Store.template(s.template);
       var body = Store.bodyFor(c, s);
 
       return '<div class="card editor">' +
@@ -116,31 +114,20 @@
             Store.CHANNELS.map(function (ch) { return '<option' + (ch === s.channel ? ' selected' : '') + '>' + ch + '</option>'; }).join('') +
           '</select></label>' +
           '<label class="field"><span>Day</span><input class="input" type="number" min="0" max="120" value="' + s.day + '" data-f="day"></label>' +
-          '<label class="field"><span>Start from</span><select class="input" data-f="template">' +
-            '<option value="">Blank</option>' +
-            Store.state.templates.map(function (t) { return '<option value="' + t.id + '"' + (t.id === s.template ? ' selected' : '') + '>' + esc(t.name) + '</option>'; }).join('') +
-          '</select></label>' +
         '</div>' +
 
-        '<div class="ed-tabs">' +
-          s.variants.map(function (x, i) {
-            return '<button class="vtab' + (i === s.activeVariant ? ' on' : '') + '" data-v="' + i + '">' + esc(x.label) +
-              (s.variants.length > 1 && i === s.activeVariant ? '<span class="vx" data-vx="' + i + '" role="button" aria-label="Remove variant">✕</span>' : '') +
-              '</button>';
-          }).join('') +
-          '<button class="vadd" id="add-variant" title="Add a variant to test">+</button>' +
-          '<span class="grow"></span>' +
-          '<span class="hint" id="words"></span>' +
+        '<div class="ed-tplbar">' +
+          (t ? '<span class="tplmark"><b>' + esc(t.name) + '</b><em>' + esc(t.stage) + ' · ' + esc(t.persona) + '</em></span>'
+             : '<span class="tplmark tplmark-off"><b>Written from scratch</b><em>Or start from something you already send</em></span>') +
+          '<button class="btn btn-secondary btn-sm" id="pick-tpl">' + (t ? 'Use a different template' : 'Use a template') + '</button>' +
         '</div>' +
 
         '<div class="ed-body">' +
           (hasSubject(s)
-            ? '<input class="subject" id="subject" placeholder="Subject line, lowercase, about them" value="' + esc(vr.subject) + '">'
+            ? '<input class="subject" id="subject" placeholder="Subject line, lowercase, about them" value="' + esc(s.subject || '') + '">'
             : '') +
-          '<textarea class="bodytext" id="body" spellcheck="false" aria-label="Message">' + esc(body) + '</textarea>' +
-          '<div class="fieldbar">' + FIELDS.map(function (f) {
-            return '<button class="fbtn" data-field="' + esc(f) + '">' + esc(f) + '</button>';
-          }).join('') + '</div>' +
+          '<textarea class="bodytext" id="body" spellcheck="false" aria-label="Message" placeholder="Write it, or pull in a template above.">' + esc(body) + '</textarea>' +
+          '<div class="ed-count"><span class="hint" id="words"></span></div>' +
         '</div>' +
 
         '<div class="ed-foot">' +
@@ -154,6 +141,7 @@
       '<div class="grid cols-2 mt4">' +
         '<div class="card p5 col g3" id="ctx"></div>' +
         '<div class="card assist-card">' +
+          '<div class="assist-head"><b>Change something</b><span class="hint">Edits the draft in place</span></div>' +
           '<div class="assist-log" id="log"></div>' +
           '<div class="assist-sug" id="sug"></div>' +
           '<form class="assist-in" id="assist-form">' +
@@ -173,9 +161,46 @@
               return '<div class="mini-act"><p>' + esc(a.text) + '</p>' +
                 '<button class="btn btn-ghost btn-sm" data-insert="' + esc(a.use) + '">Drop this in</button></div>';
             }).join('')
-          : '<p class="hint">Nothing public found. Worth knowing on its own.</p>') +
+          : '<p class="hint">Nothing public found for them yet. Worth knowing on its own.</p>') +
         (p.ask ? '<p class="hint">You want: ' + esc(p.ask) + '</p>' : '') +
         '<a class="hint" href="#/c/' + c.id + '/research">All research →</a>';
+    }
+
+    /* ---------------- template picker ---------------- */
+    function openPicker() {
+      var s = step();
+      var p = contactOf(s);
+      var who = p ? p.persona.toLowerCase() : 'someone';
+      var list = Store.templatesFor(p ? p.persona : null, s.channel);
+
+      UI.sheet({
+        title: 'What do you usually send ' + (p ? 'a ' + who : 'here') + '?',
+        cls: 'modal-picker',
+        onMount: function (node, close) {
+          UI.on(node, 'click', '[data-use]', function (e, el) {
+            var t = Store.template(el.dataset.use);
+            if (!t) return;
+            Store.updateStep(c.id, s.id, {
+              template: t.id,
+              body: Store.fill(t.body, c, p),
+              channel: t.channel
+            });
+            close();
+            paintAll();
+            UI.toast('Pulled in "' + t.name + '". Names already filled in.');
+          });
+        },
+        html: '<p class="dim mb4" style="font-size:var(--fs-sm)">Sorted by how well each one fits this step. Picking one fills in the names for you.</p>' +
+          '<div class="tplpick">' + list.map(function (t) {
+            var fit = (p && t.persona === p.persona ? 1 : 0) + (t.channel === s.channel ? 1 : 0);
+            return '<button class="tplopt" data-use="' + t.id + '">' +
+              '<span class="row between g2 wrap"><b>' + esc(t.name) + '</b>' +
+              (fit === 2 ? '<span class="chip chip-pos">Best fit</span>' : fit === 1 ? '<span class="chip">Close</span>' : '') + '</span>' +
+              '<span class="tplopt-meta">' + esc(t.stage) + ' · ' + esc(t.persona) + ' · ' + esc(t.channel) + '</span>' +
+              '<span class="tplopt-body">' + esc(Store.fill(t.body, c, p).slice(0, 150)) + '…</span>' +
+              '</button>';
+          }).join('') + '</div>'
+      });
     }
 
     /* ---------------- painting ---------------- */
@@ -196,7 +221,8 @@
 
     function paintEditor() {
       v.querySelector('#editor').innerHTML = editorHTML();
-      v.querySelector('#ctx').innerHTML = ctxHTML();
+      var ctx = v.querySelector('#ctx');
+      if (ctx) ctx.innerHTML = ctxHTML();
       wire();
       words();
       grow();
@@ -217,13 +243,14 @@
     /* ---------------- wiring ---------------- */
     function wire() {
       var s = step();
+      if (!s) return;
       var body = v.querySelector('#body');
       var subject = v.querySelector('#subject');
 
       function persist() {
-        Store.updateVariant(c.id, s.id, s.activeVariant, {
-          body: body ? body.value : '',
-          subject: subject ? subject.value : (variant(s).subject || '')
+        Store.updateStep(c.id, s.id, {
+          body: body ? body.value : s.body,
+          subject: subject ? subject.value : (s.subject || '')
         });
       }
       if (body) body.addEventListener('input', function () { words(); grow(); persist(); });
@@ -239,38 +266,8 @@
         });
       });
 
-      v.querySelectorAll('[data-v]').forEach(function (el) {
-        el.addEventListener('click', function (e) {
-          if (e.target.closest('[data-vx]')) return;
-          persist();
-          s.activeVariant = +el.dataset.v; Store.save(); paintAll();
-        });
-      });
-      v.querySelectorAll('[data-vx]').forEach(function (el) {
-        el.addEventListener('click', function (e) {
-          e.stopPropagation();
-          Store.removeVariant(c.id, s.id, +el.dataset.vx);
-          paintAll(); UI.toast('Variant removed.');
-        });
-      });
-      var addv = v.querySelector('#add-variant');
-      if (addv) addv.addEventListener('click', function () {
-        persist();
-        var nv = Store.addVariant(c.id, s.id);
-        paintAll();
-        UI.toast(nv ? 'Variant ' + nv.label + ' added. Change one thing, not five.' : 'Could not add.');
-      });
-
-      v.querySelectorAll('[data-field]').forEach(function (el) {
-        el.addEventListener('click', function () {
-          if (!body) return;
-          var at = body.selectionStart || body.value.length;
-          body.value = body.value.slice(0, at) + el.dataset.field + body.value.slice(at);
-          body.focus();
-          body.selectionStart = body.selectionEnd = at + el.dataset.field.length;
-          words(); grow(); persist();
-        });
-      });
+      var pick = v.querySelector('#pick-tpl');
+      if (pick) pick.addEventListener('click', function () { persist(); openPicker(); });
 
       v.querySelectorAll('[data-insert]').forEach(function (el) {
         el.addEventListener('click', function () {
@@ -298,8 +295,9 @@
       });
       var mark = v.querySelector('#mark');
       if (mark) mark.addEventListener('click', function () {
+        if (s.status !== 'sent' && s.status !== 'replied') c.sent += 1;
         Store.updateStep(c.id, s.id, { status: 'sent' });
-        Store.completeTask('t6');
+        Store.completeTask(c.id, 't6');
         paintAll(); UI.toast('Logged.');
       });
       var savet = v.querySelector('#save-tpl');
@@ -308,10 +306,12 @@
         var p = contactOf(s);
         var t = Store.addTemplate({
           name: (p ? p.persona : 'Custom') + ', day ' + s.day,
-          persona: p ? p.persona : 'Other', channel: s.channel, body: body ? body.value : ''
+          persona: p ? p.persona : 'Other', channel: s.channel,
+          stage: s.day === 0 ? 'First touch' : s.day > 10 ? 'Breakup' : 'Follow up',
+          body: body ? body.value : ''
         });
         Store.updateStep(c.id, s.id, { template: t.id });
-        paintAll(); UI.toast('Saved as "' + t.name + '".');
+        paintAll(); UI.toast('Saved to your library as "' + t.name + '".');
       });
 
       /* assistant */
@@ -347,7 +347,8 @@
     /* rail events (delegated, survives repaints) */
     UI.on(v, 'click', '[data-step]', function (e, el) {
       var b = v.querySelector('#body');
-      if (b) Store.updateVariant(c.id, step().id, step().activeVariant, { body: b.value });
+      var cur = step();
+      if (b && cur) Store.updateStep(c.id, cur.id, { body: b.value });
       c.activeStep = el.dataset.step; Store.save(); paintAll();
     });
     UI.on(v, 'change', '[data-wait]', function (e, el) {
@@ -357,14 +358,16 @@
     UI.on(v, 'click', '#add-step', function () {
       var s = Store.addStep(c.id);
       c.activeStep = s.id; Store.save(); paintAll();
+      Store.completeTask(c.id, 't5');
       UI.toast('Step added. Set the day and who it goes to.');
     });
 
     document.getElementById('preview').addEventListener('click', function () {
-      var s = step(), p = contactOf(s), vr = variant(s);
+      var s = step(); if (!s) return;
+      var p = contactOf(s);
       var b = v.querySelector('#body');
       var text = Store.fill(b ? b.value : Store.bodyFor(c, s), c, p);
-      var subj = Store.fill(vr.subject || '', c, p);
+      var subj = Store.fill(s.subject || '', c, p);
       UI.sheet({
         title: 'How it lands',
         html: '<div class="mailprev">' +

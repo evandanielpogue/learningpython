@@ -79,7 +79,7 @@
   UI.sheet = function (opts) {
     var scrim = document.createElement('div');
     scrim.className = 'scrim modal-scrim';
-    scrim.innerHTML = '<div class="modal modal-wide" role="dialog" aria-modal="true" aria-label="' + UI.esc(opts.title) + '">' +
+    scrim.innerHTML = '<div class="modal modal-wide' + (opts.cls ? ' ' + opts.cls : '') + '" role="dialog" aria-modal="true" aria-label="' + UI.esc(opts.title) + '">' +
       '<div class="row between"><h3>' + UI.esc(opts.title) + '</h3>' +
       '<button class="icon-btn" data-close aria-label="Close">✕</button></div>' + opts.html + '</div>';
     document.body.appendChild(scrim);
@@ -92,6 +92,9 @@
     function key(e) { if (e.key === 'Escape') close(); }
     document.addEventListener('keydown', key);
     scrim.addEventListener('click', function (e) { if (e.target === scrim || e.target.closest('[data-close]')) close(); });
+    /* hand the caller the node so it can wire its own controls without
+       hanging a listener off the document that outlives the sheet */
+    if (opts.onMount) opts.onMount(scrim.firstChild, close);
     return close;
   };
 

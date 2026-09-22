@@ -12,9 +12,11 @@
     .add('/login',  Views.login,  { public: true })
     .add('/signup', Views.signup, { public: true })
     .add('/',        Views.home)
+    .add('/new',     Views.newOpp)
     .add('/import',  Views.importer)
     .add('/settings', Views.settings)
     .add('/templates', Views.templates)
+    .add('/c/:id',          Views.opportunity)
     .add('/c/:id/people',   Views.people)
     .add('/c/:id/research', Views.research)
     .add('/c/:id/sequence', Views.sequence)
@@ -25,10 +27,12 @@
   UI.paletteSource = function () {
     var cid = Shell.activeCampaignId();
     var items = [
-      { group: 'Go to', icon: '◉', label: 'Overview', hint: 'G O', run: function () { Router.go('/'); } }
+      { group: 'Go to', icon: '◉', label: 'Overview', hint: 'G O', run: function () { Router.go('/'); } },
+      { group: 'Do', icon: '+', label: 'Add a company from a job listing', run: function () { Router.go('/new'); } }
     ];
     if (cid) {
       items.push(
+        { group: 'Go to', icon: '◆', label: 'Company summary', hint: 'G C', run: function () { Router.go('/c/' + cid); } },
         { group: 'Go to', icon: '◎', label: 'Contacts', hint: 'G P', run: function () { Router.go('/c/' + cid + '/people'); } },
         { group: 'Go to', icon: '◈', label: 'Research on the company and the people', hint: 'G R', run: function () { Router.go('/c/' + cid + '/research'); } },
         { group: 'Go to', icon: '≡', label: 'The fourteen day sequence', hint: 'G S', run: function () { Router.go('/c/' + cid + '/sequence'); } },
@@ -70,6 +74,8 @@
       awaitingG = false;
       clearTimeout(gTimer);
       if (k === 'o') Router.go('/');
+      else if (k === 'c' && cid) Router.go('/c/' + cid);
+      else if (k === 'n') Router.go('/new');
       else if (k === 'p' && cid) Router.go('/c/' + cid + '/people');
       else if (k === 's' && cid) Router.go('/c/' + cid + '/sequence');
       else if (k === 'r' && cid) Router.go('/c/' + cid + '/research');

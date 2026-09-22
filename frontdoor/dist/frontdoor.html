@@ -687,36 +687,150 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .browser-bar { display: flex; align-items: center; gap: 6px; padding: 8px var(--s-4); background: var(--sunk); border-bottom: 1px solid var(--line); }
 .browser-bar i { width: 8px; height: 8px; border-radius: var(--r-full); background: var(--line-3); }
 .browser-bar .url { flex: 1; text-align: center; font-family: var(--mono); font-size: var(--fs-xs); color: var(--ink-3); background: var(--panel); border-radius: var(--r-1); padding: 4px 10px; }
-.pub { padding: var(--s-7); display: grid; gap: var(--s-7); min-width: 0; }
-.pub section { min-width: 0; }
+/* ---- the public page ----------------------------------------------------
+   Its own type scale and rhythm, because it is a different document that
+   happens to be rendered inside the app. ---------------------------------- */
+.pub {
+  --pg-ink: #14161A; --pg-dim: #5A6070; --pg-line: #E6E8EE; --pg-wash: #F6F7F9;
+  padding: var(--s-8) var(--s-7) var(--s-7); min-width: 0; color: var(--pg-ink);
+  font-size: 14.5px; line-height: 1.62;
+}
 @media (max-width: 640px) { .pub { padding: var(--s-5); } }
-.pub section { display: grid; gap: var(--s-3); }
-.pub .hero h2 { font-size: clamp(22px, 3.4vw, 31px); font-weight: 650; letter-spacing: -.03em; }
-.pub .hero .thesis { font-size: var(--fs-md); color: var(--ink-2); max-width: 52ch; }
-.stats { display: grid; gap: var(--s-2); grid-template-columns: repeat(auto-fit, minmax(138px, 1fr)); }
-.stats div { background: var(--sunk); border-radius: var(--r-2); padding: var(--s-4); }
-.stats b { display: block; font-size: var(--fs-xl); font-weight: 650; letter-spacing: -.03em; color: var(--ac); font-variant-numeric: tabular-nums; }
-.stats span { font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.4; }
-.take { border-left: 2px solid var(--ac); padding-left: var(--s-4); font-size: var(--fs-md); line-height: 1.55; }
-.history { display: grid; padding-left: var(--s-5); position: relative; }
-.history::before { content: ""; position: absolute; left: 4px; top: 12px; bottom: 12px; width: 1px; background: var(--line); }
-.job { padding: var(--s-3) 0; position: relative; display: grid; gap: 4px; }
-.job::before { content: ""; position: absolute; left: -21px; top: 17px; width: 9px; height: 9px; border-radius: var(--r-full); background: var(--panel); border: 2px solid var(--ac); }
-.job .jt { display: flex; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; align-items: baseline; }
-.job .jt b { font-size: var(--fs-md); font-weight: 600; }
-.job .jt em { font-style: normal; font-family: var(--mono); font-size: var(--fs-xs); color: var(--ink-3); }
-.job .jw { font-size: var(--fs-base); color: var(--ink-2); }
-.job ul { margin: 3px 0 0; padding-left: 16px; display: grid; gap: 4px; font-size: var(--fs-base); color: var(--ink-2); }
-.days { display: grid; gap: var(--s-2); }
-.days div { display: grid; grid-template-columns: 42px 1fr; gap: var(--s-3); font-size: var(--fs-base); color: var(--ink-2); align-items: start; }
-.days span { font-family: var(--mono); font-size: var(--fs-xs); color: var(--ac); background: var(--ac-wash); padding: 4px 6px; border-radius: var(--r-1); text-align: center; }
-.reel { aspect-ratio: 16/9; border-radius: var(--r-2); background: var(--solid); display: grid; place-items: center; cursor: pointer; }
-.reel b { width: 46px; height: 46px; border-radius: var(--r-full); background: var(--ac); color: #fff; display: grid; place-items: center; transition: transform var(--t-2) var(--spring); }
-.reel:hover b { transform: scale(1.12); }
-.said { background: var(--sunk); border-radius: var(--r-2); padding: var(--s-5); display: grid; gap: var(--s-3); }
-.said p { font-size: var(--fs-md); line-height: 1.5; }
-.said .by { display: flex; align-items: center; gap: 10px; font-size: var(--fs-sm); color: var(--ink-2); }
-.pub-foot { border-top: 1px solid var(--line); padding-top: var(--s-5); display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.pub-in { animation: pubIn var(--t-4) var(--ease); }
+@keyframes pubIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.pub section { min-width: 0; display: grid; gap: var(--s-3); margin-bottom: var(--s-7); }
+.pub section:last-of-type { margin-bottom: var(--s-6); }
+
+.pg-h {
+  font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--pg-dim); margin-bottom: 2px;
+}
+.pg-eyebrow {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .04em; color: var(--ac);
+  text-transform: uppercase;
+}
+.pub h1 { font-size: clamp(28px, 4.2vw, 40px); font-weight: 680; letter-spacing: -.035em; line-height: 1.06; }
+.pg-thesis { font-size: clamp(16px, 1.7vw, 19px); line-height: 1.5; color: var(--pg-ink); max-width: 48ch; }
+.pg-take, .pg-story { font-size: 15.5px; color: var(--pg-ink); max-width: 62ch; }
+.pg-story { border-left: 2px solid var(--ac); padding-left: var(--s-4); }
+
+.pg-hero {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-6);
+  align-items: center; padding-bottom: var(--s-7); border-bottom: 1px solid var(--pg-line);
+}
+@media (max-width: 620px) { .pg-hero { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); } }
+.pg-hero-txt { display: grid; gap: var(--s-3); min-width: 0; }
+.pg-portrait { position: relative; }
+.pg-portrait::after {
+  content: ""; position: absolute; inset: -6px; border-radius: 20px;
+  border: 1px solid var(--pg-line); pointer-events: none;
+}
+.portrait { border-radius: 16px; object-fit: cover; display: block; background: var(--sunk); }
+.portrait-mono {
+  display: grid; place-items: center; background: var(--solid); color: #fff;
+  font-weight: 620; letter-spacing: -.02em;
+}
+
+.pg-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pg-chips span {
+  font-size: 12px; color: var(--pg-dim); background: var(--pg-wash);
+  border: 1px solid var(--pg-line); border-radius: var(--r-full); padding: 3px 10px;
+}
+
+.pg-stats { display: grid; gap: var(--s-2); grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.pg-stats div {
+  background: var(--pg-wash); border: 1px solid var(--pg-line); border-radius: var(--r-2);
+  padding: var(--s-4); display: grid; gap: 2px; transition: transform var(--t-2) var(--ease);
+}
+.pg-stats div:hover { transform: translateY(-2px); }
+.pg-stats b {
+  font-size: 27px; font-weight: 670; letter-spacing: -.035em; color: var(--ac);
+  font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.pg-stats span { font-size: 13px; color: var(--pg-ink); line-height: 1.35; }
+.pg-stats em { font-style: normal; font-family: var(--mono); font-size: 10px; color: var(--pg-dim); }
+
+.pg-days { display: grid; gap: var(--s-2); }
+.pg-days div {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: var(--s-4); align-items: start;
+  padding: var(--s-3) 0; border-top: 1px solid var(--pg-line);
+}
+.pg-days div:first-child { border-top: none; padding-top: 0; }
+.pg-days span {
+  font-family: var(--mono); font-size: 11px; color: var(--ac); background: var(--ac-wash);
+  padding: 4px 0; border-radius: var(--r-1); text-align: center;
+}
+.pg-days p { font-size: 14px; color: var(--pg-ink); }
+
+.pg-jobs { display: grid; padding-left: var(--s-5); position: relative; }
+.pg-jobs::before { content: ""; position: absolute; left: 4px; top: 10px; bottom: 10px; width: 1px; background: var(--pg-line); }
+.pg-job { padding: var(--s-3) 0; position: relative; display: grid; gap: 3px; }
+.pg-job::before {
+  content: ""; position: absolute; left: -21px; top: 16px; width: 9px; height: 9px;
+  border-radius: var(--r-full); background: var(--panel); border: 2px solid var(--ac);
+}
+.pg-job-h { display: flex; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; align-items: baseline; }
+.pg-job-h b { font-size: 15px; font-weight: 620; }
+.pg-job-h em { font-style: normal; font-family: var(--mono); font-size: 11px; color: var(--pg-dim); }
+.pg-job-co { font-size: 13px; color: var(--pg-dim); }
+.pg-job ul { margin: 4px 0 0; padding-left: 16px; display: grid; gap: 3px; font-size: 13.5px; color: var(--pg-ink); }
+
+.pg-quote {
+  margin: 0; background: var(--pg-wash); border: 1px solid var(--pg-line);
+  border-radius: var(--r-3); padding: var(--s-5); display: grid; gap: var(--s-4);
+}
+.pg-quote blockquote { margin: 0; font-size: 16px; line-height: 1.5; }
+.pg-quote blockquote::before { content: "\201C"; }
+.pg-quote blockquote::after { content: "\201D"; }
+.pg-quote figcaption { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.pg-quote figcaption b { display: block; }
+.pg-quote figcaption em { font-style: normal; color: var(--pg-dim); }
+
+.pg-reel {
+  aspect-ratio: 16/9; border-radius: var(--r-3); background: var(--solid); color: #fff;
+  display: grid; place-items: center; gap: var(--s-3); cursor: pointer; align-content: center;
+}
+.pg-reel b {
+  width: 46px; height: 46px; border-radius: var(--r-full); background: var(--ac); color: #fff;
+  display: grid; place-items: center; transition: transform var(--t-2) var(--spring);
+}
+.pg-reel span { font-size: 13px; opacity: .72; }
+.pg-reel:hover b { transform: scale(1.12); }
+
+.pg-foot {
+  border-top: 1px solid var(--pg-line); padding-top: var(--s-5); display: flex; gap: var(--s-3);
+  flex-wrap: wrap; align-items: center; justify-content: space-between;
+}
+.pg-foot b { font-size: 15px; }
+.pg-foot p { font-size: 13px; color: var(--pg-dim); }
+.pg-btn {
+  border: 1px solid var(--solid); background: var(--solid); color: #fff; border-radius: var(--r-2);
+  padding: 8px 14px; font-size: 13px; font-weight: 550; cursor: pointer;
+  transition: transform var(--t-1) var(--ease), background var(--t-1) var(--ease);
+}
+.pg-btn:hover { background: var(--solid-hover); }
+.pg-btn:active { transform: scale(.975); }
+.pg-btn-ghost { background: none; color: var(--pg-ink); border-color: var(--pg-line); }
+.pg-btn-ghost:hover { background: var(--pg-wash); }
+
+/* brief: two columns under a compact header */
+.pub-brief .pg-hero { grid-template-columns: auto minmax(0, 1fr); padding-bottom: var(--s-5); }
+.pub-brief .pub h1, .pub-brief h1 { font-size: clamp(24px, 3vw, 31px); }
+.pb-cols { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: var(--s-7); margin-top: var(--s-6); }
+@media (max-width: 760px) { .pb-cols { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+
+/* letter: one narrow column, addressed to a person */
+.pub-letter { max-width: 620px; margin: 0 auto; }
+.pub-letter .pg-h { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--pg-ink); font-weight: 620; }
+.pub-letter .pl-top { border-bottom: none; padding-bottom: var(--s-4); }
+.pub-letter h1 { font-size: clamp(24px, 3vw, 30px); }
+.pub-letter .pg-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pl-sign {
+  display: flex; align-items: center; gap: var(--s-3); padding: var(--s-5) 0;
+  border-top: 1px solid var(--pg-line); margin-bottom: var(--s-5);
+}
+.pl-sign b { font-size: 15px; display: block; }
+.pl-sign p { font-size: 13px; color: var(--pg-dim); }
 
 /* wizard */
 .steps-bar { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-6); flex-wrap: wrap; }
@@ -1004,23 +1118,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 }
 .ed-meta .input { padding: 7px 10px; font-size: var(--fs-sm); }
 
-.ed-tabs { display: flex; align-items: center; gap: var(--s-1); padding: var(--s-3) var(--s-5) 0; }
-.vtab {
-  display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: var(--r-1) var(--r-1) 0 0;
-  border: 1px solid transparent; border-bottom: none; background: none; cursor: pointer;
-  font-family: var(--mono); font-size: var(--fs-sm); color: var(--ink-3);
-  transition: background var(--t-1) var(--ease), color var(--t-1) var(--ease);
-}
-.vtab:hover { background: var(--sunk); color: var(--ink); }
-.vtab.on { background: var(--panel); border-color: var(--line); color: var(--ink); font-weight: 600; box-shadow: 0 1px 0 0 var(--panel); }
-.vx { color: var(--ink-4); font-size: 10px; padding: 0 1px; }
-.vx:hover { color: var(--neg); }
-.vadd {
-  width: 24px; height: 24px; border-radius: var(--r-1); border: 1px dashed var(--line-2); background: none;
-  color: var(--ink-3); cursor: pointer; font-size: 13px; line-height: 1;
-  transition: border-color var(--t-1) var(--ease), color var(--t-1) var(--ease);
-}
-.vadd:hover { border-color: var(--ac); color: var(--ac); }
 
 .ed-body { padding: 0 var(--s-5) var(--s-4); border-top: 1px solid var(--line); margin-top: -1px; }
 .subject {
@@ -1034,14 +1131,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   font-family: var(--mono); font-size: 13px; line-height: 1.85; color: var(--ink);
 }
 .bodytext.flash { animation: flash 620ms var(--ease); }
-.fieldbar { display: flex; gap: var(--s-1); flex-wrap: wrap; padding-top: var(--s-2); border-top: 1px dashed var(--line); }
-.fbtn {
-  font-family: var(--mono); font-size: var(--fs-xs); padding: 3px 8px; border-radius: var(--r-1);
-  border: 1px solid var(--line); background: var(--sunk); color: var(--ink-3); cursor: pointer;
-  transition: all var(--t-1) var(--ease);
-}
-.fbtn:hover { border-color: var(--ac); color: var(--ac); background: var(--ac-wash); }
-.fbtn:active { transform: scale(.94); }
 
 .ed-foot {
   display: flex; align-items: flex-end; gap: var(--s-3); flex-wrap: wrap;
@@ -1063,6 +1152,194 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   color: var(--ink-2); background: var(--sunk); border-radius: var(--r-2); padding: var(--s-4);
   max-height: 46vh; overflow: auto;
 }
+
+/* ==========================================================================
+   Overview: one row per company
+   ========================================================================== */
+.cols-4 { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.opps { display: grid; gap: var(--s-2); }
+.opp {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: var(--s-4);
+  align-items: center; padding: var(--s-4) var(--s-5); background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r-3); text-decoration: none; color: inherit;
+  transition: border-color var(--t-1) var(--ease), box-shadow var(--t-2) var(--ease), transform var(--t-2) var(--ease);
+}
+.opp:hover { text-decoration: none; border-color: var(--line-2); box-shadow: var(--e-2); transform: translateY(-1px); }
+.opp:active { transform: scale(.995); }
+.opp-ring { position: relative; display: grid; place-items: center; flex: none; }
+.opp-pct {
+  position: absolute; font-family: var(--mono); font-size: 9.5px; color: var(--ink-3);
+}
+.opp-main { min-width: 0; display: grid; gap: 2px; }
+.opp-co { font-size: var(--fs-md); font-weight: 650; letter-spacing: -.02em; }
+.opp-role { font-size: var(--fs-sm); color: var(--ink-3); }
+.opp-next {
+  font-size: var(--fs-sm); color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.opp-nums { display: flex; gap: var(--s-4); }
+.opp-nums span { display: grid; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-4); font-family: var(--mono); }
+.opp-nums b { font-size: var(--fs-md); font-weight: 620; color: var(--ink); font-family: var(--mono); letter-spacing: -.02em; }
+.opp-end { display: flex; align-items: center; gap: var(--s-3); }
+.opp .arr { color: var(--ink-4); transition: transform var(--t-2) var(--ease); }
+.opp:hover .arr { transform: translateX(3px); color: var(--ac); }
+@media (max-width: 860px) {
+  .opp { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .opp-nums { display: none; }
+}
+.addrow-lg { padding: var(--s-5); font-size: var(--fs-base); }
+
+.split-wide { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--s-4); align-items: start; }
+@media (max-width: 980px) { .split-wide { grid-template-columns: minmax(0, 1fr); } }
+
+.leadwins { display: grid; gap: var(--s-2); }
+.leadwins div {
+  display: flex; align-items: baseline; gap: var(--s-3); padding: var(--s-3);
+  background: var(--sunk); border-radius: var(--r-2);
+}
+.leadwins b { font-family: var(--mono); font-size: var(--fs-md); color: var(--ac); font-weight: 620; flex: none; }
+.leadwins span { font-size: var(--fs-sm); color: var(--ink-2); }
+.storyline {
+  margin-top: var(--s-4); font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.6;
+  border-left: 2px solid var(--line-2); padding-left: var(--s-3);
+}
+.ticks { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ticks li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: var(--s-2); font-size: var(--fs-sm); color: var(--ink-2); }
+.ticks li::before { content: "✓"; color: var(--pos); font-size: 11px; }
+
+.sugg { display: flex; align-items: center; gap: var(--s-3); }
+.sugg b { display: block; font-size: var(--fs-base); font-weight: 600; line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sugg em { font-style: normal; display: block; font-size: var(--fs-sm); color: var(--ink-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ==========================================================================
+   Add a company
+   ========================================================================== */
+.listing-in {
+  min-height: 260px; resize: vertical; font-family: var(--mono); font-size: 12.5px; line-height: 1.75;
+}
+.assist-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3);
+  flex-wrap: wrap; padding: var(--s-4) var(--s-4) 0;
+}
+.assist-head b { font-size: var(--fs-base); }
+
+/* ==========================================================================
+   People we found
+   ========================================================================== */
+.foundgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--s-3); }
+.foundcard {
+  border: 1px solid var(--line); border-left: 2px solid var(--pc); border-radius: var(--r-2);
+  padding: var(--s-4); display: grid; gap: var(--s-2); background: var(--panel);
+  transition: box-shadow var(--t-2) var(--ease);
+}
+.foundcard:hover { box-shadow: var(--e-2); }
+.foundcard b { display: block; font-size: var(--fs-base); font-weight: 600; line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.foundcard em { font-style: normal; display: block; font-size: var(--fs-sm); color: var(--ink-3); }
+.fc-why { font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.5; }
+.fc-found { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-4); }
+
+/* ==========================================================================
+   Templates
+   ========================================================================== */
+.filterbar { display: flex; gap: var(--s-2); flex-wrap: wrap; margin-bottom: var(--s-4); }
+.ftab {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: var(--r-full);
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer;
+  font-size: var(--fs-sm); font-weight: 500;
+  transition: border-color var(--t-1) var(--ease), background var(--t-1) var(--ease), color var(--t-1) var(--ease);
+}
+.ftab:hover { border-color: var(--line-2); color: var(--ink); }
+.ftab.on { background: var(--solid); border-color: var(--solid); color: #fff; }
+.ftab span { font-family: var(--mono); font-size: 10px; opacity: .6; }
+.ftab:active { transform: scale(.97); }
+
+.tplrow {
+  display: grid; grid-template-columns: 8px minmax(0, 1fr) auto auto; gap: var(--s-3); align-items: center;
+  width: 100%; text-align: left; background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r-2); padding: 10px var(--s-4); margin-bottom: var(--s-2); cursor: pointer;
+  transition: border-color var(--t-1) var(--ease), box-shadow var(--t-1) var(--ease), transform var(--t-1) var(--ease);
+}
+.tplrow:hover { box-shadow: var(--e-2); transform: translateX(2px); }
+.tplrow.on { border-color: var(--pc); box-shadow: 0 0 0 1px var(--pc); }
+.tplrow-dot { width: 8px; height: 8px; border-radius: var(--r-full); background: var(--pc); }
+.tplrow-main { min-width: 0; }
+.tplrow-name { display: block; font-size: var(--fs-base); font-weight: 600; line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tplrow-sub { display: block; font-size: var(--fs-sm); color: var(--ink-3); }
+.tplrow-stage {
+  font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--ink-3); white-space: nowrap;
+}
+.tplrow-mine { color: var(--ac); font-size: 11px; }
+@media (max-width: 560px) { .tplrow-stage { display: none; } }
+
+/* ==========================================================================
+   Sequence: the template a step starts from
+   ========================================================================== */
+.ed-tplbar {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap;
+  padding: var(--s-3) var(--s-5); background: var(--ac-wash); border-top: 1px solid var(--line);
+}
+.tplmark b { display: block; font-size: var(--fs-sm); font-weight: 600; }
+.tplmark em { font-style: normal; font-size: var(--fs-xs); color: var(--ink-3); }
+.tplmark-off b { color: var(--ink-2); font-weight: 500; }
+.ed-tplbar:has(.tplmark-off) { background: var(--sunk); }
+.ed-count { display: flex; justify-content: flex-end; padding-top: var(--s-2); border-top: 1px solid var(--line); }
+.sc-tpl { font-family: var(--mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-4); }
+
+.modal-picker { max-width: 640px; }
+.tplpick { display: grid; gap: var(--s-2); max-height: 54vh; overflow: auto; padding-right: 2px; }
+.tplopt {
+  display: grid; gap: 5px; text-align: left; width: 100%; padding: var(--s-4);
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-2); cursor: pointer;
+  transition: border-color var(--t-1) var(--ease), box-shadow var(--t-1) var(--ease);
+}
+.tplopt:hover { border-color: var(--ac); box-shadow: 0 0 0 1px var(--ac-edge); }
+.tplopt:active { transform: scale(.995); }
+.tplopt b { font-size: var(--fs-base); font-weight: 600; }
+.tplopt-meta { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-4); }
+.tplopt-body {
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.7; color: var(--ink-3);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* ==========================================================================
+   Page: layout picker and the photo
+   ========================================================================== */
+.laypick { display: grid; gap: var(--s-2); }
+.lay {
+  display: grid; gap: 4px; text-align: left; padding: var(--s-3); cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-2);
+  transition: border-color var(--t-1) var(--ease), box-shadow var(--t-1) var(--ease);
+}
+.lay:hover { border-color: var(--line-2); }
+.lay.on { border-color: var(--ac); box-shadow: 0 0 0 1px var(--ac-edge); background: var(--ac-wash); }
+.lay b { font-size: var(--fs-sm); font-weight: 600; }
+.lay em { font-style: normal; font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.45; }
+.lay-art {
+  display: grid; gap: 2px; height: 26px; padding: 4px; border-radius: 4px;
+  background: var(--sunk); border: 1px solid var(--line);
+}
+.lay-art i { background: var(--line-3); border-radius: 1px; display: block; }
+.lay-case i:nth-child(1) { height: 7px; }
+.lay-case i:nth-child(2) { height: 3px; width: 70%; }
+.lay-case i:nth-child(3) { height: 3px; width: 85%; }
+.lay-brief { grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; }
+.lay-brief i:nth-child(1) { grid-column: 1 / -1; }
+.lay-letter { justify-items: center; }
+.lay-letter i { width: 60%; height: 3px; }
+.lay.on .lay-art i { background: var(--ac); opacity: .55; }
+
+.photo-set { display: grid; gap: var(--s-2); justify-items: start; }
+.photo-ring { position: relative; }
+.pg-reads { display: grid; gap: var(--s-4); }
+.pg-reads b { display: block; font-size: 15px; font-weight: 620; letter-spacing: -.01em; margin-bottom: 3px; }
+.pg-reads p { font-size: 14px; color: var(--pg-dim); max-width: 60ch; }
+.pg-ticks { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.pg-ticks li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: var(--s-2); font-size: 14px; }
+.pg-ticks li::before { content: "✓"; color: var(--ac); font-size: 12px; }
 
 </style>
 </head>
@@ -1096,11 +1373,15 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
    Stands in for the backend. Everything persists to localStorage so a reload
    behaves like a real session. Wrapped in try/catch because private windows
    and blocked site data both throw on access.
+
+   The unit of work is an opportunity: one company, one role, one listing.
+   Wins, contacts, research, the sequence and the page all hang off it, so
+   two opportunities never share a story.
    ========================================================================== */
 (function (window) {
   'use strict';
 
-  var KEY = 'frontdoor.v3';
+  var KEY = 'frontdoor.v4';
 
   var PERSONAS = [
     { key: 'Peer',           colour: '--p-peer' },
@@ -1111,16 +1392,22 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     { key: 'Other',          colour: '--line-3' }
   ];
   var CHANNELS = ['Email', 'LinkedIn', 'Call', 'Reply', 'ATS', 'Text'];
+  var STAGES = ['First touch', 'Follow up', 'Escalation', 'Referral ask', 'Breakup'];
 
   function uid(p) { return (p || 'x') + '_' + Math.random().toString(36).slice(2, 8); }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function slugify(s) {
+    return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  }
 
   /* ---- profile --------------------------------------------------------- */
   var SEED_PROFILE = {
     name: 'Evan Pogue',
     email: 'evan@example.com',
+    phone: '312 555 0148',
     location: 'Chicago, IL',
     years: 8,
+    photo: null,
     imported: false,
     source: null,
     voice: { traits: ['Direct', 'Numbers first', 'One ask'] },
@@ -1143,14 +1430,22 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           'Built the outbound motion from nothing'
         ] }
     ],
+    /* tags are what a listing gets matched against */
     wins: [
-      { id: 'w1', text: 'Finished at 112% through a pricing change', where: 'Brightline, FY25', metric: '112%', short: 'through a pricing change', on: true },
-      { id: 'w2', text: 'Carried a $1.2M quota and hit it', where: 'Brightline, FY25', metric: '$1.2M', short: 'quota carried and hit', on: true },
-      { id: 'w3', text: 'Rebuilt discovery when cycles went 30 to 70 days', where: 'Brightline, Q2', metric: '30→70', short: 'day cycles, rebuilt discovery', on: true },
-      { id: 'w4', text: 'Grew territory ARR 41% year over year', where: 'Northwind, FY23', metric: '41%', short: 'territory ARR growth', on: false },
-      { id: 'w5', text: 'Ramped four new AEs to quota in two quarters', where: 'Northwind, FY23', metric: '4 AEs', short: 'ramped to quota in two quarters', on: false },
-      { id: 'w6', text: 'Top 3 of 38 reps, two years running', where: 'Northwind', metric: 'Top 3', short: 'of 38 reps, two years running', on: false },
-      { id: 'w7', text: 'Closed the biggest deal the company had done', where: 'Cobalt, FY21', metric: '$340k', short: 'largest deal in company history', on: false }
+      { id: 'w1', text: 'Finished at 112% through a pricing change', where: 'Brightline, FY25', metric: '112%', short: 'through a pricing change',
+        tags: ['pricing', 'quota', 'attainment', 'change', 'seat', 'packaging', 'reprice'] },
+      { id: 'w2', text: 'Carried a $1.2M quota and hit it', where: 'Brightline, FY25', metric: '$1.2M', short: 'quota carried and hit',
+        tags: ['quota', 'mid-market', 'enterprise', 'acv', 'closing', 'number'] },
+      { id: 'w3', text: 'Rebuilt discovery when cycles went 30 to 70 days', where: 'Brightline, Q2', metric: '30→70', short: 'day cycles, rebuilt discovery',
+        tags: ['discovery', 'cycle', 'process', 'meddpicc', 'qualification', 'sales process', 'complex'] },
+      { id: 'w4', text: 'Grew territory ARR 41% year over year', where: 'Northwind, FY23', metric: '41%', short: 'territory ARR growth',
+        tags: ['territory', 'growth', 'arr', 'expansion', 'pipeline', 'new logo'] },
+      { id: 'w5', text: 'Ramped four new AEs to quota in two quarters', where: 'Northwind, FY23', metric: '4 AEs', short: 'ramped to quota in two quarters',
+        tags: ['ramp', 'coaching', 'onboarding', 'mentor', 'team', 'lead', 'manager', 'hiring'] },
+      { id: 'w6', text: 'Top 3 of 38 reps, two years running', where: 'Northwind', metric: 'Top 3', short: 'of 38 reps, two years running',
+        tags: ['performance', 'ranking', 'consistent', 'top', 'president'] },
+      { id: 'w7', text: 'Closed the biggest deal the company had done', where: 'Cobalt, FY21', metric: '$340k', short: 'largest deal in company history',
+        tags: ['enterprise', 'large', 'strategic', 'acv', 'negotiation', 'outbound'] }
     ],
     stack: ['Salesforce', 'HubSpot', 'Outreach', 'Gong', 'Clay', 'Sales Navigator', 'MEDDPICC'],
     reference: { quote: 'Evan rebuilt our discovery script in the middle of a pricing change and we still made the year. He is who you want in the room when the motion breaks.', who: 'Dev Nair', role: 'VP Sales at Brightline', initials: 'DN' }
@@ -1158,23 +1453,29 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
   /* ---- message templates ----------------------------------------------- */
   var TEMPLATES = [
-    { id: 'tpl_peer', name: 'Peer, first touch', persona: 'Peer', channel: 'LinkedIn', stock: true,
+    { id: 'tpl_peer', name: 'Ask a peer what it is really like', persona: 'Peer', stage: 'First touch', channel: 'LinkedIn', stock: true,
       body: "{first}, I applied for the {role} and figured I would go to the source rather than the portal.\n\nCurious what changed day to day when {company} moved upmarket. Longer cycles, or just more people in the room?\n\nEither way, appreciate you reading this." },
-    { id: 'tpl_rec', name: 'Recruiter, first touch', persona: 'Recruiter', channel: 'Email', stock: true,
-      body: "{first}, I applied for the {role} on Tuesday. Quick context: I carried a $1.2M quota selling into ops leaders and finished at 112% last year.\n\nIs the team still interviewing for this one, or is it further along than the posting suggests?" },
-    { id: 'tpl_hm', name: 'Hiring manager, cold open', persona: 'Hiring manager', channel: 'Email', stock: true,
+    { id: 'tpl_rec', name: 'Check the req is actually moving', persona: 'Recruiter', stage: 'First touch', channel: 'Email', stock: true,
+      body: "{first}, I applied for the {role} on Tuesday. Quick context: {win}.\n\nIs the team still interviewing for this one, or is it further along than the posting suggests?" },
+    { id: 'tpl_hm', name: 'Open with what you noticed', persona: 'Hiring manager', stage: 'First touch', channel: 'Email', stock: true,
       body: "{first}, {angle}\n\nI ran that exact change at Brightline last year. We lost 40% of the team, rebuilt the discovery script, and still finished at 112%.\n\nI applied for the {role}. The 30-60-90 is here:\nfrontdoor.app/p/{slug}\n\nWorth fifteen minutes, or should I stay in the queue?" },
-    { id: 'tpl_hm2', name: 'Hiring manager, follow up', persona: 'Hiring manager', channel: 'Email', stock: true,
+    { id: 'tpl_hm2', name: 'Follow up with something new', persona: 'Hiring manager', stage: 'Follow up', channel: 'Email', stock: true,
       body: "{first}, spent an hour in your trial and wrote up the three places a mid-market buyer stalls in discovery. Added it to the same page:\nfrontdoor.app/p/{slug}\n\nThe second one is the interesting one. Integrations come up before security, which is backwards at your ACV.\n\nStill happy to trade fifteen minutes if useful." },
-    { id: 'tpl_exec', name: 'Skip level, escalation', persona: 'Skip level', channel: 'Email', stock: true,
-      body: "{first}, your mid-market segment is the one that has to carry next year's number, and new rep ramp is usually where that plan breaks.\n\nI took a mid-market team from 30 day to 70 day cycles without losing the year. 112%.\n\nApplied for the {role}. Plan is here: frontdoor.app/p/{slug}\n\nWorth passing down, or should I sit tight?" },
-    { id: 'tpl_tie', name: 'Shared tie, intro ask', persona: 'Shared tie', channel: 'LinkedIn', stock: true,
-      body: "{first}, we overlapped at Brightline in 2022.\n\nI am going after the {role} at {company} and saw you spent two years there. If you are still in touch with the team, would you be up for forwarding me along? Totally fine if that bridge is not one you want to cross.\n\nSomething you could paste:\n\"Evan ran our SMB to mid-market transition at Brightline and finished at 112% through it. He has applied for the {role}.\"" },
-    { id: 'tpl_break', name: 'Breakup', persona: 'Other', channel: 'Email', stock: true,
+    { id: 'tpl_exec', name: 'Go one level up', persona: 'Skip level', stage: 'Escalation', channel: 'Email', stock: true,
+      body: "{first}, your mid-market segment is the one that has to carry next year's number, and new rep ramp is usually where that plan breaks.\n\n{win}.\n\nApplied for the {role}. Plan is here: frontdoor.app/p/{slug}\n\nWorth passing down, or should I sit tight?" },
+    { id: 'tpl_tie', name: 'Ask for the intro and write it for them', persona: 'Shared tie', stage: 'Referral ask', channel: 'LinkedIn', stock: true,
+      body: "{first}, we overlapped at Brightline in 2022.\n\nI am going after the {role} at {company} and saw you spent two years there. If you are still in touch with the team, would you be up for forwarding me along? Totally fine if that bridge is not one you want to cross.\n\nSomething you could paste:\n\"{me} ran our SMB to mid-market transition at Brightline and finished at 112% through it. He has applied for the {role}.\"" },
+    { id: 'tpl_ref', name: 'Ask a peer to refer you', persona: 'Peer', stage: 'Referral ask', channel: 'Reply', stock: true,
+      body: "{first}, that detail about cycles was the most useful thing anyone has told me about this role. I rebuilt my 30-60-90 around it.\n\nIf it feels right after one conversation, would you be open to dropping me in the referral portal? No pressure at all." },
+    { id: 'tpl_call', name: 'Phone script for the recruiter', persona: 'Recruiter', stage: 'Follow up', channel: 'Call', stock: true,
+      body: "Hi {first}, it is {me}. I applied for the {role} a couple of weeks back. Is now a bad time?\n\n[pause, actually wait]\n\nQuick one. I wanted to check whether that req is still moving or whether it is on hold. I would rather know than keep guessing." },
+    { id: 'tpl_break', name: 'Close the loop and leave the door open', persona: 'Other', stage: 'Breakup', channel: 'Email', stock: true,
       body: "{first}, closing the loop on this one so I am not cluttering your inbox.\n\nUnrelated to the role, the integrations-before-security thing is worth handing to whoever owns your discovery script. Cheap fix.\n\nIf the seat opens up again I would still want the conversation. Good luck with the quarter." }
   ];
 
-  /* ---- contacts --------------------------------------------------------- */
+  /* ---- the Acme example -------------------------------------------------- */
+  var ACME_LISTING = "Mid-Market Account Executive\nAcme · Chicago, hybrid · Req 4821\n\nAcme is hiring six mid-market AEs as we build the segment out properly. You will own a territory of 80 to 150k ACV accounts selling to RevOps and sales leaders, with 60 to 90 day cycles.\n\nWhat you will do\n- Run full cycle from first call to close against a $1.1M annual number\n- Work RevOps buyers through a multi threaded evaluation\n- Help us rebuild the discovery script now that seat based pricing has changed the deal math\n- Ramp fast and help the next hires ramp faster\n\nWhat we are looking for\n- 5+ years of SaaS sales, at least two in mid-market\n- Experience selling through a pricing or packaging change\n- A track record of quota attainment you can talk through\n- MEDDPICC or similar, used properly";
+
   var CONTACTS = [
     { id: 'p1', name: 'Dana Koh', title: 'Mid-Market AE', persona: 'Peer', colour: '--p-peer',
       tenure: '2 yrs at Acme', prev: 'Before: Outreach', mutuals: 3,
@@ -1217,7 +1518,18 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       ] }
   ];
 
-  /* ---- company research -------------------------------------------------- */
+  /* people we found but have not added yet */
+  var SUGGESTED = [
+    { id: 'g1', name: 'Ines Okafor', title: 'Senior Manager, Mid-Market', persona: 'Hiring manager',
+      found: 'Runs the second mid-market pod', why: 'The listing says six reqs. Two managers are hiring, not one.',
+      email: 'ines.okafor@acme.com', linkedin: 'in/inesokafor', mutuals: 0, tenure: '1 yr at Acme', prev: 'Before: Klaviyo',
+      ask: 'Fifteen minutes' },
+    { id: 'g2', name: 'Tom Brantley', title: 'RevOps Lead', persona: 'Other',
+      found: 'Named in the listing as a partner to the role', why: 'He owns the discovery script the listing wants rebuilt.',
+      email: 'tom.brantley@acme.com', linkedin: 'in/tombrantley', mutuals: 1, tenure: '4 yrs at Acme', prev: '',
+      ask: 'What actually breaks in discovery today' }
+  ];
+
   var RESEARCH = [
     { date: 'Yesterday', kind: 'Leadership', title: 'Marcus Reed on the reprice',
       detail: 'Wrote publicly that half his team had to relearn how to open a call after the pricing change, and took the blame for it himself.',
@@ -1245,61 +1557,71 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       take: 'You repriced in Q2 at 340 people. Every forecast built on the old motion is guesswork now, and that lands on the front line first.' }
   ];
 
-  function V(label, subject, body) { return { id: uid('v'), label: label, subject: subject || '', body: body || '' }; }
-
   var STEPS = [
-    { id: 's1',  day: 0,  contact: null, template: null,       channel: 'ATS',      note: 'Apply. You still have to exist in the system.', status: 'sent',
-      variants: [V('A', '', 'Applied through the careers page so there is a record of it.')], activeVariant: 0 },
-    { id: 's2',  day: 0,  contact: 'p1', template: 'tpl_peer', channel: 'LinkedIn', note: 'Ask about the team, nothing else', status: 'replied',
-      variants: [V('A', '', '')], activeVariant: 0 },
-    { id: 's3',  day: 2,  contact: 'p2', template: 'tpl_rec',  channel: 'Email',    note: 'Name the req, ask one question', status: 'sent',
-      variants: [V('A', 'Mid-Market AE, applied Tuesday', '')], activeVariant: 0 },
-    { id: 's4',  day: 3,  contact: 'p3', template: 'tpl_hm',   channel: 'Email',    note: 'Your angle, then the page', status: 'due',
-      variants: [
-        V('A', 'your SMB motion and the new pricing page', ''),
-        V('B', 'the five seat floor', "{first}, the five seat SMB floor turns a one call close into a two call close. Half a team usually cannot make that jump.\n\nI watched it happen at Brightline. 40% washed out. We rebuilt discovery and finished at 112%.\n\nfrontdoor.app/p/{slug}\n\nFifteen minutes?")
-      ], activeVariant: 0 },
-    { id: 's5',  day: 5,  contact: 'p5', template: 'tpl_tie',  channel: 'LinkedIn', note: 'Ask for the intro, write it for him', status: 'queued',
-      variants: [V('A', '', '')], activeVariant: 0 },
-    { id: 's6',  day: 7,  contact: 'p1', template: null,       channel: 'Reply',    note: 'Now you can ask for the referral', status: 'queued',
-      variants: [V('A', '', "{first}, that detail about cycles going from 30 to 70 days was the most useful thing anyone has told me about this role. I rebuilt my 30-60-90 around it.\n\nIf it feels right after one conversation, would you be open to dropping me in the referral portal? No pressure at all.")], activeVariant: 0 },
-    { id: 's7',  day: 8,  contact: 'p3', template: 'tpl_hm2',  channel: 'Email',    note: 'Bring something new or do not write', status: 'queued',
-      variants: [V('A', 'three places discovery stalls', '')], activeVariant: 0 },
-    { id: 's8',  day: 10, contact: 'p4', template: 'tpl_exec', channel: 'Email',    note: 'Eighty words, business first', status: 'queued',
-      variants: [V('A', 'mid-market ramp', '')], activeVariant: 0 },
-    { id: 's9',  day: 12, contact: 'p2', template: null,       channel: 'Call',     note: 'Pick up the phone', status: 'queued',
-      variants: [V('A', '', "Hi {first}, it is {me}. I applied for the {role} a couple of weeks back. Is now a bad time?\n\n[pause, actually wait]\n\nQuick one. I wanted to check whether that req is still moving or whether it is on hold. I would rather know than keep guessing.")], activeVariant: 0 },
-    { id: 's10', day: 14, contact: null, template: 'tpl_break',channel: 'Email',    note: 'Say you are stopping, leave the door open', status: 'queued',
-      variants: [V('A', 'closing the loop', '')], activeVariant: 0 }
+    { id: 's1',  day: 0,  contact: null, template: null,        channel: 'ATS',      note: 'Apply. You still have to exist in the system.', status: 'sent',
+      subject: '', body: 'Applied through the careers page so there is a record of it.' },
+    { id: 's2',  day: 0,  contact: 'p1', template: 'tpl_peer',  channel: 'LinkedIn', note: 'Ask about the team, nothing else', status: 'replied', subject: '', body: '' },
+    { id: 's3',  day: 2,  contact: 'p2', template: 'tpl_rec',   channel: 'Email',    note: 'Name the req, ask one question', status: 'sent',
+      subject: 'Mid-Market AE, applied Tuesday', body: '' },
+    { id: 's4',  day: 3,  contact: 'p3', template: 'tpl_hm',    channel: 'Email',    note: 'Your angle, then the page', status: 'due',
+      subject: 'your SMB motion and the new pricing page', body: '' },
+    { id: 's5',  day: 5,  contact: 'p5', template: 'tpl_tie',   channel: 'LinkedIn', note: 'Ask for the intro, write it for him', status: 'queued', subject: '', body: '' },
+    { id: 's6',  day: 7,  contact: 'p1', template: 'tpl_ref',   channel: 'Reply',    note: 'Now you can ask for the referral', status: 'queued', subject: '', body: '' },
+    { id: 's7',  day: 8,  contact: 'p3', template: 'tpl_hm2',   channel: 'Email',    note: 'Bring something new or do not write', status: 'queued',
+      subject: 'three places discovery stalls', body: '' },
+    { id: 's8',  day: 10, contact: 'p4', template: 'tpl_exec',  channel: 'Email',    note: 'Eighty words, business first', status: 'queued',
+      subject: 'mid-market ramp', body: '' },
+    { id: 's9',  day: 12, contact: 'p2', template: 'tpl_call',  channel: 'Call',     note: 'Pick up the phone', status: 'queued', subject: '', body: '' },
+    { id: 's10', day: 14, contact: null, template: 'tpl_break', channel: 'Email',    note: 'Say you are stopping, leave the door open', status: 'queued',
+      subject: 'closing the loop', body: '' }
   ];
 
   var SECTIONS = [
     { key: 'hero',  label: 'Header',            on: true },
-    { key: 'why',   label: 'Why Acme',          on: true },
-    { key: 'proof', label: 'The short version', on: true },
-    { key: 'exp',   label: 'Where I have been', on: true },
+    { key: 'why',   label: 'Why this company',  on: true },
+    { key: 'proof', label: 'The numbers',       on: true },
+    { key: 'story', label: 'The story',         on: true },
     { key: 'plan',  label: 'First 90 days',     on: true },
-    { key: 'video', label: 'Video',             on: true },
+    { key: 'exp',   label: 'Where I have been', on: true },
     { key: 'said',  label: 'Reference',         on: true },
-    { key: 'stack', label: 'Tools',             on: true }
+    { key: 'stack', label: 'Tools',             on: true },
+    { key: 'video', label: 'Video',             on: false }
   ];
+
+  function taskSet() {
+    return [
+      { id: 't1', text: 'Paste the job listing',   sub: 'We read it for you',                     on: false },
+      { id: 't2', text: 'Confirm what you lead with', sub: 'Three wins, matched to the listing',  on: false },
+      { id: 't3', text: 'Add your contacts',       sub: 'Start with the three we found',          on: false },
+      { id: 't4', text: 'Read the research',       sub: 'What they said, recently, in public',    on: false },
+      { id: 't5', text: 'Build the sequence',      sub: 'Ten touches over two weeks',             on: false },
+      { id: 't6', text: 'Send the first message',  sub: 'Start with the peer',                    on: false }
+    ];
+  }
 
   function seedCampaign() {
     return {
       id: 'c_acme',
       company: 'Acme', role: 'Mid-Market Account Executive',
       location: 'Chicago, hybrid', req: '4821', slug: 'evan-acme',
+      listing: ACME_LISTING,
       status: 'running', day: 3, createdAt: Date.now() - 3 * 864e5,
       facts: ['Series B', '340 people', 'Repriced in Q2', '6 AE reqs open'],
-      requirements: ['5+ yrs SaaS', '$80 to 150k ACV', 'RevOps buyers', '60 to 90 day cycles'],
+      requirements: ['5+ yrs SaaS', '$80 to 150k ACV', 'RevOps buyers', '60 to 90 day cycles', 'Sold through a reprice'],
+      winIds: ['w1', 'w3', 'w2'],
+      story: 'Brightline repriced to seat based in the middle of my best year. Forty per cent of the team left inside two quarters. I rewrote discovery around the new deal math, took cycles from 30 days to 70 without losing the number, and finished at 112%.',
+      pageTemplate: 'case',
       angles: clone(ANGLES),
       contacts: clone(CONTACTS),
+      suggested: clone(SUGGESTED),
       steps: clone(STEPS),
       research: clone(RESEARCH),
       sections: clone(SECTIONS),
+      tasks: taskSet(),
       activeStep: 's4',
       activeContact: 'p1',
       pendingInsert: null,
+      sent: 3, replies: 1,
       views: 4, lastView: '2 hours ago'
     };
   }
@@ -1310,14 +1632,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       profile: clone(SEED_PROFILE),
       templates: clone(TEMPLATES),
       campaigns: [],
-      tasks: [
-        { id: 't1', text: 'Add your résumé',        sub: 'Pulled 3 roles and 7 wins',              on: false },
-        { id: 't2', text: 'Pick your three wins',   sub: 'The numbers a sales leader cares about', on: false },
-        { id: 't3', text: 'Paste the job listing',  sub: 'One company, one role',                  on: false },
-        { id: 't4', text: 'Add your contacts',      sub: 'Five is a good number. Rank them.',      on: false },
-        { id: 't5', text: 'Read the research',      sub: 'What they said, recently, in public',    on: false },
-        { id: 't6', text: 'Send the first message', sub: 'Start with the peer',                    on: false }
-      ]
+      lastCampaign: null
     };
   }
 
@@ -1337,7 +1652,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     state: state,
     PERSONAS: PERSONAS,
     CHANNELS: CHANNELS,
+    STAGES: STAGES,
+    SAMPLE_LISTING: ACME_LISTING,
     uid: uid,
+    slugify: slugify,
 
     init: function () {
       var saved = read();
@@ -1364,19 +1682,162 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       return String(n || '?').trim().split(/\s+/).map(function (w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
     },
 
-    /* campaigns */
+    /* ---- opportunities -------------------------------------------------- */
     campaigns: function () { return state.campaigns; },
     campaign: function (id) { return state.campaigns.filter(function (c) { return c.id === id; })[0] || null; },
+    touch: function (id) { state.lastCampaign = id; Store.save(); },
+
     createSeedCampaign: function () {
       if (Store.campaign('c_acme')) return Store.campaign('c_acme');
-      state.campaigns.unshift(seedCampaign());
-      state.tasks[0].on = true;
-      state.tasks[1].on = true;
+      var c = seedCampaign();
+      state.profile.imported = true;
+      state.profile.source = state.profile.source || 'Evan_Pogue.pdf';
+      c.tasks[0].on = true;
+      c.tasks[1].on = true;
+      c.tasks[2].on = true;
+      state.campaigns.unshift(c);
+      state.lastCampaign = c.id;
       Store.save();
-      return Store.campaign('c_acme');
+      return c;
     },
 
-    /* contacts */
+    /* Read a pasted listing. Crude on purpose: it is a stand in for the
+       parse that would happen server side, and it has to fail gracefully
+       on whatever someone actually pastes. */
+    parseListing: function (text) {
+      var raw = String(text || '').trim();
+      var lines = raw.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+      var out = { role: '', company: '', location: '', req: '', requirements: [], facts: [] };
+      if (!lines.length) return out;
+
+      /* only split on a separator with space around it, so a hyphenated
+         title like "Mid-Market Account Executive" survives intact */
+      out.role = lines[0].replace(/\s+[-–|·]\s+.*$/, '').slice(0, 70);
+
+      /* line two is usually "Company · Place · Req 123", or the company sits
+         after an "at" somewhere in the first paragraph */
+      var meta = (lines[1] || '').split(/\s*[·|]\s*/);
+      if (meta.length > 1) {
+        out.company = meta[0].slice(0, 40);
+        out.location = (meta[1] || '').slice(0, 40);
+      }
+      if (!out.company) {
+        var at = raw.match(/\bat\s+([A-Z][A-Za-z0-9&.\- ]{1,28})\b/);
+        if (at) out.company = at[1].trim();
+      }
+      if (!out.company) out.company = 'The company';
+      var req = raw.match(/\breq(?:uisition)?\.?\s*#?\s*([A-Za-z0-9-]{2,12})/i);
+      if (req) out.req = req[1];
+      if (!out.location) {
+        var loc = raw.match(/\b(remote|hybrid|on ?site|[A-Z][a-z]+,\s?[A-Z]{2})\b/);
+        if (loc) out.location = loc[1];
+      }
+
+      lines.forEach(function (l) {
+        if (/^[-–•*]\s+/.test(l)) {
+          var b = l.replace(/^[-–•*]\s+/, '').replace(/\.$/, '');
+          if (b.length > 4 && out.requirements.length < 8) out.requirements.push(b.slice(0, 80));
+        }
+      });
+
+      [[/\byears?\b/i, 'Years of experience called out'],
+       [/\bquota\b/i, 'Carries a number'],
+       [/\bmid[- ]market\b/i, 'Mid-market segment'],
+       [/\benterprise\b/i, 'Enterprise segment'],
+       [/\bpricing|packaging|reprice\b/i, 'Pricing change in play'],
+       [/\bramp\b/i, 'Ramp is on their mind'],
+       [/\bremote\b/i, 'Remote friendly']
+      ].forEach(function (p) { if (p[0].test(raw) && out.facts.length < 5) out.facts.push(p[1]); });
+
+      return out;
+    },
+
+    /* Score every win against the listing and hand back the best three. */
+    rankWins: function (text) {
+      var hay = String(text || '').toLowerCase();
+      return state.profile.wins.map(function (w) {
+        var hits = (w.tags || []).filter(function (t) { return hay.indexOf(t) > -1; });
+        return { win: w, score: hits.length, hits: hits };
+      }).sort(function (a, b) { return b.score - a.score; });
+    },
+
+    createCampaign: function (data) {
+      var parsed = data.parsed || Store.parseListing(data.listing);
+      var ranked = Store.rankWins(data.listing);
+      var id = uid('c');
+      var c = {
+        id: id,
+        company: data.company || parsed.company,
+        role: data.role || parsed.role,
+        location: parsed.location || '',
+        req: parsed.req || '',
+        slug: slugify((state.profile.name.split(' ')[0] || 'me') + '-' + (data.company || parsed.company)),
+        listing: data.listing || '',
+        status: 'running', day: 0, createdAt: Date.now(),
+        facts: parsed.facts || [],
+        requirements: parsed.requirements || [],
+        winIds: (data.winIds || ranked.slice(0, 3).map(function (r) { return r.win.id; })),
+        story: data.story || '',
+        pageTemplate: 'case',
+        angles: [],
+        contacts: [],
+        suggested: Store.suggestFor(data.company || parsed.company, parsed.role),
+        steps: [],
+        research: [],
+        sections: clone(SECTIONS),
+        tasks: taskSet(),
+        activeStep: null, activeContact: null, pendingInsert: null,
+        sent: 0, replies: 0, views: 0, lastView: 'never'
+      };
+      c.tasks[0].on = true;
+      c.tasks[1].on = true;
+      state.campaigns.unshift(c);
+      state.lastCampaign = id;
+      Store.save();
+      return c;
+    },
+    removeCampaign: function (id) {
+      state.campaigns = state.campaigns.filter(function (c) { return c.id !== id; });
+      if (state.lastCampaign === id) state.lastCampaign = state.campaigns[0] ? state.campaigns[0].id : null;
+      Store.save();
+    },
+    updateCampaign: function (id, patch) {
+      var c = Store.campaign(id); if (!c) return;
+      Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
+      Store.save();
+    },
+    /* the three names worth finding on any listing */
+    suggestFor: function (company, role) {
+      var dom = slugify(company).replace(/-/g, '') + '.com';
+      var seg = /mid[- ]market/i.test(role || '') ? 'Mid-Market' : /enterprise/i.test(role || '') ? 'Enterprise' : 'Sales';
+      return [
+        { id: uid('g'), name: 'Director, ' + seg, title: 'Likely hiring manager at ' + company, persona: 'Hiring manager',
+          found: 'Named on the team page', why: 'Owns the number this role carries. The one person who can skip the queue.',
+          email: 'first.last@' + dom, linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'Fifteen minutes' },
+        { id: uid('g'), name: 'Talent Partner', title: 'Recruiter on this req at ' + company, persona: 'Recruiter',
+          found: 'Posted the req', why: 'Knows whether the req is moving or already has a finalist.',
+          email: 'talent@' + dom, linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'Whether the req is moving' },
+        { id: uid('g'), name: 'Someone you already know', title: 'Worked with you, now near ' + company, persona: 'Shared tie',
+          found: 'Overlap in your history', why: 'A warm forward beats a cold email every time. Ask them to paste two lines.',
+          email: '', linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'An introduction' }
+      ];
+    },
+
+    /* ---- wins on an opportunity ------------------------------------------ */
+    campaignWins: function (c) {
+      return (c.winIds || []).map(function (id) {
+        return state.profile.wins.filter(function (w) { return w.id === id; })[0];
+      }).filter(Boolean);
+    },
+    toggleCampaignWin: function (cid, wid) {
+      var c = Store.campaign(cid); if (!c) return;
+      var have = c.winIds.indexOf(wid);
+      if (have > -1) c.winIds.splice(have, 1);
+      else if (c.winIds.length < 3) c.winIds.push(wid);
+      Store.save();
+    },
+
+    /* ---- contacts -------------------------------------------------------- */
     colourFor: function (persona) {
       var p = PERSONAS.filter(function (x) { return x.key === persona; })[0];
       return p ? p.colour : '--line-3';
@@ -1387,13 +1848,25 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         id: uid('p'), name: data.name || 'Someone at ' + c.company,
         title: data.title || '', persona: data.persona || 'Other',
         colour: Store.colourFor(data.persona || 'Other'),
-        tenure: data.tenure || '', prev: '', mutuals: 0,
+        tenure: data.tenure || '', prev: data.prev || '', mutuals: data.mutuals || 0,
         email: data.email || '', linkedin: data.linkedin || '',
-        ask: data.ask || '', notes: '', activity: []
+        ask: data.ask || '', notes: '', activity: data.activity || []
       };
       c.contacts.push(person);
       Store.save();
       return person;
+    },
+    acceptSuggestion: function (cid, sid) {
+      var c = Store.campaign(cid); if (!c) return null;
+      var s = (c.suggested || []).filter(function (x) { return x.id === sid; })[0];
+      if (!s) return null;
+      c.suggested = c.suggested.filter(function (x) { return x.id !== sid; });
+      return Store.addContact(cid, s);
+    },
+    dismissSuggestion: function (cid, sid) {
+      var c = Store.campaign(cid); if (!c) return;
+      c.suggested = (c.suggested || []).filter(function (x) { return x.id !== sid; });
+      Store.save();
     },
     updateContact: function (cid, pid, patch) {
       var c = Store.campaign(cid); if (!c) return;
@@ -1418,13 +1891,13 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       Store.save();
     },
 
-    /* steps */
+    /* ---- steps ------------------------------------------------------------ */
     addStep: function (cid) {
       var c = Store.campaign(cid); if (!c) return null;
       var last = c.steps.length ? c.steps[c.steps.length - 1].day : 0;
       var s = { id: uid('s'), day: last + 2, contact: c.contacts[0] ? c.contacts[0].id : null,
                 template: null, channel: 'Email', note: 'New step', status: 'queued',
-                variants: [{ id: uid('v'), label: 'A', subject: '', body: '' }], activeVariant: 0 };
+                subject: '', body: '' };
       c.steps.push(s);
       Store.sortSteps(cid);
       Store.save();
@@ -1452,7 +1925,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       var s = c.steps.filter(function (x) { return x.id === sid; })[0]; if (!s) return null;
       var copy = clone(s);
       copy.id = uid('s'); copy.day = s.day + 2; copy.status = 'queued';
-      copy.variants = copy.variants.map(function (v) { v.id = uid('v'); return v; });
       c.steps.push(copy); Store.sortSteps(cid); Store.save();
       return copy;
     },
@@ -1466,47 +1938,39 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       for (var j = i; j < c.steps.length; j++) c.steps[j].day = Math.max(0, c.steps[j].day + delta);
       Store.save();
     },
-    addVariant: function (cid, sid) {
-      var c = Store.campaign(cid); if (!c) return null;
-      var s = c.steps.filter(function (x) { return x.id === sid; })[0]; if (!s) return null;
-      var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      var base = s.variants[s.activeVariant] || s.variants[0] || { subject: '', body: '' };
-      var v = { id: uid('v'), label: letters[s.variants.length] || String(s.variants.length + 1),
-                subject: base.subject, body: base.body };
-      s.variants.push(v);
-      s.activeVariant = s.variants.length - 1;
-      Store.save();
-      return v;
-    },
-    removeVariant: function (cid, sid, index) {
-      var c = Store.campaign(cid); if (!c) return;
-      var s = c.steps.filter(function (x) { return x.id === sid; })[0]; if (!s || s.variants.length < 2) return;
-      s.variants.splice(index, 1);
-      var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      s.variants.forEach(function (v, i) { v.label = letters[i] || String(i + 1); });
-      s.activeVariant = Math.min(s.activeVariant, s.variants.length - 1);
-      Store.save();
-    },
-    updateVariant: function (cid, sid, index, patch) {
-      var c = Store.campaign(cid); if (!c) return;
-      var s = c.steps.filter(function (x) { return x.id === sid; })[0]; if (!s) return;
-      var v = s.variants[index]; if (!v) return;
-      Object.keys(patch).forEach(function (k) { v[k] = patch[k]; });
-      Store.save();
-    },
-    /* the text a step actually sends: the variant body, or the template it points at */
+    /* the text a step actually sends. A step that only points at a template
+       gets that template resolved into it the first time it is read, so the
+       editor never shows anyone a curly brace. */
     bodyFor: function (c, s) {
-      var v = s.variants[s.activeVariant] || s.variants[0];
-      if (v && v.body && v.body.trim()) return v.body;
+      if (s.body && s.body.trim()) return s.body;
       var t = Store.template(s.template);
-      return t ? t.body : '';
+      if (!t) return '';
+      var p = c.contacts.filter(function (x) { return x.id === s.contact; })[0] || null;
+      s.body = Store.fill(t.body, c, p);
+      return s.body;
+    },
+    /* resolve every step in one pass, on the way into the builder */
+    materialise: function (cid) {
+      var c = Store.campaign(cid); if (!c) return;
+      c.steps.forEach(function (s) { Store.bodyFor(c, s); });
+      Store.save();
     },
 
-    /* templates */
+    /* ---- templates -------------------------------------------------------- */
     template: function (id) { return state.templates.filter(function (t) { return t.id === id; })[0] || null; },
+    /* what you would normally send to this kind of person at this point */
+    templatesFor: function (persona, channel) {
+      var all = state.templates.slice();
+      return all.sort(function (a, b) {
+        var sa = (a.persona === persona ? 2 : 0) + (a.channel === channel ? 1 : 0);
+        var sb = (b.persona === persona ? 2 : 0) + (b.channel === channel ? 1 : 0);
+        return sb - sa;
+      });
+    },
     addTemplate: function (data) {
       var t = { id: uid('tpl'), name: data.name || 'Untitled', persona: data.persona || 'Other',
-                channel: data.channel || 'Email', body: data.body || '', stock: false };
+                stage: data.stage || 'First touch', channel: data.channel || 'Email',
+                body: data.body || '', stock: false };
       state.templates.push(t);
       Store.save();
       return t;
@@ -1524,11 +1988,17 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       Store.save();
     },
 
-    /* merge fields */
+    /* Placeholders are resolved the moment a template lands in a step, so
+       nobody ever has to look at a curly brace. */
     fill: function (body, campaign, contact) {
       var angle = (campaign.angles.filter(function (a) { return a.on; })[0] || campaign.angles[0] || {}).take || '';
       var first = contact ? String(contact.name).split(' ')[0] : 'there';
+      var wins = Store.campaignWins(campaign);
+      var win = wins[0] ? wins[0].text.charAt(0).toLowerCase() + wins[0].text.slice(1) : '';
+      /* an angle that lands mid sentence should not start with a capital */
+      var lower = angle ? angle.charAt(0).toLowerCase() + angle.slice(1) : '';
       return String(body)
+        .replace(/, \{angle\}/g, ', ' + lower)
         .replace(/\{first\}/g, first)
         .replace(/\{name\}/g, contact ? contact.name : '')
         .replace(/\{title\}/g, contact ? contact.title : '')
@@ -1536,34 +2006,33 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         .replace(/\{role\}/g, campaign.role)
         .replace(/\{slug\}/g, campaign.slug)
         .replace(/\{angle\}/g, angle)
+        .replace(/\{win\}/g, win)
         .replace(/\{me\}/g, state.profile.name);
     },
 
-    /* profile */
+    /* ---- profile ---------------------------------------------------------- */
     markImported: function (source) { state.profile.imported = true; state.profile.source = source; Store.save(); },
-    selectedWins: function () { return state.profile.wins.filter(function (w) { return w.on; }); },
-    toggleWin: function (id) {
-      var w = state.profile.wins.filter(function (x) { return x.id === id; })[0]; if (!w) return;
-      if (!w.on && Store.selectedWins().length >= 3) return;
-      w.on = !w.on; Store.save();
-    },
+    setPhoto: function (data) { state.profile.photo = data; Store.save(); },
     toggleRole: function (id) {
       var r = state.profile.roles.filter(function (x) { return x.id === id; })[0];
       if (r) { r.on = !r.on; Store.save(); }
     },
 
-    /* tasks */
-    toggleTask: function (id) {
-      var t = state.tasks.filter(function (x) { return x.id === id; })[0];
+    /* ---- per opportunity checklist ---------------------------------------- */
+    toggleTask: function (cid, id) {
+      var c = Store.campaign(cid); if (!c) return null;
+      var t = c.tasks.filter(function (x) { return x.id === id; })[0];
       if (t) { t.on = !t.on; Store.save(); }
       return t;
     },
-    completeTask: function (id) {
-      var t = state.tasks.filter(function (x) { return x.id === id; })[0];
+    completeTask: function (cid, id) {
+      var c = Store.campaign(cid); if (!c) return;
+      var t = c.tasks.filter(function (x) { return x.id === id; })[0];
       if (t && !t.on) { t.on = true; Store.save(); }
     },
-    taskProgress: function () {
-      return { done: state.tasks.filter(function (t) { return t.on; }).length, total: state.tasks.length };
+    taskProgress: function (c) {
+      if (!c) return { done: 0, total: 0 };
+      return { done: c.tasks.filter(function (t) { return t.on; }).length, total: c.tasks.length };
     },
 
     reset: function () {
@@ -1658,7 +2127,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   UI.sheet = function (opts) {
     var scrim = document.createElement('div');
     scrim.className = 'scrim modal-scrim';
-    scrim.innerHTML = '<div class="modal modal-wide" role="dialog" aria-modal="true" aria-label="' + UI.esc(opts.title) + '">' +
+    scrim.innerHTML = '<div class="modal modal-wide' + (opts.cls ? ' ' + opts.cls : '') + '" role="dialog" aria-modal="true" aria-label="' + UI.esc(opts.title) + '">' +
       '<div class="row between"><h3>' + UI.esc(opts.title) + '</h3>' +
       '<button class="icon-btn" data-close aria-label="Close">✕</button></div>' + opts.html + '</div>';
     document.body.appendChild(scrim);
@@ -1671,6 +2140,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     function key(e) { if (e.key === 'Escape') close(); }
     document.addEventListener('keydown', key);
     scrim.addEventListener('click', function (e) { if (e.target === scrim || e.target.closest('[data-close]')) close(); });
+    /* hand the caller the node so it can wire its own controls without
+       hanging a listener off the document that outlives the sheet */
+    if (opts.onMount) opts.onMount(scrim.firstChild, close);
     return close;
   };
 
@@ -1910,9 +2382,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
      collapsed rail, where the label is hidden and an icon alone is a guess. */
   var NAV = [
     { group: 'Workspace', items: [
-      { key: 'home', icon: '◉', label: 'Overview', href: '/', hint: 'where the campaign stands today', sc: 'G then O' }
+      { key: 'home', icon: '◉', label: 'Overview', href: '/', hint: 'every company you are working', sc: 'G then O' }
     ] },
-    { group: 'Campaign', needsCampaign: true, items: [
+    { group: 'company', needsCampaign: true, items: [
+      { key: 'opp',      icon: '◆', label: 'Summary',  href: '/c/:id', hint: 'the checklist and the numbers', sc: 'G then C' },
       { key: 'people',   icon: '◎', label: 'Contacts', href: '/c/:id/people',   count: 'contacts', hint: 'the people you are working, ranked', sc: 'G then P' },
       { key: 'research', icon: '◈', label: 'Research', href: '/c/:id/research', hint: 'what they said recently, in public', sc: 'G then R' },
       { key: 'sequence', icon: '≡', label: 'Sequence', href: '/c/:id/sequence', count: 'steps', hint: 'the touches and the days between them', sc: 'G then S' },
@@ -1920,7 +2393,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     ] },
     { group: 'Library', items: [
       { key: 'templates', icon: '❏', label: 'Templates', href: '/templates', hint: 'messages you reuse across steps', sc: 'G then T' },
-      { key: 'settings',  icon: '⚙', label: 'Settings',  href: '/settings', hint: 'your name, role and wins' }
+      { key: 'settings',  icon: '⚙', label: 'Settings',  href: '/settings', hint: 'your name, photo and history' }
     ] }
   ];
 
@@ -1931,7 +2404,12 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     return t;
   }
 
+  /* the campaign group follows the route you are on, then the last one you
+     opened, so the nav never points at a company you are not looking at */
   function activeCampaignId() {
+    var m = (location.hash || '').match(/#\/c\/([^\/]+)/);
+    if (m && Store.campaign(m[1])) return m[1];
+    if (Store.campaign(Store.state.lastCampaign)) return Store.state.lastCampaign;
     var cs = Store.campaigns();
     return cs.length ? cs[0].id : null;
   }
@@ -1995,7 +2473,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '<span class="nav-label">' + esc(n.label) + '</span>' +
           (count ? '<span class="nav-count">' + count + '</span>' : '') + '</a>';
       }).join('');
-      return '<div class="nav-group"><p class="cap nav-group-label">' + esc(g.group) + '</p>' + items + '</div>';
+      var label = g.needsCampaign && c ? c.company : g.group;
+      return '<div class="nav-group"><p class="cap nav-group-label">' + esc(label) + '</p>' + items + '</div>';
     }).join('');
   }
 
@@ -2107,6 +2586,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       err.classList.add('hide');
       UI.busy(btn, 750).then(function () {
         Store.signIn(email.value.trim());
+        if (signup) { UI.toast('Welcome. Start with your resume.'); Router.go('/import'); return; }
         Store.createSeedCampaign();
         UI.toast('Signed in. Acme is waiting for you.');
         Router.go('/');
@@ -2125,6 +2605,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       var b = this;
       UI.busy(b, 850).then(function () {
         Store.signIn(email.value.trim());
+        if (signup) { UI.toast('Welcome. Start with your resume.'); Router.go('/import'); return; }
         Store.createSeedCampaign();
         UI.toast('Signed in with Google.');
         Router.go('/');
@@ -2140,131 +2621,119 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 ;
 /* assets/js/views/dashboard.js */
 /* ==========================================================================
-   views/dashboard.js — overview, campaign list, empty state, settings
+   views/dashboard.js — the overview (every opportunity you are running)
+   and settings. One company per row, each with its own checklist.
    ========================================================================== */
 (function (window, document) {
   'use strict';
 
   var esc = UI.esc;
-
-  function ringSVG(done, total) {
-    var C = 2 * Math.PI * 17;
-    var off = C - (done / total) * C;
-    return '<svg class="ring" width="42" height="42" viewBox="0 0 42 42" aria-hidden="true">' +
-      '<circle class="track" cx="21" cy="21" r="17"></circle>' +
-      '<circle class="fill" cx="21" cy="21" r="17" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"></circle></svg>';
-  }
-
-  function taskList() {
-    return Store.state.tasks.map(function (t) {
-      return '<button class="task" data-task="' + t.id + '" aria-pressed="' + t.on + '">' +
-        '<span class="tick"></span>' +
-        '<span class="tt">' + esc(t.text) + '<em>' + esc(t.sub) + '</em></span>' +
-        '<span class="cap">' + (t.on ? 'Done' : 'Open') + '</span></button>';
-    }).join('');
-  }
-
-  function stepRow(c, s) {
-    var p = c.contacts.filter(function (x) { return x.id === s.contact; })[0];
-    var cls = 'touch' + (s.status === 'sent' || s.status === 'replied' ? ' sent' : '');
-    var badge = s.status === 'replied' ? '<span class="chip chip-pos">Replied</span>'
-              : s.status === 'due'     ? '<span class="chip chip-accent">Due today</span>'
-              : s.status === 'sent'    ? '<span class="chip">Sent</span>'
-              : '<span class="chip">Queued</span>';
-    return '<button class="' + cls + '" data-step="' + s.id + '" style="--pc:var(' + (p ? p.colour : '--line-3') + ')">' +
-      '<span class="td">Day ' + s.day + '</span>' +
-      '<span class="tw">' + esc(p ? p.name : 'No contact') + '<em>' + esc(s.note) + '</em></span>' +
-      badge + '<span class="tc">' + esc(s.channel) + '</span></button>';
-  }
-
-  /* ---- empty state ---------------------------------------------------- */
-  function emptyHome() {
-    return '<div class="card" style="overflow:hidden">' +
-      '<div class="empty">' +
-        '<span class="art">◎</span>' +
-        '<h2>No campaign yet</h2>' +
-        '<p>Pick one company you actually want to work at. Five people, ten touches, fourteen days, and a page written for them.</p>' +
-        '<button class="btn btn-primary btn-lg" id="start-campaign">Start a campaign <span class="arr">→</span></button>' +
-      '</div></div>';
-  }
-
-  /* ---- overview ------------------------------------------------------- */
   window.Views = window.Views || {};
 
+  function ringSVG(done, total, size) {
+    var s = size || 42, r = (s / 2) - 4;
+    var C = 2 * Math.PI * r;
+    var off = C - (total ? done / total : 0) * C;
+    return '<svg class="ring" width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + ' ' + s + '" aria-hidden="true">' +
+      '<circle class="track" cx="' + s / 2 + '" cy="' + s / 2 + '" r="' + r + '"></circle>' +
+      '<circle class="fill" cx="' + s / 2 + '" cy="' + s / 2 + '" r="' + r + '" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"></circle></svg>';
+  }
+  window.Views.ringSVG = ringSVG;
+
+  function nextUp(c) {
+    var s = c.steps.filter(function (x) { return x.status === 'due'; })[0] ||
+            c.steps.filter(function (x) { return x.status === 'queued'; })[0];
+    if (!s) return c.steps.length ? 'Everything is sent' : 'No sequence yet';
+    var p = c.contacts.filter(function (x) { return x.id === s.contact; })[0];
+    return (p ? p.name : 'Nobody yet') + ' · ' + s.note;
+  }
+
+  /* ---- overview -------------------------------------------------------- */
   window.Views.home = function () {
-    var c = Store.campaigns()[0];
-
-    if (!c) {
-      var v0 = Shell.mount({ nav: 'home', crumbs: [{ label: 'Overview' }], html: emptyHome() });
-      v0.querySelector('#start-campaign').addEventListener('click', function () {
-        Store.createSeedCampaign();
-        UI.toast('Acme campaign created.');
-        Router.go('/c/c_acme/people');
-      });
-      return;
-    }
-
-    var p = Store.taskProgress();
+    var list = Store.campaigns();
     var hour = new Date().getHours();
     var greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
     var name = (Store.state.user && Store.state.user.name || 'there').split(' ')[0];
-    var upNext = c.steps.filter(function (s) { return s.status === 'due' || s.status === 'queued'; }).slice(0, 3);
+    var imported = Store.state.profile.imported;
+
+    function oppCard(c) {
+      var pr = Store.taskProgress(c);
+      var due = c.steps.filter(function (s) { return s.status === 'due'; }).length;
+      return '<a class="opp" href="#/c/' + c.id + '">' +
+        '<div class="opp-ring">' + ringSVG(pr.done, pr.total, 44) +
+          '<span class="opp-pct">' + pr.done + '/' + pr.total + '</span></div>' +
+        '<div class="opp-main">' +
+          '<div class="row g2 wrap" style="align-items:baseline">' +
+            '<b class="opp-co">' + esc(c.company) + '</b>' +
+            '<span class="opp-role">' + esc(c.role) + '</span>' +
+          '</div>' +
+          '<p class="opp-next">' + esc(nextUp(c)) + '</p>' +
+        '</div>' +
+        '<div class="opp-nums">' +
+          '<span><b>' + c.contacts.length + '</b>people</span>' +
+          '<span><b>' + c.sent + '</b>sent</span>' +
+          '<span><b>' + c.replies + '</b>replies</span>' +
+          '<span><b>' + c.views + '</b>opens</span>' +
+        '</div>' +
+        '<div class="opp-end">' +
+          (due ? '<span class="chip chip-accent">' + due + ' due</span>'
+               : '<span class="chip">Day ' + c.day + '</span>') +
+          '<span class="arr">→</span>' +
+        '</div></a>';
+    }
 
     var html =
       '<div class="page-head">' +
         '<h1>' + esc(greet) + ', ' + esc(name) + '</h1>' +
-        '<p>One company at a time. Here is where ' + esc(c.company) + ' stands on day ' + c.day + '.</p>' +
-      '</div>' +
-
-      '<div class="card p5 mb4">' +
-        '<div class="row g4" style="align-items:flex-start">' +
-          ringSVG(p.done, p.total) +
-          '<div class="col g2 grow">' +
-            '<div class="row between wrap"><h3>Getting ' + esc(c.company) + ' off the ground</h3>' +
-            '<span class="cap" id="ring-label">' + p.done + ' of ' + p.total + ' done</span></div>' +
-            '<p class="dim" style="font-size:var(--fs-sm)">We filled the first two in from your résumé. The rest take about twenty minutes.</p>' +
-          '</div>' +
-        '</div>' +
-        '<div class="mt3" id="tasks" style="display:grid;gap:1px">' + taskList() + '</div>' +
-      '</div>' +
-
-      '<div class="grid cols-3 mb4">' +
-        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><h2 class="mono">3</h2><p class="dimmer" style="font-size:var(--fs-sm)">of ' + c.steps.length + ' planned</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Replies</p><h2 class="mono">1</h2><p class="dimmer" style="font-size:var(--fs-sm)">Dana, on day 1</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Page opens</p><h2 class="mono">' + c.views + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div>' +
-      '</div>' +
-
-      '<div class="card p5">' +
-        '<div class="row between mb4"><h3>Up next</h3>' +
-        '<a class="btn btn-ghost btn-sm" href="#/c/' + c.id + '/sequence">See all <span class="arr">→</span></a></div>' +
-        '<div class="seq">' + upNext.map(function (s) { return stepRow(c, s); }).join('') + '</div>' +
+        '<p>' + (list.length
+          ? 'Every company you are working, and what each one is waiting on.'
+          : 'Start with the company you actually want. Everything else is built from the listing.') + '</p>' +
       '</div>';
+
+    if (!imported) {
+      html += '<div class="card" style="overflow:hidden"><div class="empty">' +
+        '<span class="art">↑</span><h2>Start with your résumé</h2>' +
+        '<p>We read it once. Every company you add after that gets its wins picked from it, matched to the listing.</p>' +
+        '<button class="btn btn-primary btn-lg" id="go-import">Add your résumé <span class="arr">→</span></button>' +
+        '</div></div>';
+    } else if (!list.length) {
+      html += '<div class="card" style="overflow:hidden"><div class="empty">' +
+        '<span class="art">◎</span><h2>Add your first company</h2>' +
+        '<p>Paste the job listing. We pull the role apart, pick the three wins that answer it, and go looking for the people behind the req.</p>' +
+        '<button class="btn btn-primary btn-lg" id="go-new">Paste a job listing <span class="arr">→</span></button>' +
+        '</div></div>';
+    } else {
+      html += '<div class="opps">' + list.map(oppCard).join('') +
+        '<button class="addrow addrow-lg" id="go-new">+ Add a company</button></div>';
+
+      var totals = list.reduce(function (a, c) {
+        a.sent += c.sent; a.rep += c.replies; a.views += c.views;
+        a.due += c.steps.filter(function (s) { return s.status === 'due'; }).length;
+        return a;
+      }, { sent: 0, rep: 0, views: 0, due: 0 });
+
+      html += '<div class="grid cols-4 mt5">' +
+        '<div class="card hover p5"><p class="cap mb3">Companies</p><h2 class="mono">' + list.length + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">running at once</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Due today</p><h2 class="mono">' + totals.due + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">across all of them</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Replies</p><h2 class="mono">' + totals.rep + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">of ' + totals.sent + ' sent</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Page opens</p><h2 class="mono">' + totals.views + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">people reading</p></div>' +
+        '</div>';
+    }
 
     var v = Shell.mount({
       nav: 'home',
-      crumbs: [{ label: c.company, href: '/' }, { label: 'Overview' }],
-      actions: '<span class="chip chip-pos">Day ' + c.day + ' of 14</span>' +
-               '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/page">View page</a>',
+      crumbs: [{ label: 'Overview' }],
+      actions: imported ? '<button class="btn btn-primary btn-sm" id="new-top">Add a company</button>' : '',
       html: html
     });
 
-    UI.on(v, 'click', '[data-task]', function (e, el) {
-      var t = Store.toggleTask(el.dataset.task);
-      var pr = Store.taskProgress();
-      el.setAttribute('aria-pressed', t.on);
-      el.querySelector('.cap').textContent = t.on ? 'Done' : 'Open';
-      var C = 2 * Math.PI * 17;
-      v.querySelector('.ring .fill').setAttribute('stroke-dashoffset', (C - (pr.done / pr.total) * C).toFixed(1));
-      v.querySelector('#ring-label').textContent = pr.done + ' of ' + pr.total + ' done';
-      if (t.on) UI.toast(pr.done === pr.total ? 'That is all of them. Go send the first message.' : 'Nice. ' + pr.done + ' of ' + pr.total + '.');
-    });
-    UI.on(v, 'click', '[data-step]', function (e, el) {
-      c.activeStep = el.dataset.step; Store.save();
-      Router.go('/c/' + c.id + '/sequence');
-    });
+    UI.on(v, 'click', '#go-import', function () { Router.go('/import'); });
+    UI.on(v, 'click', '#go-new', function () { Router.go('/new'); });
+    var top = document.getElementById('new-top');
+    if (top) top.addEventListener('click', function () { Router.go('/new'); });
   };
 
-  /* ---- settings ------------------------------------------------------- */
+  /* ---- settings -------------------------------------------------------- */
   window.Views.settings = function () {
     var pf = Store.state.profile;
     var u = Store.state.user;
@@ -2273,13 +2742,25 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       '<div class="page-head"><h1>Settings</h1><p>Your profile feeds every message and every page. Change it here and it changes everywhere.</p></div>' +
 
       '<div class="card p5 mb4">' +
-        '<h3 class="mb4">Account</h3>' +
-        '<div class="grid cols-2">' +
-          '<div class="field"><label for="s-name">Name</label><input class="input" id="s-name" value="' + esc(pf.name) + '"></div>' +
-          '<div class="field"><label for="s-email">Email</label><input class="input" id="s-email" value="' + esc(u ? u.email : pf.email) + '"></div>' +
+        '<h3 class="mb4">You</h3>' +
+        '<div class="row g4 wrap" style="align-items:flex-start">' +
+          '<div class="photo-set">' +
+            '<div class="photo-ring" id="photo-prev">' + Views.photoHTML(88) + '</div>' +
+            '<label class="btn btn-secondary btn-sm" for="photo-in">' + (pf.photo ? 'Replace' : 'Add a photo') + '</label>' +
+            '<input type="file" id="photo-in" accept="image/*" hidden>' +
+            (pf.photo ? '<button class="btn btn-ghost btn-sm" id="photo-clear">Remove</button>' : '') +
+          '</div>' +
+          '<div class="grow" style="min-width:260px">' +
+            '<div class="grid cols-2">' +
+              '<div class="field"><label for="s-name">Name</label><input class="input" id="s-name" value="' + esc(pf.name) + '"></div>' +
+              '<div class="field"><label for="s-email">Email</label><input class="input" id="s-email" value="' + esc(u ? u.email : pf.email) + '"></div>' +
+              '<div class="field"><label for="s-phone">Phone</label><input class="input" id="s-phone" value="' + esc(pf.phone) + '"></div>' +
+              '<div class="field"><label for="s-loc">Where you are</label><input class="input" id="s-loc" value="' + esc(pf.location) + '"></div>' +
+            '</div>' +
+            '<div class="row mt4"><button class="btn btn-primary btn-sm" id="s-save">Save changes</button>' +
+            '<span class="hint" id="s-saved" style="opacity:0;transition:opacity var(--t-2)">Saved</span></div>' +
+          '</div>' +
         '</div>' +
-        '<div class="row mt4"><button class="btn btn-primary btn-sm" id="s-save">Save changes</button>' +
-        '<span class="hint" id="s-saved" style="opacity:0;transition:opacity var(--t-2)">Saved</span></div>' +
       '</div>' +
 
       '<div class="card p5 mb4">' +
@@ -2293,7 +2774,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         '<h3 class="mb3">Where your history came from</h3>' +
         '<div class="row between wrap g3">' +
           '<span class="dim" style="font-size:var(--fs-sm)">' +
-            (pf.imported ? esc(pf.source) : 'Nothing imported yet') + '</span>' +
+            (pf.imported ? esc(pf.source) + ' · ' + pf.roles.length + ' roles, ' + pf.wins.length + ' wins' : 'Nothing imported yet') + '</span>' +
           '<button class="btn btn-secondary btn-sm" id="s-reimport">Import again</button>' +
         '</div>' +
       '</div>' +
@@ -2307,26 +2788,59 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     var v = Shell.mount({ nav: 'settings', crumbs: [{ label: 'Settings' }], html: html });
 
     v.querySelector('#s-save').addEventListener('click', function () {
-      Store.state.profile.name = v.querySelector('#s-name').value.trim() || pf.name;
-      if (Store.state.user) Store.state.user.email = v.querySelector('#s-email').value.trim();
+      var pfx = Store.state.profile;
+      pfx.name = v.querySelector('#s-name').value.trim() || pfx.name;
+      pfx.phone = v.querySelector('#s-phone').value.trim();
+      pfx.location = v.querySelector('#s-loc').value.trim();
+      if (Store.state.user) {
+        Store.state.user.email = v.querySelector('#s-email').value.trim();
+        Store.state.user.name = pfx.name;
+        Store.state.user.initials = Store.initials(pfx.name);
+      }
       Store.save();
       var f = v.querySelector('#s-saved');
       f.style.opacity = 1;
       setTimeout(function () { f.style.opacity = 0; }, 1600);
       UI.toast('Saved.');
     });
+
+    v.querySelector('#photo-in').addEventListener('change', function () {
+      var file = this.files && this.files[0];
+      if (!file) return;
+      if (file.size > 900000) { UI.toast('That one is too big. Try something under 900KB.'); return; }
+      var fr = new FileReader();
+      fr.onload = function () {
+        Store.setPhoto(fr.result);
+        UI.toast('Photo added. It shows up on your page.');
+        Views.settings();
+      };
+      fr.onerror = function () { UI.toast('Could not read that file.'); };
+      fr.readAsDataURL(file);
+    });
+    var clear = v.querySelector('#photo-clear');
+    if (clear) clear.addEventListener('click', function () { Store.setPhoto(null); Views.settings(); });
+
     v.querySelector('#s-reimport').addEventListener('click', function () { Router.go('/import'); });
     v.querySelector('#s-reset').addEventListener('click', function () {
-      UI.confirm({ title: 'Clear all data?', body: 'The campaign, the profile and the sign in all go. You will land back at the login screen.', confirm: 'Clear it', danger: true })
+      UI.confirm({ title: 'Clear all data?', body: 'Every company, the profile and the sign in all go. You will land back at the login screen.', confirm: 'Clear it', danger: true })
         .then(function (ok) { if (ok) { Store.reset(); Router.go('/login'); location.reload(); } });
     });
+  };
+
+  /* a portrait if there is one, initials if there is not */
+  window.Views.photoHTML = function (size) {
+    var pf = Store.state.profile;
+    if (pf.photo) return '<img class="portrait" src="' + pf.photo + '" alt="' + esc(pf.name) + '" style="width:' + size + 'px;height:' + size + 'px">';
+    return '<span class="portrait portrait-mono" style="width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size / 2.6) + 'px">' +
+      esc(Store.initials(pf.name)) + '</span>';
   };
 })(window, document);
 
 ;
-/* assets/js/views/importer.js */
+/* assets/js/views/opportunity.js */
 /* ==========================================================================
-   views/importer.js — the two step import wizard
+   views/opportunity.js — one company: the checklist, the numbers, what is
+   next. Plus the flow that creates one from a pasted job listing.
    ========================================================================== */
 (function (window, document) {
   'use strict';
@@ -2335,8 +2849,353 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   window.Views = window.Views || {};
 
   /* ======================================================================
-     IMPORT WIZARD
+     ADD A COMPANY
      ====================================================================== */
+  var READ = [
+    ['Role and company', function (p) { return p.role ? p.role.split(',')[0] : 'found'; }],
+    ['Where it sits', function (p) { return p.location || 'not stated'; }],
+    ['What they are asking for', function (p) { return p.requirements.length + ' lines'; }],
+    ['Wins of yours that answer it', function (p, r) { return r.filter(function (x) { return x.score; }).length + ' matched'; }]
+  ];
+
+  window.Views.newOpp = function () {
+    var stage = 1;
+    var listing = '';
+    var parsed = null;
+    var ranked = [];
+    var chosen = [];
+    var story = '';
+    var asked = 0;
+
+    function paint() {
+      var body;
+
+      if (stage === 1) {
+        body =
+          '<div class="card p6">' +
+            '<h3 class="mb2">Paste the job listing</h3>' +
+            '<p class="dim mb5" style="font-size:var(--fs-sm)">All of it. The boring requirements section is the part that tells us which of your wins to lead with.</p>' +
+            '<textarea class="input listing-in" id="listing" placeholder="Paste the whole posting here" spellcheck="false"></textarea>' +
+            '<div class="row between wrap mt4 g3">' +
+              '<button class="btn btn-ghost btn-sm" id="use-sample">Use an example listing</button>' +
+              '<button class="btn btn-primary" id="read" disabled>Read it <span class="arr">→</span></button>' +
+            '</div>' +
+            '<div class="hide mt5" id="scan-box"><p class="cap mb3">Reading the listing</p><div id="scan"></div></div>' +
+          '</div>';
+      } else {
+        var matched = ranked.filter(function (r) { return r.score > 0; });
+        body =
+          '<div class="card p6 mb4">' +
+            '<div class="row between wrap g3 mb4">' +
+              '<div><p class="cap mb1">The role</p><h3>' + esc(parsed.role || 'Untitled role') + '</h3>' +
+                '<p class="dim" style="font-size:var(--fs-sm)">' + esc(parsed.company) +
+                (parsed.location ? ' · ' + esc(parsed.location) : '') +
+                (parsed.req ? ' · Req ' + esc(parsed.req) : '') + '</p></div>' +
+              '<button class="btn btn-ghost btn-sm" id="back">Paste a different one</button>' +
+            '</div>' +
+            (parsed.requirements.length
+              ? '<div class="row wrap g2">' + parsed.requirements.slice(0, 6).map(function (r) {
+                  return '<span class="chip">' + esc(r.length > 44 ? r.slice(0, 42) + '…' : r) + '</span>';
+                }).join('') + '</div>'
+              : '<p class="hint">No bullet list in there, so we will go on the body text.</p>') +
+          '</div>' +
+
+          '<div class="card p6 mb4">' +
+            '<div class="row between wrap g3 mb2"><h3>What you lead with</h3>' +
+            '<span class="cap" id="pick-count">' + chosen.length + ' of 3</span></div>' +
+            '<p class="dim mb5" style="font-size:var(--fs-sm)">' +
+            (matched.length
+              ? 'Picked by matching your résumé against the listing. Swap any of them.'
+              : 'Nothing in the listing lined up cleanly with your wins, so these are your strongest three. Swap any of them.') +
+            '</p>' +
+            '<div class="grid" style="gap:var(--s-2)" id="wins"></div>' +
+          '</div>' +
+
+          '<div class="card assist-card mb4" style="min-height:280px">' +
+            '<div class="assist-head"><b>One more thing</b>' +
+            '<span class="hint">Answers here become the story on your page</span></div>' +
+            '<div class="assist-log" id="log"></div>' +
+            '<form class="assist-in" id="story-form">' +
+              '<input id="story-q" placeholder="Type your answer" autocomplete="off" aria-label="Your answer">' +
+              '<button type="submit" aria-label="Send">↑</button></form>' +
+          '</div>' +
+
+          '<div class="row g2 wrap">' +
+            '<button class="btn btn-primary" id="create">Add ' + esc(parsed.company) + ' <span class="arr">→</span></button>' +
+            '<button class="btn btn-ghost" id="skip-story">Skip the story for now</button>' +
+          '</div>';
+      }
+
+      var v = Shell.mount({
+        nav: 'home',
+        crumbs: [{ label: 'Overview', href: '/' }, { label: 'Add a company' }],
+        html: '<div class="page-head"><h1>Add a company</h1>' +
+              '<p>One listing in, a whole campaign out. Takes about two minutes.</p></div>' + body
+      });
+
+      if (stage === 1) wireOne(v); else wireTwo(v);
+    }
+
+    function wireOne(v) {
+      var ta = v.querySelector('#listing');
+      var go = v.querySelector('#read');
+      ta.value = listing;
+      go.disabled = ta.value.trim().length < 40;
+
+      ta.addEventListener('input', function () {
+        listing = ta.value;
+        go.disabled = ta.value.trim().length < 40;
+      });
+      v.querySelector('#use-sample').addEventListener('click', function () {
+        ta.value = Store.SAMPLE_LISTING;
+        listing = ta.value;
+        go.disabled = false;
+        ta.focus();
+      });
+      go.addEventListener('click', function () {
+        parsed = Store.parseListing(listing);
+        ranked = Store.rankWins(listing);
+        chosen = ranked.slice(0, 3).map(function (r) { return r.win.id; });
+        go.disabled = true;
+        var box = v.querySelector('#scan-box');
+        box.classList.remove('hide');
+        v.querySelector('#scan').innerHTML = READ.map(function (s, i) {
+          return '<div class="scan-line" id="sl' + i + '"><span class="dot"></span><span>' + esc(s[0]) + '</span><em><span class="skel"></span></em></div>';
+        }).join('');
+        READ.forEach(function (s, i) {
+          setTimeout(function () {
+            var ln = v.querySelector('#sl' + i);
+            if (!ln) return;
+            ln.classList.add('done');
+            ln.querySelector('em').textContent = s[1](parsed, ranked);
+            if (i === READ.length - 1) setTimeout(function () { stage = 2; paint(); }, 420);
+          }, 320 * (i + 1));
+        });
+      });
+    }
+
+    function wireTwo(v) {
+      var winsEl = v.querySelector('#wins');
+
+      function paintWins() {
+        winsEl.innerHTML = ranked.map(function (r) {
+          var on = chosen.indexOf(r.win.id) > -1;
+          var locked = !on && chosen.length >= 3;
+          return '<button class="opt' + (locked ? ' locked' : '') + '" data-win="' + r.win.id + '" aria-pressed="' + on + '">' +
+            '<span class="box"></span><span class="ot">' + esc(r.win.text) +
+            '<em>' + (r.score
+              ? 'Matches the listing on ' + esc(r.hits.slice(0, 3).join(', '))
+              : esc(r.win.where)) + '</em></span>' +
+            '<span class="om">' + esc(r.win.metric) + '</span></button>';
+        }).join('');
+        v.querySelector('#pick-count').textContent = chosen.length + ' of 3';
+      }
+      paintWins();
+
+      UI.on(v, 'click', '[data-win]', function (e, el) {
+        var id = el.dataset.win;
+        var at = chosen.indexOf(id);
+        if (at > -1) chosen.splice(at, 1);
+        else if (chosen.length < 3) chosen.push(id);
+        paintWins();
+      });
+
+      /* the chat only wants one thing: the detail a résumé bullet leaves out */
+      var log = v.querySelector('#log');
+      function say(cls, text) {
+        log.insertAdjacentHTML('beforeend', '<div class="bubble ' + cls + '">' + esc(text) + '</div>');
+        log.scrollTop = log.scrollHeight;
+      }
+      var top = Store.state.profile.wins.filter(function (w) { return w.id === chosen[0]; })[0];
+      var QS = [
+        top ? 'You are leading with "' + top.text + '". What actually broke first?' : 'What is the hardest thing you have fixed at work?',
+        'And what did you do about it, in the order you did it?',
+        'Last one. How did it end, with a number if you have one?'
+      ];
+      say('ai', QS[0]);
+
+      v.querySelector('#story-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var i = v.querySelector('#story-q');
+        var text = i.value.trim();
+        if (!text) return;
+        say('me', text);
+        story += (story ? ' ' : '') + text;
+        i.value = '';
+        asked += 1;
+        setTimeout(function () {
+          if (asked < QS.length) say('ai', QS[asked]);
+          else say('ai', 'That is the story. It goes on your page and into the first message to the hiring manager.');
+        }, 380);
+      });
+
+      v.querySelector('#back').addEventListener('click', function () { stage = 1; paint(); });
+      v.querySelector('#skip-story').addEventListener('click', create);
+      v.querySelector('#create').addEventListener('click', create);
+
+      function create() {
+        if (!chosen.length) { UI.toast('Pick at least one win to lead with.'); return; }
+        var c = Store.createCampaign({
+          listing: listing, parsed: parsed, winIds: chosen.slice(), story: story
+        });
+        UI.toast(c.company + ' added. Three people to look at.');
+        Router.go('/c/' + c.id);
+      }
+    }
+
+    paint();
+  };
+
+  /* ======================================================================
+     ONE OPPORTUNITY
+     ====================================================================== */
+  function stepRow(c, s) {
+    var p = c.contacts.filter(function (x) { return x.id === s.contact; })[0];
+    var cls = 'touch' + (s.status === 'sent' || s.status === 'replied' ? ' sent' : '');
+    var badge = s.status === 'replied' ? '<span class="chip chip-pos">Replied</span>'
+              : s.status === 'due'     ? '<span class="chip chip-accent">Due today</span>'
+              : s.status === 'sent'    ? '<span class="chip">Sent</span>'
+              : '<span class="chip">Queued</span>';
+    return '<button class="touch-row ' + cls + '" data-step="' + s.id + '" style="--pc:var(' + (p ? p.colour : '--line-3') + ')">' +
+      '<span class="td">Day ' + s.day + '</span>' +
+      '<span class="tw">' + esc(p ? p.name : 'No contact') + '<em>' + esc(s.note) + '</em></span>' +
+      badge + '<span class="tc">' + esc(s.channel) + '</span></button>';
+  }
+
+  window.Views.opportunity = function (params) {
+    var c = Store.campaign(params.id);
+    if (!c) return Router.go('/', true);
+    Store.touch(c.id);
+
+    var pr = Store.taskProgress(c);
+    var wins = Store.campaignWins(c);
+    var upNext = c.steps.filter(function (s) { return s.status === 'due' || s.status === 'queued'; }).slice(0, 4);
+    var sugg = c.suggested || [];
+
+    function taskList() {
+      return c.tasks.map(function (t) {
+        return '<button class="task" data-task="' + t.id + '" aria-pressed="' + t.on + '">' +
+          '<span class="tick"></span>' +
+          '<span class="tt">' + esc(t.text) + '<em>' + esc(t.sub) + '</em></span>' +
+          '<span class="cap">' + (t.on ? 'Done' : 'Open') + '</span></button>';
+      }).join('');
+    }
+
+    var html =
+      '<div class="page-head">' +
+        '<div class="row between wrap g3">' +
+          '<div><h1>' + esc(c.company) + '</h1>' +
+          '<p>' + esc(c.role) + (c.location ? ' · ' + esc(c.location) : '') + '</p></div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="grid cols-4 mb4">' +
+        '<div class="card hover p5"><p class="cap mb3">People</p><h2 class="mono">' + c.contacts.length + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">' + (sugg.length ? sugg.length + ' more suggested' : 'all added') + '</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><h2 class="mono">' + c.sent + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">of ' + c.steps.length + ' planned</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Replies</p><h2 class="mono">' + c.replies + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">' + (c.replies ? 'keep going' : 'early days') + '</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Page opens</p><h2 class="mono">' + c.views + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div>' +
+      '</div>' +
+
+      '<div class="split-wide">' +
+        '<div class="col g4">' +
+          '<div class="card p5">' +
+            '<div class="row g4" style="align-items:flex-start">' +
+              Views.ringSVG(pr.done, pr.total) +
+              '<div class="col g2 grow">' +
+                '<div class="row between wrap"><h3>Getting ' + esc(c.company) + ' off the ground</h3>' +
+                '<span class="cap" id="ring-label">' + pr.done + ' of ' + pr.total + ' done</span></div>' +
+                '<p class="dim" style="font-size:var(--fs-sm)">Each one is a screen away. Nothing here takes longer than five minutes.</p>' +
+              '</div>' +
+            '</div>' +
+            '<div class="mt3" id="tasks" style="display:grid;gap:1px">' + taskList() + '</div>' +
+          '</div>' +
+
+          '<div class="card p5">' +
+            '<div class="row between mb4"><h3>Up next</h3>' +
+            '<a class="btn btn-ghost btn-sm" href="#/c/' + c.id + '/sequence">Open the sequence <span class="arr">→</span></a></div>' +
+            (upNext.length
+              ? '<div class="seq">' + upNext.map(function (s) { return stepRow(c, s); }).join('') + '</div>'
+              : '<p class="dim" style="font-size:var(--fs-sm)">No sequence yet. Build one and it shows up here.</p>') +
+          '</div>' +
+        '</div>' +
+
+        '<div class="col g4">' +
+          '<div class="card p5">' +
+            '<p class="cap mb3">What you lead with</p>' +
+            (wins.length
+              ? '<div class="leadwins">' + wins.map(function (w) {
+                  return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
+                }).join('') + '</div>'
+              : '<p class="hint">Nothing picked yet.</p>') +
+            (c.story ? '<p class="storyline">' + esc(c.story) + '</p>' : '') +
+            '<a class="btn btn-secondary btn-sm mt4" href="#/c/' + c.id + '/page">See the page <span class="arr">→</span></a>' +
+          '</div>' +
+
+          (sugg.length
+            ? '<div class="card p5">' +
+                '<p class="cap mb2">People we found</p>' +
+                '<p class="dim mb4" style="font-size:var(--fs-sm)">The hiring manager, the recruiter, and someone who could forward you along.</p>' +
+                '<div class="col g2">' + sugg.slice(0, 3).map(function (s) {
+                  return '<div class="sugg"><span class="avatar avatar-md" style="background:var(' + Store.colourFor(s.persona) + ')">' +
+                    esc(Store.initials(s.name)) + '</span>' +
+                    '<span class="grow" style="min-width:0"><b>' + esc(s.name) + '</b>' +
+                    '<em>' + esc(s.title) + '</em></span>' +
+                    '<button class="btn btn-secondary btn-sm" data-take="' + s.id + '">Add</button></div>';
+                }).join('') + '</div>' +
+                '<a class="btn btn-ghost btn-sm mt3" href="#/c/' + c.id + '/people">See all of them <span class="arr">→</span></a>' +
+              '</div>'
+            : '') +
+
+          (c.requirements.length
+            ? '<div class="card p5"><p class="cap mb3">What the listing asks for</p>' +
+              '<ul class="ticks">' + c.requirements.slice(0, 6).map(function (r) {
+                return '<li>' + esc(r) + '</li>';
+              }).join('') + '</ul></div>'
+            : '') +
+        '</div>' +
+      '</div>';
+
+    var v = Shell.mount({
+      nav: 'opp',
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company }],
+      actions: '<span class="chip chip-pos">Day ' + c.day + ' of 14</span>' +
+               '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/page">View page</a>',
+      html: html
+    });
+
+    UI.on(v, 'click', '[data-task]', function (e, el) {
+      var t = Store.toggleTask(c.id, el.dataset.task);
+      var p2 = Store.taskProgress(c);
+      el.setAttribute('aria-pressed', t.on);
+      el.querySelector('.cap').textContent = t.on ? 'Done' : 'Open';
+      var r = 17, C = 2 * Math.PI * r;
+      v.querySelector('.ring .fill').setAttribute('stroke-dashoffset', (C - (p2.done / p2.total) * C).toFixed(1));
+      v.querySelector('#ring-label').textContent = p2.done + ' of ' + p2.total + ' done';
+      if (t.on) UI.toast(p2.done === p2.total ? 'That is all of them. Go send the first message.' : 'Nice. ' + p2.done + ' of ' + p2.total + '.');
+    });
+    UI.on(v, 'click', '[data-step]', function (e, el) {
+      c.activeStep = el.dataset.step; Store.save();
+      Router.go('/c/' + c.id + '/sequence');
+    });
+    UI.on(v, 'click', '[data-take]', function (e, el) {
+      var p = Store.acceptSuggestion(c.id, el.dataset.take);
+      if (p) { Store.completeTask(c.id, 't3'); UI.toast(p.name + ' added.'); Views.opportunity(params); }
+    });
+  };
+})(window, document);
+
+;
+/* assets/js/views/importer.js */
+/* ==========================================================================
+   views/importer.js — read the résumé once. Which wins matter is decided
+   per company, against the listing, so nothing is picked here.
+   ========================================================================== */
+(function (window, document) {
+  'use strict';
+
+  var esc = UI.esc;
+  window.Views = window.Views || {};
+
   var SCAN = [
     ['Name and where you are', 'Chicago'],
     ['Roles', '3'],
@@ -2349,7 +3208,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     var step = Store.state.profile.imported ? 2 : 1;
 
     function pips(active) {
-      return '<div class="steps-bar">' + ['Import', 'Pick your wins', 'Done'].map(function (l, i) {
+      return '<div class="steps-bar">' + ['Import', 'Check it', 'Add a company'].map(function (l, i) {
         var n = i + 1;
         var state = n < active ? 'done' : n === active ? 'active' : 'todo';
         return '<span class="step-pip" data-state="' + state + '"><span class="n"><span>' + n + '</span></span>' + esc(l) + '</span>' +
@@ -2359,14 +3218,13 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
     function paint() {
       var pf = Store.state.profile;
-      var picked = Store.selectedWins().length;
       var body;
 
       if (step === 1) {
         body = pips(1) +
           '<div class="card p6">' +
             '<h3 class="mb3">Where does your history live?</h3>' +
-            '<p class="dim mb5" style="font-size:var(--fs-sm)">We read it once and use it for every campaign after this.</p>' +
+            '<p class="dim mb5" style="font-size:var(--fs-sm)">We read it once. Every company you add after this pulls from it.</p>' +
             '<div class="grid cols-2">' +
               '<button class="dropzone" data-src="linkedin.com/in/evanpogue"><span class="dz-ic">in</span><b>LinkedIn profile</b><span class="hint">Paste the URL</span></button>' +
               '<button class="dropzone" data-src="Evan_Pogue.pdf"><span class="dz-ic">↑</span><b>Résumé</b><span class="hint">PDF or Word</span></button>' +
@@ -2376,15 +3234,20 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       } else {
         body = pips(2) +
           '<div class="card p6 mb4">' +
-            '<div class="row between wrap mb3"><h3>Which three go on the page?</h3><span class="cap">' + picked + ' of 3 picked</span></div>' +
-            '<p class="dim mb5" style="font-size:var(--fs-sm)">Seven came out of ' + esc(pf.source || 'your résumé') + '. Pick the ones a sales leader would care about, not the ones you are proudest of.</p>' +
-            '<div class="grid" style="gap:var(--s-2)" id="wins"></div>' +
-          '</div>' +
-          '<div class="card p6 mb4">' +
-            '<h3 class="mb3">Roles to show</h3>' +
+            '<div class="row between wrap mb3 g3"><h3>Here is what came out</h3>' +
+            '<span class="cap">' + esc(pf.source || 'your résumé') + '</span></div>' +
+            '<p class="dim mb5" style="font-size:var(--fs-sm)">Turn off anything you would not put in front of a hiring manager. Which of your wins to lead with gets decided per company, against that listing.</p>' +
             '<div class="grid" style="gap:var(--s-2)" id="roles"></div>' +
           '</div>' +
-          '<div class="row g2">' +
+
+          '<div class="card p6 mb4">' +
+            '<h3 class="mb3">' + pf.wins.length + ' wins with a number in them</h3>' +
+            '<div class="row wrap g2">' + pf.wins.map(function (w) {
+              return '<span class="chip"><b class="mono">' + esc(w.metric) + '</b> ' + esc(w.short) + '</span>';
+            }).join('') + '</div>' +
+          '</div>' +
+
+          '<div class="row g2 wrap">' +
             '<button class="btn btn-primary" id="done-import">Looks right <span class="arr">→</span></button>' +
             '<button class="btn btn-ghost" id="redo-import">Import something else</button>' +
           '</div>';
@@ -2392,7 +3255,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
       var v = Shell.mount({
         nav: 'home',
-        crumbs: [{ label: 'Overview', href: '/' }, { label: 'Import' }],
+        crumbs: [{ label: 'Overview', href: '/' }, { label: 'Your history' }],
         html: '<div class="page-head"><h1>Your history</h1><p>Two minutes of setup that every message and page is built from.</p></div>' + body
       });
 
@@ -2414,46 +3277,28 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
               ln.querySelector('em').textContent = s[1];
               if (i === SCAN.length - 1) {
                 Store.markImported(src);
-                Store.state.tasks[0].on = true;
-                Store.save();
-                setTimeout(function () { step = 2; paint(); UI.toast('Got it. Seven wins to choose from.'); }, 420);
+                setTimeout(function () { step = 2; paint(); UI.toast('Got it. Three roles, seven wins.'); }, 420);
               }
             }, 300 * (i + 1));
           });
         });
       } else {
-        var winsEl = v.querySelector('#wins');
         var rolesEl = v.querySelector('#roles');
-
-        function paintWins() {
-          var n = Store.selectedWins().length;
-          winsEl.innerHTML = Store.state.profile.wins.map(function (w) {
-            var locked = !w.on && n >= 3;
-            return '<button class="opt' + (locked ? ' locked' : '') + '" data-win="' + w.id + '" aria-pressed="' + w.on + '">' +
-              '<span class="box"></span><span class="ot">' + esc(w.text) + '<em>' + esc(w.where) + '</em></span>' +
-              '<span class="om">' + esc(w.metric) + '</span></button>';
-          }).join('');
-          var lab = v.querySelector('.cap');
-          if (lab) lab.textContent = n + ' of 3 picked';
-        }
         function paintRoles() {
           rolesEl.innerHTML = Store.state.profile.roles.map(function (r) {
             return '<button class="opt" data-role="' + r.id + '" aria-pressed="' + r.on + '">' +
               '<span class="box"></span><span class="ot">' + esc(r.title) + '<em>' + esc(r.company) + ', ' + esc(r.span) + '</em></span>' +
-              '<span></span></button>';
+              '<span class="om mono">' + r.bullets.length + '</span></button>';
           }).join('');
         }
-        paintWins(); paintRoles();
-
-        UI.on(v, 'click', '[data-win]', function (e, el) { Store.toggleWin(el.dataset.win); paintWins(); });
+        paintRoles();
         UI.on(v, 'click', '[data-role]', function (e, el) { Store.toggleRole(el.dataset.role); paintRoles(); });
 
         v.querySelector('#done-import').addEventListener('click', function () {
-          Store.state.tasks[1].on = true;
-          Store.save();
-          var c = Store.createSeedCampaign();
-          UI.toast('Saved. Now pick who to talk to.');
-          Router.go('/c/' + c.id + '/people');
+          var first = Store.campaigns()[0];
+          if (first) { UI.toast('Saved.'); Router.go('/'); return; }
+          UI.toast('Saved. Now paste a job listing.');
+          Router.go('/new');
         });
         v.querySelector('#redo-import').addEventListener('click', function () { step = 1; paint(); });
       }
@@ -2461,7 +3306,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
     paint();
   };
-
 })(window, document);
 
 ;
@@ -2484,23 +3328,52 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   window.Views.people = function (params) {
     var c = Store.campaign(params.id);
     if (!c) return Router.go('/', true);
+    Store.touch(c.id);
     var known = c.contacts.some(function (x) { return x.id === c.activeContact; });
     var selected = known ? c.activeContact : (c.contacts[0] ? c.contacts[0].id : null);
     var adding = false;
 
     var v = Shell.mount({
       nav: 'people',
-      crumbs: [{ label: c.company, href: '/' }, { label: 'Contacts' }],
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Contacts' }],
       actions: '<button class="btn btn-primary btn-sm" id="add-top">Add contact</button>',
       html:
         '<div class="page-head"><h1>Who you are working</h1>' +
         '<p>Ranked top to bottom. The order is the order you reach out in, so put the person with the least to lose from helping you at the top.</p></div>' +
+        '<div id="found"></div>' +
         '<div class="split"><div id="list"></div><div id="detail"></div></div>'
     });
+
+    /* people we went looking for on this req but have not added yet */
+    function paintFound() {
+      var box = v.querySelector('#found');
+      var sug = c.suggested || [];
+      if (!sug.length) { box.innerHTML = ''; return; }
+      box.innerHTML =
+        '<div class="card p5 mb4 found">' +
+          '<div class="row between wrap g3 mb2"><h3>People we found on this req</h3>' +
+          '<span class="cap">' + sug.length + ' to look at</span></div>' +
+          '<p class="dim mb4" style="font-size:var(--fs-sm)">We go after three on every listing: whoever owns the number, whoever posted the req, and anyone already in your history who can forward you along.</p>' +
+          '<div class="foundgrid">' + sug.map(function (g) {
+            return '<div class="foundcard" style="--pc:var(' + Store.colourFor(g.persona) + ')">' +
+              '<div class="row g3" style="align-items:flex-start">' +
+                '<span class="avatar avatar-md" style="background:var(' + Store.colourFor(g.persona) + ')">' + esc(Store.initials(g.name)) + '</span>' +
+                '<span class="grow" style="min-width:0"><b>' + esc(g.name) + '</b>' +
+                '<em>' + esc(g.title) + '</em></span>' +
+              '</div>' +
+              '<p class="fc-why">' + esc(g.why) + '</p>' +
+              '<p class="fc-found">' + esc(g.found) + '</p>' +
+              '<div class="row g2 mt3">' +
+                '<button class="btn btn-primary btn-sm" data-take="' + g.id + '">Add them</button>' +
+                '<button class="btn btn-ghost btn-sm" data-skip="' + g.id + '">Not this one</button>' +
+              '</div></div>';
+          }).join('') + '</div></div>';
+    }
 
     function paint() {
       c.activeContact = selected;
       Store.save();
+      paintFound();
       var list = v.querySelector('#list');
       list.innerHTML =
         c.contacts.map(function (p, i) {
@@ -2603,6 +3476,16 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       if (e.target.closest('button')) return;
       selected = el.dataset.pick; paint();
     });
+    UI.on(v, 'click', '[data-take]', function (e, el) {
+      var p = Store.acceptSuggestion(c.id, el.dataset.take);
+      if (!p) return;
+      Store.completeTask(c.id, 't3');
+      selected = p.id; paint();
+      UI.toast(p.name + ' added. Rank them where they belong.');
+    });
+    UI.on(v, 'click', '[data-skip]', function (e, el) {
+      Store.dismissSuggestion(c.id, el.dataset.skip); paint();
+    });
     UI.on(v, 'click', '[data-up]',   function (e, el) { Store.moveContact(c.id, el.dataset.up, -1); paint(); });
     UI.on(v, 'click', '[data-down]', function (e, el) { Store.moveContact(c.id, el.dataset.down, 1); paint(); });
     UI.on(v, 'click', '#add-inline', startAdd);
@@ -2620,7 +3503,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         email: v.querySelector('#n-email').value.trim(),
         ask: v.querySelector('#n-ask').value.trim()
       });
-      Store.completeTask('t4');
+      Store.completeTask(c.id, 't3');
       adding = false; selected = p.id; paint();
       UI.toast(name + ' added. Drag them up if they matter more.');
     });
@@ -2644,11 +3527,12 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   window.Views.research = function (params) {
     var c = Store.campaign(params.id);
     if (!c) return Router.go('/', true);
+    Store.touch(c.id);
     var tab = 'company';
 
     var v = Shell.mount({
       nav: 'research',
-      crumbs: [{ label: c.company, href: '/' }, { label: 'Research' }],
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Research' }],
       actions: '<button class="btn btn-secondary btn-sm" id="refresh">Refresh</button>',
       html:
         '<div class="page-head"><h1>What they said, recently, in public</h1>' +
@@ -2697,7 +3581,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     UI.on(v, 'click', '[data-sub]', function (e, el) { tab = el.dataset.sub; paint(); });
     UI.on(v, 'click', '[data-use]', function (e, el) {
       c.pendingInsert = el.dataset.use;
-      Store.completeTask('t5');
+      Store.completeTask(c.id, 't4');
       Store.save();
       UI.toast('Dropped into your draft.');
       Router.go('/c/' + c.id + '/sequence');
@@ -2716,7 +3600,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 /* ==========================================================================
    views/sequence.js — the sequence builder
    Step rail on the left with wait-day connectors, editor on the right.
-   Copy lives here, so this is the only place a message gets written.
+   One message per step, written to one person. No variants, because you
+   cannot A/B test a single email to a single human being.
    ========================================================================== */
 (function (window, document) {
   'use strict';
@@ -2725,7 +3610,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   window.Views = window.Views || {};
 
   var CH_ICON = { Email: '✉', LinkedIn: 'in', Call: '☏', Reply: '↩', ATS: '▤', Text: '💬' };
-  var FIELDS = ['{first}', '{name}', '{title}', '{company}', '{role}', '{angle}', '{slug}', '{me}'];
 
   var EDITS = [
     { k: ['short', 'tight', 'cut', 'trim', 'brief'], reply: 'Cut the setup. Four lines.',
@@ -2741,6 +3625,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   window.Views.sequence = function (params) {
     var c = Store.campaign(params.id);
     if (!c) return Router.go('/', true);
+    Store.touch(c.id);
+    Store.materialise(c.id);
     if (!c.steps.some(function (s) { return s.id === c.activeStep; })) {
       c.activeStep = c.steps[0] ? c.steps[0].id : null;
     }
@@ -2748,18 +3634,14 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     /* a line handed over from Research goes to the top of the open step */
     if (c.pendingInsert) {
       var target = c.steps.filter(function (s) { return s.id === c.activeStep; })[0];
-      if (target) {
-        var tv = target.variants[target.activeVariant] || target.variants[0];
-        var current = Store.bodyFor(c, target);
-        tv.body = c.pendingInsert + '\n\n' + current;
-      }
+      if (target) target.body = c.pendingInsert + '\n\n' + Store.bodyFor(c, target);
       c.pendingInsert = null;
       Store.save();
     }
 
     var v = Shell.mount({
       nav: 'sequence',
-      crumbs: [{ label: c.company, href: '/' }, { label: 'Sequence' }],
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Sequence' }],
       actions: '<span class="chip" id="cap-chip"></span>' +
                '<button class="btn btn-secondary btn-sm" id="preview">Preview</button>',
       html: '<div class="page-head"><h1>Sequence</h1>' +
@@ -2769,7 +3651,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
     function step() { return c.steps.filter(function (s) { return s.id === c.activeStep; })[0] || c.steps[0]; }
     function contactOf(s) { return c.contacts.filter(function (x) { return x.id === s.contact; })[0] || null; }
-    function variant(s) { return s.variants[s.activeVariant] || s.variants[0]; }
     function hasSubject(s) { return s.channel === 'Email'; }
 
     /* ---------------- rail ---------------- */
@@ -2786,6 +3667,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         var p = contactOf(s);
         var col = p ? p.colour : '--line-3';
         var dot = s.status === 'replied' ? 'ok' : s.status === 'sent' ? 'done' : s.status === 'due' ? 'due' : '';
+        var t = Store.template(s.template);
         out += '<button class="stepcard' + (s.id === c.activeStep ? ' on' : '') + '" data-step="' + s.id + '"' +
           ' style="--pc:var(' + col + ')">' +
           '<span class="sc-top"><span class="sc-n">' + (i + 1) + '</span>' +
@@ -2794,7 +3676,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '<span class="sc-who">' + esc(p ? p.name : 'No contact') + '</span>' +
           '<span class="sc-note">' + esc(s.note) + '</span>' +
           '<span class="sc-foot"><span class="sc-day">Day ' + s.day + '</span>' +
-            (s.variants.length > 1 ? '<span class="sc-var">' + s.variants.length + ' variants</span>' : '') +
+            (t ? '<span class="sc-tpl">' + esc(t.stage) + '</span>' : '') +
           '</span></button>';
       });
       out += '<button class="addrow mt3" id="add-step">+ Add a step</button>';
@@ -2804,9 +3686,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     /* ---------------- editor ---------------- */
     function editorHTML() {
       var s = step();
-      if (!s) return '<div class="card p6"><p class="dim">No steps yet.</p></div>';
+      if (!s) return '<div class="card p6"><p class="dim">No steps yet. Add one on the left.</p></div>';
       var p = contactOf(s);
-      var vr = variant(s);
+      var t = Store.template(s.template);
       var body = Store.bodyFor(c, s);
 
       return '<div class="card editor">' +
@@ -2831,31 +3713,20 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             Store.CHANNELS.map(function (ch) { return '<option' + (ch === s.channel ? ' selected' : '') + '>' + ch + '</option>'; }).join('') +
           '</select></label>' +
           '<label class="field"><span>Day</span><input class="input" type="number" min="0" max="120" value="' + s.day + '" data-f="day"></label>' +
-          '<label class="field"><span>Start from</span><select class="input" data-f="template">' +
-            '<option value="">Blank</option>' +
-            Store.state.templates.map(function (t) { return '<option value="' + t.id + '"' + (t.id === s.template ? ' selected' : '') + '>' + esc(t.name) + '</option>'; }).join('') +
-          '</select></label>' +
         '</div>' +
 
-        '<div class="ed-tabs">' +
-          s.variants.map(function (x, i) {
-            return '<button class="vtab' + (i === s.activeVariant ? ' on' : '') + '" data-v="' + i + '">' + esc(x.label) +
-              (s.variants.length > 1 && i === s.activeVariant ? '<span class="vx" data-vx="' + i + '" role="button" aria-label="Remove variant">✕</span>' : '') +
-              '</button>';
-          }).join('') +
-          '<button class="vadd" id="add-variant" title="Add a variant to test">+</button>' +
-          '<span class="grow"></span>' +
-          '<span class="hint" id="words"></span>' +
+        '<div class="ed-tplbar">' +
+          (t ? '<span class="tplmark"><b>' + esc(t.name) + '</b><em>' + esc(t.stage) + ' · ' + esc(t.persona) + '</em></span>'
+             : '<span class="tplmark tplmark-off"><b>Written from scratch</b><em>Or start from something you already send</em></span>') +
+          '<button class="btn btn-secondary btn-sm" id="pick-tpl">' + (t ? 'Use a different template' : 'Use a template') + '</button>' +
         '</div>' +
 
         '<div class="ed-body">' +
           (hasSubject(s)
-            ? '<input class="subject" id="subject" placeholder="Subject line, lowercase, about them" value="' + esc(vr.subject) + '">'
+            ? '<input class="subject" id="subject" placeholder="Subject line, lowercase, about them" value="' + esc(s.subject || '') + '">'
             : '') +
-          '<textarea class="bodytext" id="body" spellcheck="false" aria-label="Message">' + esc(body) + '</textarea>' +
-          '<div class="fieldbar">' + FIELDS.map(function (f) {
-            return '<button class="fbtn" data-field="' + esc(f) + '">' + esc(f) + '</button>';
-          }).join('') + '</div>' +
+          '<textarea class="bodytext" id="body" spellcheck="false" aria-label="Message" placeholder="Write it, or pull in a template above.">' + esc(body) + '</textarea>' +
+          '<div class="ed-count"><span class="hint" id="words"></span></div>' +
         '</div>' +
 
         '<div class="ed-foot">' +
@@ -2869,6 +3740,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       '<div class="grid cols-2 mt4">' +
         '<div class="card p5 col g3" id="ctx"></div>' +
         '<div class="card assist-card">' +
+          '<div class="assist-head"><b>Change something</b><span class="hint">Edits the draft in place</span></div>' +
           '<div class="assist-log" id="log"></div>' +
           '<div class="assist-sug" id="sug"></div>' +
           '<form class="assist-in" id="assist-form">' +
@@ -2888,9 +3760,46 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
               return '<div class="mini-act"><p>' + esc(a.text) + '</p>' +
                 '<button class="btn btn-ghost btn-sm" data-insert="' + esc(a.use) + '">Drop this in</button></div>';
             }).join('')
-          : '<p class="hint">Nothing public found. Worth knowing on its own.</p>') +
+          : '<p class="hint">Nothing public found for them yet. Worth knowing on its own.</p>') +
         (p.ask ? '<p class="hint">You want: ' + esc(p.ask) + '</p>' : '') +
         '<a class="hint" href="#/c/' + c.id + '/research">All research →</a>';
+    }
+
+    /* ---------------- template picker ---------------- */
+    function openPicker() {
+      var s = step();
+      var p = contactOf(s);
+      var who = p ? p.persona.toLowerCase() : 'someone';
+      var list = Store.templatesFor(p ? p.persona : null, s.channel);
+
+      UI.sheet({
+        title: 'What do you usually send ' + (p ? 'a ' + who : 'here') + '?',
+        cls: 'modal-picker',
+        onMount: function (node, close) {
+          UI.on(node, 'click', '[data-use]', function (e, el) {
+            var t = Store.template(el.dataset.use);
+            if (!t) return;
+            Store.updateStep(c.id, s.id, {
+              template: t.id,
+              body: Store.fill(t.body, c, p),
+              channel: t.channel
+            });
+            close();
+            paintAll();
+            UI.toast('Pulled in "' + t.name + '". Names already filled in.');
+          });
+        },
+        html: '<p class="dim mb4" style="font-size:var(--fs-sm)">Sorted by how well each one fits this step. Picking one fills in the names for you.</p>' +
+          '<div class="tplpick">' + list.map(function (t) {
+            var fit = (p && t.persona === p.persona ? 1 : 0) + (t.channel === s.channel ? 1 : 0);
+            return '<button class="tplopt" data-use="' + t.id + '">' +
+              '<span class="row between g2 wrap"><b>' + esc(t.name) + '</b>' +
+              (fit === 2 ? '<span class="chip chip-pos">Best fit</span>' : fit === 1 ? '<span class="chip">Close</span>' : '') + '</span>' +
+              '<span class="tplopt-meta">' + esc(t.stage) + ' · ' + esc(t.persona) + ' · ' + esc(t.channel) + '</span>' +
+              '<span class="tplopt-body">' + esc(Store.fill(t.body, c, p).slice(0, 150)) + '…</span>' +
+              '</button>';
+          }).join('') + '</div>'
+      });
     }
 
     /* ---------------- painting ---------------- */
@@ -2911,7 +3820,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
     function paintEditor() {
       v.querySelector('#editor').innerHTML = editorHTML();
-      v.querySelector('#ctx').innerHTML = ctxHTML();
+      var ctx = v.querySelector('#ctx');
+      if (ctx) ctx.innerHTML = ctxHTML();
       wire();
       words();
       grow();
@@ -2932,13 +3842,14 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     /* ---------------- wiring ---------------- */
     function wire() {
       var s = step();
+      if (!s) return;
       var body = v.querySelector('#body');
       var subject = v.querySelector('#subject');
 
       function persist() {
-        Store.updateVariant(c.id, s.id, s.activeVariant, {
-          body: body ? body.value : '',
-          subject: subject ? subject.value : (variant(s).subject || '')
+        Store.updateStep(c.id, s.id, {
+          body: body ? body.value : s.body,
+          subject: subject ? subject.value : (s.subject || '')
         });
       }
       if (body) body.addEventListener('input', function () { words(); grow(); persist(); });
@@ -2954,38 +3865,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         });
       });
 
-      v.querySelectorAll('[data-v]').forEach(function (el) {
-        el.addEventListener('click', function (e) {
-          if (e.target.closest('[data-vx]')) return;
-          persist();
-          s.activeVariant = +el.dataset.v; Store.save(); paintAll();
-        });
-      });
-      v.querySelectorAll('[data-vx]').forEach(function (el) {
-        el.addEventListener('click', function (e) {
-          e.stopPropagation();
-          Store.removeVariant(c.id, s.id, +el.dataset.vx);
-          paintAll(); UI.toast('Variant removed.');
-        });
-      });
-      var addv = v.querySelector('#add-variant');
-      if (addv) addv.addEventListener('click', function () {
-        persist();
-        var nv = Store.addVariant(c.id, s.id);
-        paintAll();
-        UI.toast(nv ? 'Variant ' + nv.label + ' added. Change one thing, not five.' : 'Could not add.');
-      });
-
-      v.querySelectorAll('[data-field]').forEach(function (el) {
-        el.addEventListener('click', function () {
-          if (!body) return;
-          var at = body.selectionStart || body.value.length;
-          body.value = body.value.slice(0, at) + el.dataset.field + body.value.slice(at);
-          body.focus();
-          body.selectionStart = body.selectionEnd = at + el.dataset.field.length;
-          words(); grow(); persist();
-        });
-      });
+      var pick = v.querySelector('#pick-tpl');
+      if (pick) pick.addEventListener('click', function () { persist(); openPicker(); });
 
       v.querySelectorAll('[data-insert]').forEach(function (el) {
         el.addEventListener('click', function () {
@@ -3013,8 +3894,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       });
       var mark = v.querySelector('#mark');
       if (mark) mark.addEventListener('click', function () {
+        if (s.status !== 'sent' && s.status !== 'replied') c.sent += 1;
         Store.updateStep(c.id, s.id, { status: 'sent' });
-        Store.completeTask('t6');
+        Store.completeTask(c.id, 't6');
         paintAll(); UI.toast('Logged.');
       });
       var savet = v.querySelector('#save-tpl');
@@ -3023,10 +3905,12 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         var p = contactOf(s);
         var t = Store.addTemplate({
           name: (p ? p.persona : 'Custom') + ', day ' + s.day,
-          persona: p ? p.persona : 'Other', channel: s.channel, body: body ? body.value : ''
+          persona: p ? p.persona : 'Other', channel: s.channel,
+          stage: s.day === 0 ? 'First touch' : s.day > 10 ? 'Breakup' : 'Follow up',
+          body: body ? body.value : ''
         });
         Store.updateStep(c.id, s.id, { template: t.id });
-        paintAll(); UI.toast('Saved as "' + t.name + '".');
+        paintAll(); UI.toast('Saved to your library as "' + t.name + '".');
       });
 
       /* assistant */
@@ -3062,7 +3946,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     /* rail events (delegated, survives repaints) */
     UI.on(v, 'click', '[data-step]', function (e, el) {
       var b = v.querySelector('#body');
-      if (b) Store.updateVariant(c.id, step().id, step().activeVariant, { body: b.value });
+      var cur = step();
+      if (b && cur) Store.updateStep(c.id, cur.id, { body: b.value });
       c.activeStep = el.dataset.step; Store.save(); paintAll();
     });
     UI.on(v, 'change', '[data-wait]', function (e, el) {
@@ -3072,14 +3957,16 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     UI.on(v, 'click', '#add-step', function () {
       var s = Store.addStep(c.id);
       c.activeStep = s.id; Store.save(); paintAll();
+      Store.completeTask(c.id, 't5');
       UI.toast('Step added. Set the day and who it goes to.');
     });
 
     document.getElementById('preview').addEventListener('click', function () {
-      var s = step(), p = contactOf(s), vr = variant(s);
+      var s = step(); if (!s) return;
+      var p = contactOf(s);
       var b = v.querySelector('#body');
       var text = Store.fill(b ? b.value : Store.bodyFor(c, s), c, p);
-      var subj = Store.fill(vr.subject || '', c, p);
+      var subj = Store.fill(s.subject || '', c, p);
       UI.sheet({
         title: 'How it lands',
         html: '<div class="mailprev">' +
@@ -3100,7 +3987,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 ;
 /* assets/js/views/templates.js */
 /* ==========================================================================
-   views/templates.js — the message library
+   views/templates.js — the message library. What you normally send to a
+   given kind of person at a given point in the sequence.
    ========================================================================== */
 (function (window, document) {
   'use strict';
@@ -3108,30 +3996,44 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   var esc = UI.esc;
   window.Views = window.Views || {};
 
-  /* ======================================================================
-     TEMPLATE LIBRARY
-     ====================================================================== */
   window.Views.templates = function () {
     var selected = Store.state.templates[0] ? Store.state.templates[0].id : null;
+    var filter = 'All';
 
     var v = Shell.mount({
       nav: 'templates',
       crumbs: [{ label: 'Templates' }],
       actions: '<button class="btn btn-primary btn-sm" id="new-tpl">New template</button>',
       html: '<div class="page-head"><h1>Your messages</h1>' +
-        '<p>Seven to start with. Edit any of them and the change sticks for every campaign after this. The ones you write yourself sit alongside them.</p></div>' +
+        '<p>Nine to start with, one for each kind of person at each point in the sequence. Pull any of them into a step and the names fill in.</p></div>' +
+        '<div class="filterbar" id="filters"></div>' +
         '<div class="split"><div id="tpl-list"></div><div id="tpl-edit"></div></div>'
     });
 
-    function paintList() {
-      v.querySelector('#tpl-list').innerHTML = Store.state.templates.map(function (t) {
-        return '<button class="rankrow' + (t.id === selected ? ' on' : '') + '" data-tpl="' + t.id + '"' +
-          ' style="--pc:var(' + Store.colourFor(t.persona) + ')">' +
-          '<span class="rank" style="background:none;color:var(--ink-4)">' + (t.stock ? '' : '★') + '</span>' +
-          '<span class="rr-main"><span class="rr-name">' + esc(t.name) + '</span>' +
-          '<span class="rr-sub">' + esc(t.persona) + ' · ' + esc(t.channel) + '</span></span>' +
-          '<span class="rr-tag">' + (t.stock ? 'Stock' : 'Yours') + '</span></button>';
+    function paintFilters() {
+      var tabs = ['All'].concat(Store.STAGES);
+      v.querySelector('#filters').innerHTML = tabs.map(function (t) {
+        var n = t === 'All' ? Store.state.templates.length
+              : Store.state.templates.filter(function (x) { return x.stage === t; }).length;
+        return '<button class="ftab' + (t === filter ? ' on' : '') + '" data-filter="' + esc(t) + '">' +
+          esc(t) + '<span>' + n + '</span></button>';
       }).join('');
+    }
+
+    function paintList() {
+      var rows = Store.state.templates.filter(function (t) { return filter === 'All' || t.stage === filter; });
+      v.querySelector('#tpl-list').innerHTML = rows.length
+        ? rows.map(function (t) {
+            return '<button class="tplrow' + (t.id === selected ? ' on' : '') + '" data-tpl="' + t.id + '"' +
+              ' style="--pc:var(' + Store.colourFor(t.persona) + ')">' +
+              '<span class="tplrow-dot"></span>' +
+              '<span class="tplrow-main"><span class="tplrow-name">' + esc(t.name) + '</span>' +
+              '<span class="tplrow-sub">' + esc(t.persona) + ' · ' + esc(t.channel) + '</span></span>' +
+              '<span class="tplrow-stage">' + esc(t.stage) + '</span>' +
+              (t.stock ? '' : '<span class="tplrow-mine" title="You wrote this">★</span>') +
+              '</button>';
+          }).join('')
+        : '<div class="card p5"><p class="dim">Nothing at this stage yet.</p></div>';
       paintEdit();
     }
 
@@ -3140,11 +4042,14 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       var box = v.querySelector('#tpl-edit');
       if (!t) { box.innerHTML = '<div class="card p6"><p class="dim">Pick one on the left.</p></div>'; return; }
       box.innerHTML =
-        '<div class="card p5 col g3">' +
+        '<div class="card p5 col g3" style="position:sticky;top:calc(var(--topbar) + var(--s-4))">' +
           '<div class="field"><label for="t-name">Name</label><input class="input" id="t-name" value="' + esc(t.name) + '"></div>' +
-          '<div class="grid cols-2">' +
+          '<div class="grid cols-3">' +
             '<div class="field"><label for="t-persona">For</label><select class="input" id="t-persona">' +
               Store.PERSONAS.map(function (p) { return '<option' + (p.key === t.persona ? ' selected' : '') + '>' + esc(p.key) + '</option>'; }).join('') +
+            '</select></div>' +
+            '<div class="field"><label for="t-stage">Stage</label><select class="input" id="t-stage">' +
+              Store.STAGES.map(function (s) { return '<option' + (s === t.stage ? ' selected' : '') + '>' + esc(s) + '</option>'; }).join('') +
             '</select></div>' +
             '<div class="field"><label for="t-channel">Channel</label><select class="input" id="t-channel">' +
               Store.CHANNELS.map(function (ch) { return '<option' + (ch === t.channel ? ' selected' : '') + '>' + ch + '</option>'; }).join('') +
@@ -3152,41 +4057,44 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '</div>' +
           '<div class="field"><label for="t-body">Message</label>' +
             '<textarea class="input" id="t-body" style="min-height:250px;font-family:var(--mono);font-size:13px;line-height:1.8">' + esc(t.body) + '</textarea>' +
-            '<p class="hint">Merge fields: {first} {name} {title} {company} {role} {angle} {slug}</p></div>' +
+            '<p class="hint">Anything in braces is filled in from the company and the person when you pull this into a step.</p></div>' +
           '<div class="row between">' +
             '<span class="hint" id="t-saved" style="opacity:0;transition:opacity var(--t-2)">Saved</span>' +
             '<button class="btn btn-danger btn-sm" id="t-del">Delete</button></div>' +
         '</div>';
 
-      ['name', 'persona', 'channel', 'body'].forEach(function (k) {
+      ['name', 'persona', 'stage', 'channel', 'body'].forEach(function (k) {
         var el = box.querySelector('#t-' + k);
         el.addEventListener('change', function () {
           var o = {}; o[k] = this.value;
           Store.updateTemplate(t.id, o);
           var s = box.querySelector('#t-saved'); s.style.opacity = 1;
           setTimeout(function () { s.style.opacity = 0; }, 1400);
-          if (k === 'name' || k === 'persona' || k === 'channel') setTimeout(paintList, 0);
+          if (k !== 'body') setTimeout(function () { paintFilters(); paintList(); }, 0);
         });
       });
       box.querySelector('#t-del').addEventListener('click', function () {
-        UI.confirm({ title: 'Delete "' + t.name + '"?', body: 'Any step using it falls back to writing from scratch.', confirm: 'Delete', danger: true })
+        UI.confirm({ title: 'Delete "' + t.name + '"?', body: 'Any step using it keeps the words, it just loses the link back here.', confirm: 'Delete', danger: true })
           .then(function (ok) {
             if (!ok) return;
             Store.removeTemplate(t.id);
             selected = Store.state.templates[0] ? Store.state.templates[0].id : null;
-            paintList(); UI.toast('Deleted.');
+            paintFilters(); paintList(); UI.toast('Deleted.');
           });
       });
     }
 
     UI.on(v, 'click', '[data-tpl]', function (e, el) { selected = el.dataset.tpl; paintList(); });
+    UI.on(v, 'click', '[data-filter]', function (e, el) { filter = el.dataset.filter; paintFilters(); paintList(); });
     document.getElementById('new-tpl').addEventListener('click', function () {
-      var t = Store.addTemplate({ name: 'Untitled', persona: 'Peer', channel: 'Email',
+      var t = Store.addTemplate({ name: 'Untitled', persona: 'Peer', stage: 'First touch', channel: 'Email',
         body: '{first}, \n\n\n\nWorth fifteen minutes?' });
-      selected = t.id; paintList();
+      selected = t.id; filter = 'All';
+      paintFilters(); paintList();
       UI.toast('New template. Give it a name.');
     });
 
+    paintFilters();
     paintList();
   };
 })(window, document);
@@ -3194,7 +4102,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 ;
 /* assets/js/views/page.js */
 /* ==========================================================================
-   views/page.js — the public account plan, plus the shared tab strip
+   views/page.js — the public page, the one thing you link to in a message.
+   Three layouts over the same content, because a hiring manager who skims
+   and one who reads want different shapes.
    ========================================================================== */
 (function (window, document) {
   'use strict';
@@ -3202,98 +4112,215 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   var esc = UI.esc;
   window.Views = window.Views || {};
 
-  /* the section nav lives in the sidebar now, so no tab strip here */
+  var LAYOUTS = [
+    { key: 'case',   name: 'The case',   sub: 'Portrait, a thesis, then the proof. Reads top to bottom.' },
+    { key: 'brief',  name: 'The brief',  sub: 'Two columns, everything above the fold. For skimmers.' },
+    { key: 'letter', name: 'The letter', sub: 'One narrow column addressed to a person. For a warm intro.' }
+  ];
 
   window.Views.page = function (params) {
     var c = Store.campaign(params.id);
     if (!c) return Router.go('/', true);
+    Store.touch(c.id);
     var pf = Store.state.profile;
-    var angle = c.angles.filter(function (a) { return a.on; })[0] || c.angles[0];
+    var angle = c.angles.filter(function (a) { return a.on; })[0] || c.angles[0] || null;
+    var wins = Store.campaignWins(c);
+    var hm = c.contacts.filter(function (p) { return p.persona === 'Hiring manager'; })[0] ||
+             c.contacts[0] || null;
 
-    function stats() {
-      return Store.selectedWins().map(function (w) {
-        return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
-      }).join('');
+    function on(key) { return (c.sections.filter(function (s) { return s.key === key; })[0] || {}).on; }
+
+    /* ---------------- page sections ---------------- */
+    function sHero() {
+      return '<section class="pg-hero" data-sec="hero">' +
+        '<div class="pg-portrait">' + Views.photoHTML(112) + '</div>' +
+        '<div class="pg-hero-txt">' +
+          '<p class="pg-eyebrow">Written for ' + esc(c.company) + ' · ' + esc(c.role) + '</p>' +
+          '<h1>' + esc(pf.name) + '</h1>' +
+          '<p class="pg-thesis">' + esc(angle ? angle.take : (c.story || 'Here is why this company, and what I would do in the first ninety days.')) + '</p>' +
+          '<div class="pg-chips">' +
+            '<span>' + esc(pf.location) + '</span>' +
+            '<span>' + pf.years + ' years in SaaS</span>' +
+            (c.req ? '<span>Req ' + esc(c.req) + '</span>' : '') +
+          '</div>' +
+        '</div></section>';
     }
-    function history() {
-      return pf.roles.filter(function (r) { return r.on; }).map(function (r) {
-        return '<div class="job"><div class="jt"><b>' + esc(r.title) + '</b><em>' + esc(r.span) + '</em></div>' +
-          '<p class="jw">' + esc(r.company) + '</p><ul>' +
-          r.bullets.map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '</ul></div>';
-      }).join('');
+    function sProof() {
+      if (!wins.length) return '';
+      return '<section data-sec="proof"><h2 class="pg-h">The numbers</h2>' +
+        '<div class="pg-stats">' + wins.map(function (w) {
+          return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span>' +
+            '<em>' + esc(w.where) + '</em></div>';
+        }).join('') + '</div></section>';
+    }
+    /* the hero already carries the lead angle, so this section carries what
+       comes after it: the other reads, or what the listing asked for */
+    function sWhy() {
+      var rest = c.angles.filter(function (a) { return a !== angle; });
+      var inner = '';
+      if (!on('hero') && angle) {
+        inner = '<p class="pg-take">' + esc(angle.take) + '</p>';
+      } else if (rest.length) {
+        inner = '<div class="pg-reads">' + rest.map(function (a) {
+          return '<div><b>' + esc(a.title) + '</b><p>' + esc(a.take) + '</p></div>';
+        }).join('') + '</div>';
+      } else if (c.requirements.length) {
+        inner = '<ul class="pg-ticks">' + c.requirements.slice(0, 6).map(function (r) {
+          return '<li>' + esc(r) + '</li>';
+        }).join('') + '</ul>';
+      }
+      if (!inner) return '';
+      return '<section data-sec="why"><h2 class="pg-h">Why ' + esc(c.company) + '</h2>' + inner + '</section>';
+    }
+    function sStory() {
+      if (!c.story) return '';
+      return '<section data-sec="story"><h2 class="pg-h">What happened last time</h2>' +
+        '<p class="pg-story">' + esc(c.story) + '</p></section>';
+    }
+    function sPlan() {
+      return '<section data-sec="plan"><h2 class="pg-h">First 90 days at ' + esc(c.company) + '</h2>' +
+        '<div class="pg-days">' +
+          '<div><span>30</span><p>Sit on twenty calls. Find out where deals actually stall against the new deal math.</p></div>' +
+          '<div><span>60</span><p>Rewrite discovery for a two call close and hand the team a working script, not a deck.</p></div>' +
+          '<div><span>90</span><p>Two closed won on the new motion, and a written teardown of what moved the number.</p></div>' +
+        '</div></section>';
+    }
+    function sExp() {
+      var roles = pf.roles.filter(function (r) { return r.on; });
+      if (!roles.length) return '';
+      return '<section data-sec="exp"><h2 class="pg-h">Where I have been</h2>' +
+        '<div class="pg-jobs">' + roles.map(function (r) {
+          return '<div class="pg-job"><div class="pg-job-h"><b>' + esc(r.title) + '</b><em>' + esc(r.span) + '</em></div>' +
+            '<p class="pg-job-co">' + esc(r.company) + '</p><ul>' +
+            r.bullets.map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '</ul></div>';
+        }).join('') + '</div></section>';
+    }
+    function sSaid() {
+      return '<section data-sec="said"><h2 class="pg-h">Someone who worked with me</h2>' +
+        '<figure class="pg-quote"><blockquote>' + esc(pf.reference.quote) + '</blockquote>' +
+        '<figcaption><span class="avatar avatar-md" style="background:var(--p-tie)">' + esc(pf.reference.initials) + '</span>' +
+        '<span><b>' + esc(pf.reference.who) + '</b><em>' + esc(pf.reference.role) + '</em></span></figcaption></figure></section>';
+    }
+    function sStack() {
+      return '<section data-sec="stack"><h2 class="pg-h">Tools I live in</h2>' +
+        '<div class="pg-chips">' + pf.stack.map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('') + '</div></section>';
+    }
+    function sVideo() {
+      return '<section data-sec="video"><h2 class="pg-h">Ninety seconds</h2>' +
+        '<div class="pg-reel"><b>▶</b><span>A short video, if reading is not your thing</span></div></section>';
+    }
+    function sFoot() {
+      return '<footer class="pg-foot">' +
+        '<div><b>' + esc(pf.name) + '</b><p>' + esc(pf.email) + (pf.phone ? ' · ' + esc(pf.phone) : '') + '</p></div>' +
+        '<div class="row g2"><button class="pg-btn pg-btn-ghost">Résumé</button>' +
+        '<button class="pg-btn">Book fifteen minutes</button></div></footer>';
     }
 
+    /* ---------------- layouts ---------------- */
+    function pick(fns) {
+      return fns.map(function (f) { return f(); }).join('');
+    }
+    function pageBody() {
+      var keep = { hero: sHero, why: sWhy, proof: sProof, story: sStory,
+                   plan: sPlan, exp: sExp, said: sSaid, stack: sStack, video: sVideo };
+      function part(k) { return on(k) ? keep[k] : function () { return ''; }; }
+
+      if (c.pageTemplate === 'brief') {
+        return '<div class="pub pub-brief">' +
+          part('hero')() +
+          '<div class="pb-cols">' +
+            '<div>' + pick([part('why'), part('story'), part('plan')]) + '</div>' +
+            '<div>' + pick([part('proof'), part('exp'), part('said'), part('stack'), part('video')]) + '</div>' +
+          '</div>' + sFoot() + '</div>';
+      }
+      if (c.pageTemplate === 'letter') {
+        var first = hm ? String(hm.name).split(' ')[0] : 'there';
+        return '<div class="pub pub-letter">' +
+          (on('hero') ? '<section class="pl-top" data-sec="hero">' +
+            '<p class="pg-eyebrow">' + esc(pf.name) + ' · for ' + esc(c.company) + '</p>' +
+            '<h1>' + esc(first) + ',</h1>' +
+            '<p class="pg-thesis">' + esc(angle ? angle.take : c.story) + '</p></section>' : '') +
+          pick([part('story'), part('proof'), part('plan'), part('why'), part('exp'), part('said'), part('stack'), part('video')]) +
+          '<div class="pl-sign">' + Views.photoHTML(56) +
+            '<div><b>' + esc(pf.name) + '</b><p>' + esc(pf.email) + '</p></div></div>' +
+          sFoot() + '</div>';
+      }
+      return '<div class="pub pub-case">' +
+        pick([part('hero'), part('proof'), part('why'), part('story'), part('plan'),
+              part('exp'), part('said'), part('stack'), part('video')]) +
+        sFoot() + '</div>';
+    }
+
+    /* ---------------- the editor around it ---------------- */
     var html =
       '<div class="page-head"><h1>What they see</h1>' +
-      '<p>One page, written for one company. Turn a section off if it is not earning its place.</p></div>' +
+      '<p>One page, written for one company. Pick a shape, then turn off anything that is not earning its place.</p></div>' +
       '<div class="preview">' +
-        '<div><p class="cap" style="padding:0 var(--s-3) var(--s-2)">Sections</p>' +
-        '<div class="sec-toggles" id="toggles"></div>' +
-        '<div class="card p4 mt4"><p class="cap mb2">Opens</p><h3 class="mono">' + c.views + '</h3>' +
-        '<p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div></div>' +
+        '<div class="col g4">' +
+          '<div class="card p4">' +
+            '<p class="cap mb3">Layout</p>' +
+            '<div class="laypick" id="lay">' + LAYOUTS.map(function (l) {
+              return '<button class="lay' + (c.pageTemplate === l.key ? ' on' : '') + '" data-lay="' + l.key + '">' +
+                '<span class="lay-art lay-' + l.key + '"><i></i><i></i><i></i></span>' +
+                '<b>' + esc(l.name) + '</b><em>' + esc(l.sub) + '</em></button>';
+            }).join('') + '</div>' +
+          '</div>' +
+          '<div class="card p4">' +
+            '<p class="cap mb3">Sections</p>' +
+            '<div class="sec-toggles" id="toggles"></div>' +
+          '</div>' +
+          '<div class="card p4">' +
+            '<p class="cap mb2">Opens</p><h3 class="mono">' + c.views + '</h3>' +
+            '<p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p>' +
+            (pf.photo ? '' : '<p class="hint mt3">No photo yet. A face on this page is worth more than another bullet. <a href="#/settings">Add one</a>.</p>') +
+          '</div>' +
+        '</div>' +
         '<div class="browser">' +
           '<div class="browser-bar"><i></i><i></i><i></i><span class="url">frontdoor.app/p/' + esc(c.slug) + '</span></div>' +
-          '<div class="pub">' +
-            '<section class="hero" data-sec="hero">' +
-              '<p class="cap">Written for ' + esc(c.company) + ', ' + esc(c.role) + '</p>' +
-              '<h2>' + esc(pf.name) + '</h2>' +
-              '<p class="thesis">I have already run the change ' + esc(c.company) + ' is in the middle of. Seat pricing, longer cycles, and a team that has to relearn how to open a deal.</p>' +
-              '<div class="row wrap g2"><span class="chip">' + esc(pf.location) + '</span>' +
-              '<span class="chip">' + pf.years + ' years in SaaS</span><span class="chip">Mid-market and SMB</span></div>' +
-            '</section>' +
-            '<section data-sec="why"><h3 class="cap">Why ' + esc(c.company) + '</h3>' +
-              '<p class="take">' + esc(angle.take) + '</p></section>' +
-            '<section data-sec="proof"><h3 class="cap">The short version</h3><div class="stats">' + stats() + '</div></section>' +
-            '<section data-sec="exp"><h3 class="cap">Where I have been</h3><div class="history">' + history() + '</div></section>' +
-            '<section data-sec="plan"><h3 class="cap">First 90 days at ' + esc(c.company) + '</h3><div class="days">' +
-              '<div><span>30</span>Sit on twenty calls. Find out where mid-market deals actually stall against the five seat floor.</div>' +
-              '<div><span>60</span>Rewrite discovery for a two call close and hand the team a working script, not a deck.</div>' +
-              '<div><span>90</span>Two closed won on the new motion, and a written teardown of what moved the number.</div>' +
-            '</div></section>' +
-            '<section data-sec="video"><h3 class="cap">Ninety seconds</h3><div class="reel"><b>▶</b></div></section>' +
-            '<section data-sec="said"><h3 class="cap">Someone who worked with me</h3>' +
-              '<div class="said"><p>"' + esc(pf.reference.quote) + '"</p>' +
-              '<div class="by"><span class="avatar avatar-md" style="background:var(--p-tie)">' + esc(pf.reference.initials) + '</span>' +
-              '<span>' + esc(pf.reference.who) + ', ' + esc(pf.reference.role) + '</span></div></div></section>' +
-            '<section data-sec="stack"><h3 class="cap">Tools I live in</h3><div class="row wrap g2">' +
-              pf.stack.map(function (s) { return '<span class="chip">' + esc(s) + '</span>'; }).join('') + '</div></section>' +
-            '<div class="pub-foot"><div class="row wrap g2"><span class="chip">' + esc(pf.email) + '</span>' +
-              '<span class="chip">312 555 0148</span></div>' +
-              '<button class="btn btn-secondary btn-sm">Download résumé</button></div>' +
-          '</div>' +
+          '<div id="pub-mount">' + pageBody() + '</div>' +
         '</div>' +
       '</div>';
 
     var v = Shell.mount({
       nav: 'page',
-      crumbs: [{ label: c.company, href: '/' }, { label: 'Page' }],
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Page' }],
       actions: '<button class="btn btn-secondary btn-sm" id="copy-link">Copy link</button>' +
                '<button class="btn btn-primary btn-sm" id="sim">Simulate a view</button>',
       html: html
     });
+
+    function repaintPage() {
+      v.querySelector('#pub-mount').innerHTML = pageBody();
+      var el = v.querySelector('.pub');
+      if (el) { el.classList.remove('pub-in'); void el.offsetWidth; el.classList.add('pub-in'); }
+    }
 
     function paintToggles() {
       v.querySelector('#toggles').innerHTML = c.sections.map(function (s) {
         return '<button class="sec-tog" data-sec-key="' + s.key + '" aria-pressed="' + s.on + '">' +
           '<span class="box"></span>' + esc(s.label) + '</button>';
       }).join('');
-      c.sections.forEach(function (s) {
-        var node = v.querySelector('[data-sec="' + s.key + '"]');
-        if (node) node.classList.toggle('hide', !s.on);
-      });
     }
     paintToggles();
 
     UI.on(v, 'click', '[data-sec-key]', function (e, el) {
       var s = c.sections.filter(function (x) { return x.key === el.dataset.secKey; })[0];
-      s.on = !s.on; Store.save(); paintToggles();
+      s.on = !s.on; Store.save();
+      paintToggles(); repaintPage();
     });
+    UI.on(v, 'click', '[data-lay]', function (e, el) {
+      Store.updateCampaign(c.id, { pageTemplate: el.dataset.lay });
+      v.querySelectorAll('[data-lay]').forEach(function (b) { b.classList.toggle('on', b.dataset.lay === el.dataset.lay); });
+      repaintPage();
+      UI.toast('Switched to ' + LAYOUTS.filter(function (l) { return l.key === el.dataset.lay; })[0].name.toLowerCase() + '.');
+    });
+
     document.getElementById('copy-link').addEventListener('click', function () {
       UI.copy('https://frontdoor.app/p/' + c.slug); UI.toast('Link copied.');
     });
     document.getElementById('sim').addEventListener('click', function () {
       c.views += 1; c.lastView = 'just now'; Store.save();
-      UI.toast('Marcus opened your page. Just now.');
+      UI.toast((hm ? hm.name.split(' ')[0] : 'Someone') + ' opened your page. Just now.');
       Views.page(params);
     });
   };
@@ -3315,9 +4342,11 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     .add('/login',  Views.login,  { public: true })
     .add('/signup', Views.signup, { public: true })
     .add('/',        Views.home)
+    .add('/new',     Views.newOpp)
     .add('/import',  Views.importer)
     .add('/settings', Views.settings)
     .add('/templates', Views.templates)
+    .add('/c/:id',          Views.opportunity)
     .add('/c/:id/people',   Views.people)
     .add('/c/:id/research', Views.research)
     .add('/c/:id/sequence', Views.sequence)
@@ -3328,10 +4357,12 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   UI.paletteSource = function () {
     var cid = Shell.activeCampaignId();
     var items = [
-      { group: 'Go to', icon: '◉', label: 'Overview', hint: 'G O', run: function () { Router.go('/'); } }
+      { group: 'Go to', icon: '◉', label: 'Overview', hint: 'G O', run: function () { Router.go('/'); } },
+      { group: 'Do', icon: '+', label: 'Add a company from a job listing', run: function () { Router.go('/new'); } }
     ];
     if (cid) {
       items.push(
+        { group: 'Go to', icon: '◆', label: 'Company summary', hint: 'G C', run: function () { Router.go('/c/' + cid); } },
         { group: 'Go to', icon: '◎', label: 'Contacts', hint: 'G P', run: function () { Router.go('/c/' + cid + '/people'); } },
         { group: 'Go to', icon: '◈', label: 'Research on the company and the people', hint: 'G R', run: function () { Router.go('/c/' + cid + '/research'); } },
         { group: 'Go to', icon: '≡', label: 'The fourteen day sequence', hint: 'G S', run: function () { Router.go('/c/' + cid + '/sequence'); } },
@@ -3373,6 +4404,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       awaitingG = false;
       clearTimeout(gTimer);
       if (k === 'o') Router.go('/');
+      else if (k === 'c' && cid) Router.go('/c/' + cid);
+      else if (k === 'n') Router.go('/new');
       else if (k === 'p' && cid) Router.go('/c/' + cid + '/people');
       else if (k === 's' && cid) Router.go('/c/' + cid + '/sequence');
       else if (k === 'r' && cid) Router.go('/c/' + cid + '/research');
