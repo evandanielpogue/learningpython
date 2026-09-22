@@ -1,0 +1,649 @@
+<title>Play It Safe Cleaning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Karla:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#E6ECE8;
+    --surface:#FFFFFF;
+    --surface-2:#F3F6F4;
+    --ink:#12241E;
+    --ink-2:#44564F;
+    --ink-3:#71847C;
+    --line:#CFDAD4;
+    --primary:#0E5C4C;
+    --primary-soft:#D9E8E3;
+    --accent:#FFB300;
+    --accent-ink:#5A3F00;
+    --signal:#C8451F;
+    --shadow:0 1px 2px rgba(18,36,30,.06), 0 8px 24px -12px rgba(18,36,30,.18);
+    --radius:10px;
+    --display:'Archivo',system-ui,sans-serif;
+    --body:'Karla',system-ui,sans-serif;
+    --mono:'DM Mono',ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0C1512; --surface:#131F1B; --surface-2:#182621;
+      --ink:#E4EDE8; --ink-2:#A8BAB3; --ink-3:#7E918A;
+      --line:#26362F; --primary:#4FC3A6; --primary-soft:#17302A;
+      --accent:#FFC53D; --accent-ink:#1A1204; --signal:#F07A53;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0C1512; --surface:#131F1B; --surface-2:#182621;
+    --ink:#E4EDE8; --ink-2:#A8BAB3; --ink-3:#7E918A;
+    --line:#26362F; --primary:#4FC3A6; --primary-soft:#17302A;
+    --accent:#FFC53D; --accent-ink:#1A1204; --signal:#F07A53;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--ground); color:var(--ink);
+    font-family:var(--body); font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{font-family:var(--display); text-wrap:balance; margin:0; line-height:1.12; letter-spacing:-.02em}
+  h1{font-size:clamp(2.1rem,6vw,3.4rem); font-weight:800}
+  h2{font-size:clamp(1.5rem,3.6vw,2.1rem); font-weight:700}
+  h3{font-size:1.1rem; font-weight:700; letter-spacing:-.01em}
+  p{margin:0}
+  a{color:var(--primary)}
+
+  .wrap{max-width:1060px; margin-inline:auto; padding-inline:20px}
+  .eyebrow{
+    font-family:var(--mono); font-size:.72rem; text-transform:uppercase;
+    letter-spacing:.14em; color:var(--ink-3);
+  }
+
+  /* ---- nav ---- */
+  .topbar{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:20;
+    background:color-mix(in srgb, var(--ground) 88%, transparent);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+  }
+  .topbar .wrap{
+    display:flex; align-items:center; gap:16px 20px;
+    flex-wrap:wrap; padding-block:12px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; margin-right:auto; text-decoration:none; color:var(--ink)}
+  .mark{
+    width:30px; height:30px; border-radius:8px; flex:none;
+    background:var(--primary); position:relative;
+  }
+  .mark::before{
+    content:""; position:absolute; inset:0;
+    background:
+      radial-gradient(circle at 26% 34%, var(--accent) 1.6px, transparent 1.8px),
+      radial-gradient(circle at 68% 28%, #ffffff 1.4px, transparent 1.6px),
+      radial-gradient(circle at 44% 72%, #ffffff 1.2px, transparent 1.4px),
+      radial-gradient(circle at 78% 66%, var(--accent) 1.3px, transparent 1.5px);
+  }
+  .brand b{font-family:var(--display); font-weight:800; font-size:1.02rem; letter-spacing:-.02em}
+  .tabs{display:flex; gap:2px; flex-wrap:wrap}
+  .tab{
+    font-family:var(--body); font-size:.92rem; font-weight:500;
+    padding:7px 13px; border-radius:99px; border:1px solid transparent;
+    background:none; color:var(--ink-2); cursor:pointer;
+  }
+  .tab:hover{color:var(--ink); background:var(--surface-2)}
+  .tab[aria-selected="true"]{background:var(--primary); color:var(--ground); font-weight:700}
+  .tab:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  /* ---- shared blocks ---- */
+  section.page{padding-block:44px 72px}
+  .stack{display:flex; flex-direction:column; gap:14px}
+  .lede{font-size:1.12rem; color:var(--ink-2); max-width:62ch}
+  .grid{display:grid; gap:16px}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  .card{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); padding:20px; box-shadow:var(--shadow);
+    display:flex; flex-direction:column; gap:9px;
+  }
+  .card h3{margin-bottom:1px}
+  .card p{color:var(--ink-2); font-size:.95rem}
+  .spec{font-family:var(--mono); font-size:.78rem; color:var(--primary); letter-spacing:.01em}
+
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; justify-content:center;
+    font-family:var(--body); font-weight:700; font-size:.97rem;
+    padding:12px 22px; border-radius:99px; text-decoration:none; cursor:pointer;
+    border:1px solid transparent;
+  }
+  .btn-primary{background:var(--primary); color:#fff}
+  .btn-ghost{background:transparent; color:var(--ink); border-color:var(--line)}
+  .btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  /* ---- hero ---- */
+  .hero{padding-block:48px 12px}
+  .hero-grid{display:grid; gap:28px; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); align-items:center}
+  @media (max-width:820px){ .hero-grid{grid-template-columns:1fr} }
+  .hero h1 em{font-style:normal; color:var(--primary)}
+  .cta-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px}
+  .trust{
+    display:flex; flex-wrap:wrap; gap:8px 10px; margin-top:20px;
+    font-family:var(--mono); font-size:.74rem; color:var(--ink-2);
+  }
+  .trust span{
+    background:var(--surface); border:1px solid var(--line);
+    padding:5px 11px; border-radius:99px;
+  }
+  /* poured-in-place rubber granule texture — the surface we work on */
+  .epdm{
+    border-radius:14px; border:1px solid var(--line); min-height:230px;
+    background-color:var(--primary);
+    background-image:
+      radial-gradient(circle at 12% 18%, #ffffffcc 2.2px, transparent 2.4px),
+      radial-gradient(circle at 63% 9%,  #FFB300bb 2.6px, transparent 2.8px),
+      radial-gradient(circle at 86% 32%, #ffffff99 1.9px, transparent 2.1px),
+      radial-gradient(circle at 31% 46%, #FFB30099 2.3px, transparent 2.5px),
+      radial-gradient(circle at 72% 58%, #ffffffaa 2.5px, transparent 2.7px),
+      radial-gradient(circle at 9%  74%, #FFB30088 2.1px, transparent 2.3px),
+      radial-gradient(circle at 48% 87%, #ffffff88 2.4px, transparent 2.6px),
+      radial-gradient(circle at 91% 79%, #ffffff77 1.8px, transparent 2.0px);
+    background-size:118px 118px;
+    display:flex; align-items:flex-end; padding:18px;
+  }
+  .epdm figcaption{
+    font-family:var(--mono); font-size:.72rem; color:#fff;
+    background:rgba(8,26,21,.62); padding:7px 12px; border-radius:7px;
+  }
+
+  /* ---- numbered visit sequence (order is real: you cannot sanitize before you rinse) ---- */
+  ol.flow{list-style:none; padding:0; margin:0; display:grid; gap:2px}
+  ol.flow li{
+    display:grid; grid-template-columns:52px 1fr; gap:16px; align-items:start;
+    background:var(--surface); border:1px solid var(--line); padding:16px 18px;
+  }
+  ol.flow li:first-child{border-radius:var(--radius) var(--radius) 0 0}
+  ol.flow li:last-child{border-radius:0 0 var(--radius) var(--radius)}
+  ol.flow .n{
+    font-family:var(--mono); font-size:.8rem; color:var(--primary);
+    background:var(--primary-soft); border-radius:6px; padding:5px 0; text-align:center; font-weight:500;
+  }
+  ol.flow h4{font-size:1rem; margin-bottom:3px}
+  ol.flow p{font-size:.93rem; color:var(--ink-2)}
+
+  /* ---- tables ---- */
+  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface)}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:.93rem}
+  th,td{text-align:left; padding:12px 16px; border-bottom:1px solid var(--line)}
+  thead th{
+    font-family:var(--mono); font-size:.72rem; text-transform:uppercase;
+    letter-spacing:.1em; color:var(--ink-3); font-weight:500; background:var(--surface-2);
+  }
+  tbody tr:last-child td{border-bottom:none}
+  td.yes{color:var(--primary); font-weight:700}
+  td.no{color:var(--ink-3)}
+  .warn{color:var(--signal); font-weight:700}
+
+  /* ---- tiers ---- */
+  .tier{position:relative; padding-top:22px}
+  .tier .ribbon{
+    position:absolute; top:-1px; left:-1px; right:-1px; height:5px;
+    border-radius:var(--radius) var(--radius) 0 0;
+  }
+  .tier .price{font-family:var(--display); font-weight:800; font-size:1.55rem; letter-spacing:-.02em}
+  .tier .price small{font-family:var(--body); font-weight:500; font-size:.83rem; color:var(--ink-3)}
+  .tier ul{margin:4px 0 0; padding-left:18px; display:grid; gap:6px; font-size:.93rem; color:var(--ink-2)}
+
+  /* ---- faq ---- */
+  details{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); padding:2px 18px; margin-bottom:8px;
+  }
+  details[open]{background:var(--surface-2)}
+  summary{
+    cursor:pointer; font-family:var(--display); font-weight:700; font-size:1rem;
+    padding:15px 0; list-style:none; display:flex; gap:12px; align-items:baseline;
+  }
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"+"; font-family:var(--mono); color:var(--primary); flex:none}
+  details[open] summary::before{content:"−"}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  details .answer{padding:0 0 16px 24px; color:var(--ink-2); font-size:.95rem; display:grid; gap:10px}
+
+  .callout{
+    background:var(--primary-soft); border:1px solid var(--line);
+    border-left:3px solid var(--primary);
+    border-radius:var(--radius); padding:18px 20px; display:grid; gap:7px;
+  }
+  .callout h3{color:var(--primary)}
+  .callout p{font-size:.95rem; color:var(--ink-2)}
+
+  footer{border-top:1px solid var(--line); padding-block:28px 40px; margin-top:20px}
+  footer .wrap{display:flex; flex-wrap:wrap; gap:14px 28px; align-items:baseline}
+  footer p{font-size:.86rem; color:var(--ink-3)}
+  .mock{
+    font-family:var(--mono); font-size:.72rem; color:var(--accent-ink);
+    background:var(--accent); padding:4px 10px; border-radius:5px; font-weight:500;
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#" onclick="return false"><span class="mark"></span><b>Play It Safe Cleaning</b></a>
+    <nav class="tabs" role="tablist" aria-label="Site sections">
+      <button class="tab" role="tab" id="tab-home" aria-controls="home" aria-selected="true">Home</button>
+      <button class="tab" role="tab" id="tab-services" aria-controls="services" aria-selected="false">Services</button>
+      <button class="tab" role="tab" id="tab-about" aria-controls="about" aria-selected="false">About</button>
+      <button class="tab" role="tab" id="tab-faq" aria-controls="faq" aria-selected="false">FAQ</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HOME ============ -->
+<main>
+<section class="page hero" id="home" role="tabpanel" aria-labelledby="tab-home">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="stack">
+        <p class="eyebrow">Playground cleaning &amp; sanitation</p>
+        <h1>The slide gets touched<br>400 times a day. <em>Nobody cleans it.</em></h1>
+        <p class="lede">We wash, sanitize and inspect outdoor play equipment for daycares, preschools, churches, HOAs and schools — on a schedule, with photo proof, using methods that will not destroy your surfacing.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#quote" onclick="return false">Get a quote</a>
+          <a class="btn btn-ghost" href="#" onclick="showTab('services');return false">See what a visit includes</a>
+        </div>
+        <div class="trust">
+          <span>EPA-registered disinfectants</span>
+          <span>Soft wash · ≤500 PSI</span>
+          <span>Photo report every visit</span>
+          <span>Insured + background checked</span>
+        </div>
+      </div>
+      <figure class="epdm">
+        <figcaption>Poured-in-place EPDM — the surface most cleaners ruin</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="home-2" data-of="home">
+  <div class="wrap stack" style="gap:34px">
+
+    <div class="stack">
+      <p class="eyebrow">Why it matters</p>
+      <h2>Play equipment is the highest-touch surface you own — and the only one on nobody's cleaning schedule</h2>
+      <div class="grid g3" style="margin-top:6px">
+        <article class="card">
+          <h3>Hands, then mouths</h3>
+          <p>Handrails, grab bars, steering wheels and slide walls collect everything a toddler's hands carry. Indoor high-touch points get wiped daily. Outdoor ones get rained on.</p>
+        </article>
+        <article class="card">
+          <h3>Bird droppings and mold</h3>
+          <p>Shaded decks and tube slides hold moisture. What grows there is a slip hazard before it is a health one, and it stains permanently if left through a season.</p>
+        </article>
+        <article class="card">
+          <h3>Parents notice first</h3>
+          <p>A grimy play structure is the thing a touring parent photographs. For a childcare center, clean equipment is enrollment marketing that also happens to be sanitation.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="stack">
+      <p class="eyebrow">What a visit looks like</p>
+      <h2>Four steps, in this order, every time</h2>
+      <p class="lede">The sequence is not arbitrary. Disinfectant does not work on a dirty surface, and it needs contact time before it is rinsed.</p>
+      <ol class="flow" style="margin-top:6px">
+        <li>
+          <span class="n">01</span>
+          <div>
+            <h4>Walk and document</h4>
+            <p>Debris pickup, and a visual safety pass — loose bolts, protruding hardware, worn S-hooks, surfacing gaps under swings and slide exits. Anything found goes in your report with a photo. We clean; we do not repair.</p>
+          </div>
+        </li>
+        <li>
+          <span class="n">02</span>
+          <div>
+            <h4>Soft wash</h4>
+            <p>Low pressure and a biodegradable detergent, applied with soft-bristle brushes on plastics, powder-coated steel and painted metal. <span class="spec">≤500 PSI on play components</span> — enough to lift grime, not enough to etch plastic or strip coating.</p>
+          </div>
+        </li>
+        <li>
+          <span class="n">03</span>
+          <div>
+            <h4>Sanitize with dwell time</h4>
+            <p>An EPA-registered disinfectant rated for child-occupied spaces, held on high-touch points for the full contact time printed on the label. <span class="spec">No undiluted bleach, ever</span> — it corrodes metal, degrades rubber and plastic, and leaves residue that irritates skin.</p>
+          </div>
+        </li>
+        <li>
+          <span class="n">04</span>
+          <div>
+            <h4>Rinse, dry, report</h4>
+            <p>Clean-water rinse, air dry, then a before/after photo set and the safety notes emailed to you the same day. Equipment is back in service as soon as it is dry.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="stack">
+      <p class="eyebrow">Surfaces</p>
+      <h2>What we do — and deliberately don't do — to each surface</h2>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Surface</th><th>Our method</th><th>What we never do</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Plastic &amp; rotomold components</td>
+              <td>Soft wash, soft-bristle brush, microfiber detail on touch points</td>
+              <td class="no">High-pressure tips that chalk and dull the finish</td>
+            </tr>
+            <tr>
+              <td>Powder-coated &amp; painted steel</td>
+              <td>Low pressure, pH-neutral detergent, immediate rinse</td>
+              <td class="no">Abrasives or bleach that undercut the coating</td>
+            </tr>
+            <tr>
+              <td>Poured-in-place rubber (PIP)</td>
+              <td>Blower and nylon brush; vinegar-and-water dwell on stains, gentle scrub, rinse</td>
+              <td class="warn">Never pressure washed. Never metal bristles.</td>
+            </tr>
+            <tr>
+              <td>Engineered wood fiber</td>
+              <td>Rake, de-compact, level to depth at swing and slide exits; flag when top-off is due</td>
+              <td class="no">Wetting it down — saturated fiber compacts harder</td>
+            </tr>
+            <tr>
+              <td>Wood structures</td>
+              <td>Controlled wash with the nozzle always moving <span class="spec">1,200–1,500 PSI</span></td>
+              <td class="no">Standing in one spot, which furs the grain and raises splinters</td>
+            </tr>
+            <tr>
+              <td>Shade sails &amp; canopies</td>
+              <td>Rinse and spot-treat mildew by hand</td>
+              <td class="no">Anything that stresses the seams or hardware</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:.86rem; color:var(--ink-3)">Poured-in-place surfacing costs more than the structure standing on it. A cleaner who arrives with a 3,000 PSI wand and no plan for it is a liability, not a bargain.</p>
+    </div>
+
+    <div class="callout">
+      <h3>Serving [Your County] and surrounding areas</h3>
+      <p>Routed by area, which keeps recurring visits affordable. If you manage more than one site — a church with a preschool, an HOA with three tot lots, a center with multiple locations — tell us and we will price them as a route.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SERVICES ============ -->
+<section class="page" id="services" role="tabpanel" aria-labelledby="tab-services" hidden>
+  <div class="wrap stack" style="gap:34px">
+    <div class="stack">
+      <p class="eyebrow">Services</p>
+      <h1 style="font-size:clamp(1.8rem,5vw,2.7rem)">Three levels. Pick the one that matches your traffic.</h1>
+      <p class="lede">Every level includes the photo report. Pricing below is illustrative for a single standard structure — final quotes come from a site visit, because square footage and access drive the number more than anything else.</p>
+    </div>
+
+    <div class="grid g3">
+      <article class="card tier">
+        <span class="ribbon" style="background:var(--line)"></span>
+        <p class="eyebrow">Level 1</p>
+        <h3>Sanitize</h3>
+        <p class="price">$225 <small>/ visit</small></p>
+        <p>High-touch sanitation on a tight schedule. Best for centers already doing their own debris pickup.</p>
+        <ul>
+          <li>Debris and litter clear</li>
+          <li>Disinfect all touch points with full dwell time</li>
+          <li>Rinse and air dry</li>
+          <li>Before/after photo report</li>
+        </ul>
+        <p class="spec">45–75 min on site</p>
+      </article>
+
+      <article class="card tier">
+        <span class="ribbon" style="background:var(--primary)"></span>
+        <p class="eyebrow">Level 2 · most common</p>
+        <h3>Wash &amp; Sanitize</h3>
+        <p class="price">$395 <small>/ visit</small></p>
+        <p>The full four-step visit. This is what most daycares and HOAs end up on.</p>
+        <ul>
+          <li>Everything in Level 1</li>
+          <li>Full soft wash of all components</li>
+          <li>Surfacing care appropriate to your material</li>
+          <li>Visual safety notes in the report</li>
+        </ul>
+        <p class="spec">2–3 hrs on site</p>
+      </article>
+
+      <article class="card tier">
+        <span class="ribbon" style="background:var(--accent)"></span>
+        <p class="eyebrow">Level 3</p>
+        <h3>Full Care</h3>
+        <p class="price">$595 <small>/ visit</small></p>
+        <p>For licensed childcare and schools that have to show documentation to somebody.</p>
+        <ul>
+          <li>Everything in Level 2</li>
+          <li>Documented inspection against a written checklist</li>
+          <li>Surfacing depth measurements at fall zones</li>
+          <li>Dated records retained for your licensing file</li>
+        </ul>
+        <p class="spec">3–4 hrs on site</p>
+      </article>
+    </div>
+
+    <div class="stack">
+      <h2>How often</h2>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Schedule</th><th>Right for</th><th>Per-visit rate</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Every 2 weeks</td><td>Licensed childcare, indoor-adjacent play, heavy year-round use</td><td class="yes">Best rate</td></tr>
+            <tr><td>Monthly</td><td>Preschools, church weekday programs, busy apartment communities</td><td class="yes">Discounted</td></tr>
+            <tr><td>Quarterly</td><td>HOA tot lots, seasonal use, lower-traffic sites</td><td>Standard</td></tr>
+            <tr><td>One-time</td><td>Season open, post-event, pre-inspection, new management taking over</td><td class="no">Standard + trip</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:.9rem;color:var(--ink-2)">Quarterly is the floor we recommend for any site children use regularly. More frequent visits cost less per visit — the structure never gets far enough gone to need the slow work.</p>
+    </div>
+
+    <div class="stack">
+      <h2>Add-ons</h2>
+      <div class="grid g3">
+        <article class="card"><h3>Shade sail wash</h3><p>Rinse and mildew spot-treatment on canopies and sails.</p></article>
+        <article class="card"><h3>Site furniture</h3><p>Benches, picnic tables, trash enclosures and bike racks in the same visit.</p></article>
+        <article class="card"><h3>Surfacing top-off coordination</h3><p>We measure and flag; we bring in the surfacing contractor and manage the scheduling.</p></article>
+        <article class="card"><h3>Splash pad &amp; water feature</h3><p>Seasonal open and close cleaning for spray grounds.</p></article>
+        <article class="card"><h3>Indoor soft play</h3><p>Netting, padding and ball pit sanitation for indoor play areas.</p></article>
+        <article class="card"><h3>Multi-site routing</h3><p>Several properties scheduled together at a route rate.</p></article>
+      </div>
+    </div>
+
+    <div class="callout" id="quote">
+      <h3>Getting a quote takes one site visit</h3>
+      <p>Send a photo of your structure and your address. We will walk it, measure the footprint, note the surfacing type and send a fixed per-visit price with no obligation. Most quotes go out same week.</p>
+      <p style="margin-top:4px"><strong style="color:var(--ink)">[phone]</strong> · <strong style="color:var(--ink)">[email]</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ABOUT ============ -->
+<section class="page" id="about" role="tabpanel" aria-labelledby="tab-about" hidden>
+  <div class="wrap stack" style="gap:34px">
+    <div class="stack">
+      <p class="eyebrow">About</p>
+      <h1 style="font-size:clamp(1.8rem,5vw,2.7rem)">We only clean playgrounds.</h1>
+      <p class="lede">A general cleaning company treats a play structure like a patio. It is not one. It is a piece of safety equipment with a certified fall zone, a coating system that can be stripped, and a surfacing layer that can be permanently damaged by the wrong nozzle. Doing one thing means we know exactly where the limits are.</p>
+    </div>
+
+    <div class="grid g2">
+      <article class="card">
+        <p class="eyebrow">Our story</p>
+        <h3>[Founder name] started this after a conversation at a daycare</h3>
+        <p>[Two or three sentences. What you noticed, why nobody was doing it, and why you decided to. Keep it specific and true — this paragraph does more selling than anything else on the site.]</p>
+      </article>
+      <article class="card">
+        <p class="eyebrow">How we work</p>
+        <h3>Scheduled, documented, out of your way</h3>
+        <p>We work around your hours — early mornings, weekends, or during nap — so equipment is dry and back in service before the kids come out. You get the report the same day whether or not anyone was there to meet us.</p>
+      </article>
+    </div>
+
+    <div class="stack">
+      <h2>Credentials we carry</h2>
+      <div class="grid g3">
+        <article class="card">
+          <p class="eyebrow">Insurance</p>
+          <h3>General liability</h3>
+          <p>Certificate available on request, and we will name your organization as additional insured where your vendor packet requires it.</p>
+        </article>
+        <article class="card">
+          <p class="eyebrow">Insurance</p>
+          <h3>Abuse &amp; molestation coverage</h3>
+          <p>Carried specifically because we work on property where children are present. Most districts and licensed centers will not approve a vendor without it.</p>
+        </article>
+        <article class="card">
+          <p class="eyebrow">Personnel</p>
+          <h3>Background checked</h3>
+          <p>Every technician is background checked, and fingerprinted where a district or state licensing rule requires it before work begins.</p>
+        </article>
+        <article class="card">
+          <p class="eyebrow">Training</p>
+          <h3>Playground safety trained</h3>
+          <p>Our inspection checklist follows the public CPSC playground safety handbook and ASTM F1487. We identify and document; we do not certify.</p>
+        </article>
+        <article class="card">
+          <p class="eyebrow">Products</p>
+          <h3>EPA-registered, child-space rated</h3>
+          <p>Safety data sheets for everything we use are available to you on request, and we will match a product to your center's own approved list if you have one.</p>
+        </article>
+        <article class="card">
+          <p class="eyebrow">Workmanship</p>
+          <h3>Manufacturer-aligned methods</h3>
+          <p>Our pressure limits and chemical choices follow what the equipment makers publish. If your structure has a specific care sheet, send it and we will work to it.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="callout">
+      <h3>What we are not</h3>
+      <p>We are not a playground inspection firm and not a repair contractor. We flag what we see and photograph it so you can act on it. When something needs certified inspection or a parts repair, we will say so and tell you who does that locally.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="page" id="faq" role="tabpanel" aria-labelledby="tab-faq" hidden>
+  <div class="wrap stack" style="gap:26px">
+    <div class="stack">
+      <p class="eyebrow">FAQ</p>
+      <h1 style="font-size:clamp(1.8rem,5vw,2.7rem)">Questions we get on every first call</h1>
+    </div>
+
+    <div>
+      <details open>
+        <summary>Is what you spray safe for children?</summary>
+        <div class="answer">
+          <p>We use EPA-registered disinfectants rated for use in child-occupied spaces, applied at label dilution and rinsed. We do not use undiluted bleach — beyond being hard on skin, it corrodes metal fasteners and degrades rubber and plastic components over time.</p>
+          <p>Safety data sheets for every product are yours on request. If your center or district has an approved products list, send it and we will work from it.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>How long until kids can play again?</summary>
+        <div class="answer">
+          <p>As soon as the equipment is dry, typically 30 to 60 minutes after we finish depending on weather and shade. We schedule around your day — before open, during nap, or on a weekend — so in practice there is usually no downtime at all.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Will pressure washing damage our equipment or surfacing?</summary>
+        <div class="answer">
+          <p>It absolutely can, which is why we mostly do not use it. Play components get soft washing at low pressure with brushes. Wood gets controlled pressure with the nozzle always moving.</p>
+          <p>Poured-in-place rubber surfacing never gets pressure washed at all — the granules dislodge and the top layer tears, which reduces how well it cushions a fall. That is a safety-rated surface, not a patio, and it is the single most common way a playground gets damaged by a well-meaning cleaner.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What does it cost?</summary>
+        <div class="answer">
+          <p>Most single-structure sites land between $225 and $595 per visit depending on scope, size and surfacing. Recurring schedules cost meaningfully less per visit than one-time calls, and multiple properties routed together cost less again.</p>
+          <p>We quote a fixed per-visit price after walking the site. No hourly billing, no surprises on the invoice.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>How often do we actually need this?</summary>
+        <div class="answer">
+          <p>Quarterly is the minimum we recommend for any regularly used site. Licensed childcare and heavy-traffic equipment is usually better on monthly or every-other-week — at that cadence each visit is faster and cheaper, because grime never gets established.</p>
+          <p>Climate matters. Shaded, humid sites grow mold on tube slides and under decks far faster than open sunny ones.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Are you insured, and can you pass our vendor approval?</summary>
+        <div class="answer">
+          <p>Yes. We carry general liability and abuse &amp; molestation coverage, and we can name your organization as additional insured. Technicians are background checked, and fingerprinted where a district requires it for contractors with campus access.</p>
+          <p>Send us your vendor packet and we will fill it out. We have been through the process and it does not slow us down.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Do you inspect for safety problems too?</summary>
+        <div class="answer">
+          <p>We document. Every visit includes a visual pass for the obvious hazards — loose or protruding hardware, worn swing hangers, cracks, surfacing thin at fall zones — photographed and noted in your report.</p>
+          <p>That is a cleaner's documentation, not a certified inspection. If something needs a credentialed inspector or a parts repair, we tell you plainly and point you to someone who does it.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What about engineered wood fiber and mulch surfacing?</summary>
+        <div class="answer">
+          <p>Loose-fill surfacing compacts and migrates, especially under swings and at slide exits, which is exactly where depth matters. We rake, de-compact and re-level it as part of a visit, and we measure depth and tell you when a top-off is due — generally every two to three years.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>We have several properties. Can you do all of them?</summary>
+        <div class="answer">
+          <p>That is our favorite call. Multiple sites scheduled as a route cost less per site and get one consolidated report. Property managers, multi-site childcare operators and districts with several campuses should ask about route pricing.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What do you need from us to get started?</summary>
+        <div class="answer">
+          <p>An address, your surfacing type if you know it, and a rough idea of how often you want us. We walk the site, send a fixed quote, and the first visit is usually within two weeks.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="mock">Mock site — placeholder copy in brackets</span>
+    <p><strong style="color:var(--ink-2)">Play It Safe Cleaning</strong> · [phone] · [email] · Serving [Your County]</p>
+  </div>
+</footer>
+
+<script>
+  var TABS = ['home','services','about','faq'];
+  function showTab(name){
+    TABS.forEach(function(t){
+      var selected = (t === name);
+      var btn = document.getElementById('tab-' + t);
+      if (btn) btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+      document.querySelectorAll('[id="' + t + '"], [data-of="' + t + '"]').forEach(function(sec){
+        sec.hidden = !selected;
+      });
+    });
+    window.scrollTo({top:0, behavior:'instant'});
+  }
+  TABS.forEach(function(t){
+    var btn = document.getElementById('tab-' + t);
+    if (btn) btn.addEventListener('click', function(){ showTab(t); });
+  });
+</script>
