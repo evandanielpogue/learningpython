@@ -1,0 +1,89 @@
+/* ==========================================================================
+   Frontdoor — design tokens
+   Light-mode product. Every value is defined here; nothing hard-codes a colour.
+   ========================================================================== */
+
+:root {
+  /* ---- surfaces ------------------------------------------------------- */
+  --bg:            #F7F7F8;   /* app canvas */
+  --panel:         #FFFFFF;   /* cards, sheets, inputs */
+  --sunk:          #F1F2F4;   /* wells, hovers, secondary fills */
+  --sunk-2:        #E9EAED;   /* pressed / heavier wells */
+  --overlay:       rgba(17, 18, 21, .38);
+
+  /* ---- ink ------------------------------------------------------------ */
+  --ink:           #111215;
+  --ink-2:         #555963;
+  --ink-3:         #868B96;
+  --ink-4:         #B0B4BD;
+  --ink-inv:       #FFFFFF;
+
+  /* ---- lines ---------------------------------------------------------- */
+  --line:          #E6E7EA;
+  --line-2:        #D6D8DD;
+  --line-3:        #C2C5CC;
+
+  /* ---- accent (selection, focus, active state, links) ----------------- */
+  --ac:            #4C6FFF;
+  --ac-hover:      #3A5BEA;
+  --ac-wash:       #EEF2FF;
+  --ac-line:       #C7D3FF;
+
+  /* ---- primary action is near-black, not accent ----------------------- */
+  --solid:         #17181C;
+  --solid-hover:   #000000;
+
+  /* ---- semantic ------------------------------------------------------- */
+  --pos:           #0F8A5F;   --pos-wash: #E4F4EC;   --pos-line: #B7E2CE;
+  --warn:          #A66A00;   --warn-wash: #FCF2E0;  --warn-line: #EFD8A8;
+  --neg:           #C8372E;   --neg-wash: #FCEAE8;   --neg-line: #F2C6C1;
+
+  /* ---- persona colours (assigned, never decorative) ------------------- */
+  --p-peer:        #0F8A5F;
+  --p-recruiter:   #7B4FD0;
+  --p-manager:     #4C6FFF;
+  --p-exec:        #A66A00;
+  --p-tie:         #BE4463;
+
+  /* ---- spacing: 4px base ---------------------------------------------- */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 20px;
+  --s-6: 24px; --s-7: 32px; --s-8: 40px; --s-9: 56px; --s-10: 72px;
+
+  /* ---- radius: overlays sit higher than cards ------------------------- */
+  --r-1: 6px;  --r-2: 8px;  --r-3: 10px; --r-4: 14px; --r-5: 18px;
+  --r-full: 999px;
+
+  /* ---- elevation: tight, downward, single direction -------------------- */
+  --e-1: 0 1px 2px rgba(17, 18, 21, .05);
+  --e-2: 0 1px 3px rgba(17, 18, 21, .07), 0 1px 2px rgba(17, 18, 21, .04);
+  --e-3: 0 4px 12px rgba(17, 18, 21, .07), 0 1px 3px rgba(17, 18, 21, .05);
+  --e-4: 0 12px 32px rgba(17, 18, 21, .12), 0 2px 8px rgba(17, 18, 21, .06);
+  --e-5: 0 24px 64px rgba(17, 18, 21, .18), 0 4px 12px rgba(17, 18, 21, .08);
+  --ring: 0 0 0 3px var(--ac-wash);
+
+  /* ---- motion ---------------------------------------------------------- */
+  --t-1: 110ms;   /* press feedback */
+  --t-2: 170ms;   /* hover, colour */
+  --t-3: 240ms;   /* enter, layout */
+  --t-4: 380ms;   /* page transitions */
+  --ease:   cubic-bezier(.2, .8, .3, 1);
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+
+  /* ---- type ------------------------------------------------------------ */
+  --ui:   'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --fs-xs:   11.5px;
+  --fs-sm:   12.5px;
+  --fs-base: 13.75px;
+  --fs-md:   15px;
+  --fs-lg:   17px;
+  --fs-xl:   21px;
+  --fs-2xl:  27px;
+  --fs-3xl:  34px;
+
+  /* ---- layout ---------------------------------------------------------- */
+  --sidebar: 244px;
+  --topbar:  56px;
+  --measure: 66ch;
+}
