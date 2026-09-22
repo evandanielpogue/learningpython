@@ -7,14 +7,19 @@
 
   var esc = UI.esc;
   var NAV = [
-    { key: 'home',      icon: '◉', label: 'Overview',  href: '/' },
-    { key: 'people',    icon: '◎', label: 'Contacts',  href: '/c/:id/people',   needsCampaign: true, count: 'contacts' },
-    { key: 'research',  icon: '◈', label: 'Research',  href: '/c/:id/research', needsCampaign: true },
-    { key: 'sequence',  icon: '≡', label: 'Sequence',  href: '/c/:id/sequence', needsCampaign: true, count: 'steps' },
-    { key: 'messages',  icon: '✎', label: 'Messages',  href: '/c/:id/messages', needsCampaign: true },
-    { key: 'page',      icon: '▤', label: 'Page',      href: '/c/:id/page',     needsCampaign: true },
-    { key: 'templates', icon: '❏', label: 'Templates', href: '/templates' },
-    { key: 'settings',  icon: '⚙', label: 'Settings',  href: '/settings' }
+    { group: 'Workspace', items: [
+      { key: 'home', icon: '◉', label: 'Overview', href: '/' }
+    ] },
+    { group: 'Campaign', needsCampaign: true, items: [
+      { key: 'people',   icon: '◎', label: 'Contacts', href: '/c/:id/people',   count: 'contacts' },
+      { key: 'research', icon: '◈', label: 'Research', href: '/c/:id/research' },
+      { key: 'sequence', icon: '≡', label: 'Sequence', href: '/c/:id/sequence', count: 'steps' },
+      { key: 'page',     icon: '▤', label: 'Page',     href: '/c/:id/page' }
+    ] },
+    { group: 'Library', items: [
+      { key: 'templates', icon: '❏', label: 'Templates', href: '/templates' },
+      { key: 'settings',  icon: '⚙', label: 'Settings',  href: '/settings' }
+    ] }
   ];
 
   function activeCampaignId() {
@@ -33,10 +38,7 @@
         '<aside class="sidebar">' +
           '<a class="brand" href="#/"><span class="glyph"></span><b>Frontdoor</b></a>' +
           '<button class="side-search" id="side-search"><span>⌕</span><span>Search</span><kbd>⌘K</kbd></button>' +
-          '<div>' +
-            '<p class="cap side-label">Campaign</p>' +
-            '<nav class="side-nav" id="side-nav" aria-label="Sections"></nav>' +
-          '</div>' +
+          '<nav class="side-nav" id="side-nav" aria-label="Sections"></nav>' +
           '<div class="side-foot">' +
             '<button class="user-btn" id="user-btn">' +
               '<span class="avatar avatar-sm" style="background:var(--p-recruiter)">' + esc(u.initials) + '</span>' +
@@ -70,17 +72,20 @@
   function paintNav(activeKey) {
     var cid = activeCampaignId();
     var c = cid ? Store.campaign(cid) : null;
-    document.getElementById('side-nav').innerHTML = NAV.map(function (n) {
-      if (n.needsCampaign && !cid) return '';
-      var href = n.href.replace(':id', cid || '');
-      var count = '';
-      if (c && n.count === 'contacts') count = String(c.contacts.length);
-      if (c && n.count === 'steps') count = String(c.steps.length);
-      return '<a class="nav-item" href="#' + href + '" data-key="' + n.key + '"' +
-        (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
-        '<span class="nav-ico">' + n.icon + '</span>' +
-        '<span class="nav-label">' + esc(n.label) + '</span>' +
-        (count ? '<span class="nav-count">' + count + '</span>' : '') + '</a>';
+    document.getElementById('side-nav').innerHTML = NAV.map(function (g) {
+      if (g.needsCampaign && !cid) return '';
+      var items = g.items.map(function (n) {
+        var href = n.href.replace(':id', cid || '');
+        var count = '';
+        if (c && n.count === 'contacts') count = String(c.contacts.length);
+        if (c && n.count === 'steps') count = String(c.steps.length);
+        return '<a class="nav-item" href="#' + href + '" data-key="' + n.key + '"' +
+          (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
+          '<span class="nav-ico">' + n.icon + '</span>' +
+          '<span class="nav-label">' + esc(n.label) + '</span>' +
+          (count ? '<span class="nav-count">' + count + '</span>' : '') + '</a>';
+      }).join('');
+      return '<div class="nav-group"><p class="cap nav-group-label">' + esc(g.group) + '</p>' + items + '</div>';
     }).join('');
   }
 

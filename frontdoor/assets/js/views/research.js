@@ -17,7 +17,7 @@
       nav: 'research',
       crumbs: [{ label: c.company, href: '/' }, { label: 'Research' }],
       actions: '<button class="btn btn-secondary btn-sm" id="refresh">Refresh</button>',
-      html: Views.tabs(c, 'research') +
+      html:
         '<div class="page-head"><h1>What they said, recently, in public</h1>' +
         '<p>Nobody replies to a message that could have been sent to anyone. Take a line from here and the first sentence is already specific.</p></div>' +
         '<div class="subtabs" id="subtabs"></div>' +
@@ -67,7 +67,7 @@
       Store.completeTask('t5');
       Store.save();
       UI.toast('Dropped into your draft.');
-      Router.go('/c/' + c.id + '/messages');
+      Router.go('/c/' + c.id + '/sequence');
     });
     document.getElementById('refresh').addEventListener('click', function () {
       var b = this;

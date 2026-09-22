@@ -7,18 +7,7 @@
   var esc = UI.esc;
   window.Views = window.Views || {};
 
-  Views.tabs = function (c, active) {
-    var T = [
-      ['people',   'Contacts',  '/c/' + c.id + '/people'],
-      ['research', 'Research',  '/c/' + c.id + '/research'],
-      ['sequence', 'Sequence',  '/c/' + c.id + '/sequence'],
-      ['messages', 'Messages',  '/c/' + c.id + '/messages'],
-      ['page',     'Page',      '/c/' + c.id + '/page']
-    ];
-    return '<div class="tabs" role="tablist">' + T.map(function (t) {
-      return '<a class="tab" role="tab" href="#' + t[2] + '" aria-selected="' + (t[0] === active) + '">' + t[1] + '</a>';
-    }).join('') + '</div>';
-  };
+  /* the section nav lives in the sidebar now, so no tab strip here */
 
   window.Views.page = function (params) {
     var c = Store.campaign(params.id);
@@ -39,7 +28,7 @@
       }).join('');
     }
 
-    var html = Views.tabs(c, 'page') +
+    var html =
       '<div class="page-head"><h1>What they see</h1>' +
       '<p>One page, written for one company. Turn a section off if it is not earning its place.</p></div>' +
       '<div class="preview">' +

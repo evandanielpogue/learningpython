@@ -24,7 +24,7 @@
       nav: 'people',
       crumbs: [{ label: c.company, href: '/' }, { label: 'Contacts' }],
       actions: '<button class="btn btn-primary btn-sm" id="add-top">Add contact</button>',
-      html: Views.tabs(c, 'people') +
+      html:
         '<div class="page-head"><h1>Who you are working</h1>' +
         '<p>Ranked top to bottom. The order is the order you reach out in, so put the person with the least to lose from helping you at the top.</p></div>' +
         '<div class="split"><div id="list"></div><div id="detail"></div></div>'

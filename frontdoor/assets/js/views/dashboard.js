@@ -119,7 +119,7 @@
     });
     UI.on(v, 'click', '[data-step]', function (e, el) {
       c.activeStep = el.dataset.step; Store.save();
-      Router.go('/c/' + c.id + '/messages');
+      Router.go('/c/' + c.id + '/sequence');
     });
   };
 

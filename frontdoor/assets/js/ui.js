@@ -76,6 +76,25 @@
     });
   };
 
+  UI.sheet = function (opts) {
+    var scrim = document.createElement('div');
+    scrim.className = 'scrim modal-scrim';
+    scrim.innerHTML = '<div class="modal modal-wide" role="dialog" aria-modal="true" aria-label="' + UI.esc(opts.title) + '">' +
+      '<div class="row between"><h3>' + UI.esc(opts.title) + '</h3>' +
+      '<button class="icon-btn" data-close aria-label="Close">✕</button></div>' + opts.html + '</div>';
+    document.body.appendChild(scrim);
+    requestAnimationFrame(function () { scrim.classList.add('open'); });
+    function close() {
+      scrim.classList.remove('open');
+      setTimeout(function () { if (scrim.parentNode) scrim.parentNode.removeChild(scrim); }, 200);
+      document.removeEventListener('keydown', key);
+    }
+    function key(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', key);
+    scrim.addEventListener('click', function (e) { if (e.target === scrim || e.target.closest('[data-close]')) close(); });
+    return close;
+  };
+
   /* ---- dropdown menu -------------------------------------------------- */
   var openMenu = null;
   UI.menu = function (anchor, items) {

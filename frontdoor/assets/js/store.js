@@ -7,7 +7,7 @@
 (function (window) {
   'use strict';
 
-  var KEY = 'frontdoor.v2';
+  var KEY = 'frontdoor.v3';
 
   var PERSONAS = [
     { key: 'Peer',           colour: '--p-peer' },
@@ -152,17 +152,32 @@
       take: 'You repriced in Q2 at 340 people. Every forecast built on the old motion is guesswork now, and that lands on the front line first.' }
   ];
 
+  function V(label, subject, body) { return { id: uid('v'), label: label, subject: subject || '', body: body || '' }; }
+
   var STEPS = [
-    { id: 's1',  day: 0,  contact: null, template: null,        channel: 'ATS',      note: 'Apply. You still have to exist in the system.', status: 'sent' },
-    { id: 's2',  day: 0,  contact: 'p1', template: 'tpl_peer',  channel: 'LinkedIn', note: 'Ask about the team, nothing else',  status: 'replied' },
-    { id: 's3',  day: 2,  contact: 'p2', template: 'tpl_rec',   channel: 'Email',    note: 'Name the req, ask one question',    status: 'sent' },
-    { id: 's4',  day: 3,  contact: 'p3', template: 'tpl_hm',    channel: 'Email',    note: 'Your angle, then the page',         status: 'due' },
-    { id: 's5',  day: 5,  contact: 'p5', template: 'tpl_tie',   channel: 'LinkedIn', note: 'Ask for the intro, write it for him', status: 'queued' },
-    { id: 's6',  day: 7,  contact: 'p1', template: null,        channel: 'Reply',    note: 'Now you can ask for the referral',  status: 'queued' },
-    { id: 's7',  day: 8,  contact: 'p3', template: 'tpl_hm2',   channel: 'Email',    note: 'Bring something new or do not write', status: 'queued' },
-    { id: 's8',  day: 10, contact: 'p4', template: 'tpl_exec',  channel: 'Email',    note: 'Eighty words, business first',      status: 'queued' },
-    { id: 's9',  day: 12, contact: 'p2', template: null,        channel: 'Call',     note: 'Pick up the phone',                 status: 'queued' },
-    { id: 's10', day: 14, contact: null, template: 'tpl_break', channel: 'Email',    note: 'Say you are stopping, leave the door open', status: 'queued' }
+    { id: 's1',  day: 0,  contact: null, template: null,       channel: 'ATS',      note: 'Apply. You still have to exist in the system.', status: 'sent',
+      variants: [V('A', '', 'Applied through the careers page so there is a record of it.')], activeVariant: 0 },
+    { id: 's2',  day: 0,  contact: 'p1', template: 'tpl_peer', channel: 'LinkedIn', note: 'Ask about the team, nothing else', status: 'replied',
+      variants: [V('A', '', '')], activeVariant: 0 },
+    { id: 's3',  day: 2,  contact: 'p2', template: 'tpl_rec',  channel: 'Email',    note: 'Name the req, ask one question', status: 'sent',
+      variants: [V('A', 'Mid-Market AE, applied Tuesday', '')], activeVariant: 0 },
+    { id: 's4',  day: 3,  contact: 'p3', template: 'tpl_hm',   channel: 'Email',    note: 'Your angle, then the page', status: 'due',
+      variants: [
+        V('A', 'your SMB motion and the new pricing page', ''),
+        V('B', 'the five seat floor', "{first}, the five seat SMB floor turns a one call close into a two call close. Half a team usually cannot make that jump.\n\nI watched it happen at Brightline. 40% washed out. We rebuilt discovery and finished at 112%.\n\nfrontdoor.app/p/{slug}\n\nFifteen minutes?")
+      ], activeVariant: 0 },
+    { id: 's5',  day: 5,  contact: 'p5', template: 'tpl_tie',  channel: 'LinkedIn', note: 'Ask for the intro, write it for him', status: 'queued',
+      variants: [V('A', '', '')], activeVariant: 0 },
+    { id: 's6',  day: 7,  contact: 'p1', template: null,       channel: 'Reply',    note: 'Now you can ask for the referral', status: 'queued',
+      variants: [V('A', '', "{first}, that detail about cycles going from 30 to 70 days was the most useful thing anyone has told me about this role. I rebuilt my 30-60-90 around it.\n\nIf it feels right after one conversation, would you be open to dropping me in the referral portal? No pressure at all.")], activeVariant: 0 },
+    { id: 's7',  day: 8,  contact: 'p3', template: 'tpl_hm2',  channel: 'Email',    note: 'Bring something new or do not write', status: 'queued',
+      variants: [V('A', 'three places discovery stalls', '')], activeVariant: 0 },
+    { id: 's8',  day: 10, contact: 'p4', template: 'tpl_exec', channel: 'Email',    note: 'Eighty words, business first', status: 'queued',
+      variants: [V('A', 'mid-market ramp', '')], activeVariant: 0 },
+    { id: 's9',  day: 12, contact: 'p2', template: null,       channel: 'Call',     note: 'Pick up the phone', status: 'queued',
+      variants: [V('A', '', "Hi {first}, it is {me}. I applied for the {role} a couple of weeks back. Is now a bad time?\n\n[pause, actually wait]\n\nQuick one. I wanted to check whether that req is still moving or whether it is on hold. I would rather know than keep guessing.")], activeVariant: 0 },
+    { id: 's10', day: 14, contact: null, template: 'tpl_break',channel: 'Email',    note: 'Say you are stopping, leave the door open', status: 'queued',
+      variants: [V('A', 'closing the loop', '')], activeVariant: 0 }
   ];
 
   var SECTIONS = [
@@ -315,7 +330,8 @@
       var c = Store.campaign(cid); if (!c) return null;
       var last = c.steps.length ? c.steps[c.steps.length - 1].day : 0;
       var s = { id: uid('s'), day: last + 2, contact: c.contacts[0] ? c.contacts[0].id : null,
-                template: null, channel: 'Email', note: 'New step', status: 'queued' };
+                template: null, channel: 'Email', note: 'New step', status: 'queued',
+                variants: [{ id: uid('v'), label: 'A', subject: '', body: '' }], activeVariant: 0 };
       c.steps.push(s);
       Store.sortSteps(cid);
       Store.save();
@@ -337,6 +353,60 @@
     sortSteps: function (cid) {
       var c = Store.campaign(cid); if (!c) return;
       c.steps.sort(function (a, b) { return a.day - b.day; });
+    },
+    duplicateStep: function (cid, sid) {
+      var c = Store.campaign(cid); if (!c) return null;
+      var s = c.steps.filter(function (x) { return x.id === sid; })[0]; if (!s) return null;
+      var copy = clone(s);
+      copy.id = uid('s'); copy.day = s.day + 2; copy.status = 'queued';
+      copy.variants = copy.variants.map(function (v) { v.id = uid('v'); return v; });
+      c.steps.push(copy); Store.sortSteps(cid); Store.save();
+      return copy;
+    },
+    /* the wait is the gap to the previous step; changing it shifts everything after */
+    setWait: function (cid, sid, days) {
+      var c = Store.campaign(cid); if (!c) return;
+      var i = c.steps.map(function (x) { return x.id; }).indexOf(sid);
+      if (i < 1) return;
+      var want = Math.max(0, days);
+      var delta = (c.steps[i - 1].day + want) - c.steps[i].day;
+      for (var j = i; j < c.steps.length; j++) c.steps[j].day = Math.max(0, c.steps[j].day + delta);
+      Store.save();
+    },
+    addVariant: function (cid, sid) {
+      var c = Store.campaign(cid); if (!c) return null;
+      var s = c.steps.filter(function (x) { return x.id === sid; })[0]; if (!s) return null;
+      var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      var base = s.variants[s.activeVariant] || s.variants[0] || { subject: '', body: '' };
+      var v = { id: uid('v'), label: letters[s.variants.length] || String(s.variants.length + 1),
+                subject: base.subject, body: base.body };
+      s.variants.push(v);
+      s.activeVariant = s.variants.length - 1;
+      Store.save();
+      return v;
+    },
+    removeVariant: function (cid, sid, index) {
+      var c = Store.campaign(cid); if (!c) return;
+      var s = c.steps.filter(function (x) { return x.id === sid; })[0]; if (!s || s.variants.length < 2) return;
+      s.variants.splice(index, 1);
+      var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      s.variants.forEach(function (v, i) { v.label = letters[i] || String(i + 1); });
+      s.activeVariant = Math.min(s.activeVariant, s.variants.length - 1);
+      Store.save();
+    },
+    updateVariant: function (cid, sid, index, patch) {
+      var c = Store.campaign(cid); if (!c) return;
+      var s = c.steps.filter(function (x) { return x.id === sid; })[0]; if (!s) return;
+      var v = s.variants[index]; if (!v) return;
+      Object.keys(patch).forEach(function (k) { v[k] = patch[k]; });
+      Store.save();
+    },
+    /* the text a step actually sends: the variant body, or the template it points at */
+    bodyFor: function (c, s) {
+      var v = s.variants[s.activeVariant] || s.variants[0];
+      if (v && v.body && v.body.trim()) return v.body;
+      var t = Store.template(s.template);
+      return t ? t.body : '';
     },
 
     /* templates */
@@ -372,7 +442,8 @@
         .replace(/\{company\}/g, campaign.company)
         .replace(/\{role\}/g, campaign.role)
         .replace(/\{slug\}/g, campaign.slug)
-        .replace(/\{angle\}/g, angle);
+        .replace(/\{angle\}/g, angle)
+        .replace(/\{me\}/g, state.profile.name);
     },
 
     /* profile */
