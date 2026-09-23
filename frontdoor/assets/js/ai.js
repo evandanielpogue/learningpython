@@ -267,6 +267,112 @@
         });
     },
 
+    /* ---- line the listing up against the resume -------------------------- */
+    matchListing: function (listing, requirements) {
+      var wins = Store.state.profile.wins.map(function (w) {
+        return w.id + ': ' + w.text + ' (' + (w.where || 'no date') + ')';
+      }).join('\n');
+      var roles = Store.state.profile.roles.map(function (r) {
+        return '- ' + r.title + ', ' + r.company + ', ' + r.span + ': ' + r.bullets.join('; ');
+      }).join('\n');
+
+      var sys = [
+        'You compare a job listing against one person\u2019s resume and say, line by line, where they',
+        'line up and where they do not.',
+        '',
+        'For every requirement the listing states, find the evidence on the resume and name it by id.',
+        'strong means the resume shows they have done this, with something concrete. partial means it',
+        'is adjacent or implied. none means there is nothing there, and you must say none rather than',
+        'stretch: an honest gap is the useful part of this.',
+        '',
+        'note is one short line, under 15 words, saying what the evidence actually is or what is',
+        'missing. Do not repeat the requirement back.',
+        '',
+        'leadWith is the three win ids that answer the most important requirements. Exactly three,',
+        'or fewer only if there are fewer wins.'
+      ].join('\n');
+
+      var schema = {
+        type: 'object',
+        additionalProperties: false,
+        required: ['requirements', 'leadWith'],
+        properties: {
+          requirements: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['text', 'priority', 'winIds', 'strength', 'note'],
+              properties: {
+                text: { type: 'string', description: 'The requirement, as the listing puts it, trimmed.' },
+                priority: { type: 'string', enum: ['must', 'nice'] },
+                winIds: { type: 'array', items: { type: 'string' }, description: 'Ids of the wins that evidence this. Empty when there is none.' },
+                strength: { type: 'string', enum: ['strong', 'partial', 'none'] },
+                note: { type: 'string' }
+              }
+            }
+          },
+          leadWith: { type: 'array', items: { type: 'string' }, description: 'Three win ids.' }
+        }
+      };
+
+      return AI.send({
+        system: sys,
+        schema: schema,
+        maxTokens: 4000,
+        messages: [{
+          role: 'user',
+          content: 'The listing:\n<listing>\n' + listing + '\n</listing>\n\n' +
+            'Their wins, by id:\n' + wins + '\n\nTheir roles:\n' + roles +
+            (requirements && requirements.length
+              ? '\n\nRequirements we already pulled out, if useful:\n- ' + requirements.join('\n- ')
+              : '')
+        }]
+      });
+    },
+
+    /* ---- the conversation that fills the gaps ---------------------------- */
+    prepTurn: function (campaign, item, history) {
+      var sys = [
+        'You are helping someone get ready to apply for a specific job. You work through one thing at',
+        'a time and you are after detail a resume bullet cannot hold: what broke, what they did, in',
+        'what order, what it cost, how it ended, and the number if there is one.',
+        '',
+        'Ask ONE question per message. Under 25 words. No preamble, no flattery, no summarising back',
+        'at length. If their answer is vague, ask the sharper version of the same question rather than',
+        'moving on. Two or three exchanges on one item is usually enough.',
+        '',
+        'When you have something they could actually say out loud to a hiring manager, put it in story',
+        'as three or four sentences in their own voice, first person, past tense, and set complete to',
+        'true. Until then story is an empty string and complete is false.',
+        '',
+        'If the item is a gap, something the listing wants that their resume does not show, do not',
+        'invent coverage. Look for the nearest real thing they have done and say plainly if there is',
+        'nothing. A gap they can speak to honestly beats a gap they have papered over.'
+      ].join('\n');
+
+      var head = 'Job: ' + campaign.role + ' at ' + campaign.company + '.\n' +
+        (item.kind === 'gap'
+          ? 'This is a gap. The listing asks for: "' + item.label + '". Their resume does not show it.'
+          : 'They are leading with this win: "' + item.label + '". Get the story behind it.');
+
+      return AI.send({
+        system: sys,
+        maxTokens: 900,
+        schema: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['reply', 'story', 'complete'],
+          properties: {
+            reply: { type: 'string', description: 'What you say next. One question, under 25 words, unless you are done.' },
+            story: { type: 'string', description: 'The finished story in their voice, or an empty string.' },
+            complete: { type: 'boolean' }
+          }
+        },
+        messages: [{ role: 'user', content: head }].concat(history)
+      });
+    },
+
     /* ---- the questions that turn a bullet into a story ------------------- */
     storyTurn: function (campaign, win, history) {
       var sys = [

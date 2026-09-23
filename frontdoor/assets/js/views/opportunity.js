@@ -15,7 +15,9 @@
     ['Role and company', function (p) { return p.role ? p.role.split(',')[0] : 'found'; }],
     ['Where it sits', function (p) { return p.location || 'not stated'; }],
     ['What they are asking for', function (p) { return p.requirements.length + ' lines'; }],
-    ['Wins of yours that answer it', function (p, r) { return r.filter(function (x) { return x.score; }).length + ' matched'; }]
+    ['Where your résumé lines up', function (p, r, m) {
+      return (m || []).filter(function (x) { return x.strength !== 'none'; }).length + ' of ' + (m || []).length;
+    }]
   ];
 
   window.Views.newOpp = function () {
@@ -25,7 +27,8 @@
     var parsed = null;
     var ranked = [];
     var chosen = [];
-    var asked = 0;
+    var match = [];
+    var matchedBy = 'keywords';
 
     function paint() {
       var body;
@@ -56,7 +59,7 @@
             '<div class="hide mt5" id="scan-box"><p class="cap mb3">Reading the listing</p><div id="scan"></div></div>' +
           '</div>';
       } else {
-        var matched = ranked.filter(function (r) { return r.score > 0; });
+        var sc = { total: match.length, covered: match.filter(function (r) { return r.strength !== 'none'; }).length };
         body =
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb4">' +
@@ -66,36 +69,29 @@
                 (parsed.req ? ' · Req ' + esc(parsed.req) : '') + '</p></div>' +
               '<button class="btn btn-ghost btn-sm" id="back">Paste a different one</button>' +
             '</div>' +
-            (parsed.requirements.length
-              ? '<div class="row wrap g2">' + parsed.requirements.slice(0, 6).map(function (r) {
-                  return '<span class="chip">' + esc(r.length > 44 ? r.slice(0, 42) + '…' : r) + '</span>';
-                }).join('') + '</div>'
-              : '<p class="hint">No bullet list in there, so we will go on the body text.</p>') +
+            (match.length
+              ? '<div class="matchbar"><div class="matchbar-fill" style="width:' +
+                Math.round((sc.covered / Math.max(1, sc.total)) * 100) + '%"></div></div>' +
+                '<p class="hint mt2">' + sc.covered + ' of ' + sc.total + ' things they asked for are answered by something on your résumé.</p>'
+              : '') +
+          '</div>' +
+
+          '<div class="card p6 mb4">' +
+            '<div class="row between wrap g3 mb2"><h3>Where you line up</h3>' +
+            '<span class="cap">' + (matchedBy === 'model' ? 'Matched by Claude' : 'Matched on keywords') + '</span></div>' +
+            '<p class="dim mb5" style="font-size:var(--fs-sm)">Line by line, what the listing asks for and what you have to answer it with. The gaps are the useful part.</p>' +
+            '<div id="match"></div>' +
           '</div>' +
 
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb2"><h3>What you lead with</h3>' +
             '<span class="cap" id="pick-count">' + chosen.length + ' of 3</span></div>' +
-            '<p class="dim mb5" style="font-size:var(--fs-sm)">' +
-            (matched.length
-              ? 'Picked by matching your résumé against the listing. Swap any of them.'
-              : 'Nothing in the listing lined up cleanly with your wins, so these are your strongest three. Swap any of them.') +
-            '</p>' +
+            '<p class="dim mb5" style="font-size:var(--fs-sm)">These three go on the page and open the first message. Swap any of them.</p>' +
             '<div class="grid" style="gap:var(--s-2)" id="wins"></div>' +
-          '</div>' +
-
-          '<div class="card assist-card mb4" style="min-height:280px">' +
-            '<div class="assist-head"><b>One more thing</b>' +
-            '<span class="hint">Answers here become the story on your page</span></div>' +
-            '<div class="assist-log" id="log"></div>' +
-            '<form class="assist-in" id="story-form">' +
-              '<input id="story-q" placeholder="Type your answer" autocomplete="off" aria-label="Your answer">' +
-              '<button type="submit" aria-label="Send">↑</button></form>' +
           '</div>' +
 
           '<div class="row g2 wrap">' +
             '<button class="btn btn-primary" id="create">Add ' + esc(parsed.company) + ' <span class="arr">→</span></button>' +
-            '<button class="btn btn-ghost" id="skip-story">Skip the story for now</button>' +
           '</div>';
       }
 
@@ -163,26 +159,77 @@
         parsed = Store.parseListing(listing);
         ranked = Store.rankWins(listing);
         chosen = ranked.slice(0, 3).map(function (r) { return r.win.id; });
+        match = Store.matchLocally(parsed.requirements, listing);
+        matchedBy = 'keywords';
         go.disabled = true;
+
         var box = v.querySelector('#scan-box');
         box.classList.remove('hide');
         v.querySelector('#scan').innerHTML = READ.map(function (s, i) {
           return '<div class="scan-line" id="sl' + i + '"><span class="dot"></span><span>' + esc(s[0]) + '</span><em><span class="skel"></span></em></div>';
         }).join('');
-        READ.forEach(function (s, i) {
-          setTimeout(function () {
-            var ln = v.querySelector('#sl' + i);
-            if (!ln) return;
-            ln.classList.add('done');
-            ln.querySelector('em').textContent = s[1](parsed, ranked);
-            if (i === READ.length - 1) setTimeout(function () { stage = 2; paint(); }, 420);
-          }, 320 * (i + 1));
-        });
+
+        function tick(i) {
+          var ln = v.querySelector('#sl' + i);
+          if (!ln) return;
+          ln.classList.add('done');
+          ln.querySelector('em').textContent = READ[i][1](parsed, ranked, match);
+        }
+        [0, 1, 2].forEach(function (i) { setTimeout(function () { tick(i); }, 320 * (i + 1)); });
+
+        function land() {
+          setTimeout(function () { tick(3); setTimeout(function () { stage = 2; paint(); }, 420); }, 300);
+        }
+        if (!AI.ready()) return land();
+
+        AI.matchListing(listing, parsed.requirements).then(function (out) {
+          if (out.requirements && out.requirements.length) {
+            match = out.requirements.map(function (r) {
+              return {
+                id: Store.uid('req'), text: r.text, priority: r.priority || 'nice',
+                winIds: (r.winIds || []).filter(function (id) {
+                  return Store.state.profile.wins.some(function (w) { return w.id === id; });
+                }),
+                strength: r.strength || 'none', note: r.note || ''
+              };
+            });
+            matchedBy = 'model';
+          }
+          var lead = (out.leadWith || []).filter(function (id) {
+            return Store.state.profile.wins.some(function (w) { return w.id === id; });
+          });
+          if (lead.length) chosen = lead.slice(0, 3);
+        }).catch(function (err) {
+          UI.toast('Claude could not match it (' + err.message + '). Fell back to keywords.');
+        }).then(land);
       });
     }
 
     function wireTwo(v) {
       var winsEl = v.querySelector('#wins');
+      var matchEl = v.querySelector('#match');
+
+      function paintMatch() {
+        if (!match.length) {
+          matchEl.innerHTML = '<p class="hint">The listing had no requirement list we could pull apart, so there is nothing to line up against. The wins below are your strongest three.</p>';
+          return;
+        }
+        matchEl.innerHTML = match.map(function (r) {
+          var wins = (r.winIds || []).map(function (id) {
+            return Store.state.profile.wins.filter(function (w) { return w.id === id; })[0];
+          }).filter(Boolean);
+          return '<div class="matchrow ' + r.strength + '">' +
+            '<span class="mr-dot" title="' + r.strength + '"></span>' +
+            '<div class="mr-ask"><b>' + esc(r.text) + '</b>' +
+              (r.priority === 'must' ? '<em class="mr-must">must have</em>' : '') + '</div>' +
+            '<div class="mr-have">' +
+              (wins.length
+                ? wins.map(function (w) { return '<span class="chip"><b class="mono">' + esc(w.metric) + '</b> ' + esc(w.short) + '</span>'; }).join('')
+                : '<span class="mr-none">nothing on your résumé</span>') +
+              (r.note ? '<span class="mr-note">' + esc(r.note) + '</span>' : '') +
+            '</div></div>';
+        }).join('');
+      }
 
       function paintWins() {
         winsEl.innerHTML = ranked.map(function (r) {
@@ -197,6 +244,7 @@
         }).join('');
         v.querySelector('#pick-count').textContent = chosen.length + ' of 3';
       }
+      paintMatch();
       paintWins();
 
       UI.on(v, 'click', '[data-win]', function (e, el) {
@@ -207,92 +255,19 @@
         paintWins();
       });
 
-      /* the chat is after the detail a resume bullet leaves out */
-      var log = v.querySelector('#log');
-      var history = [];
-      var thinking = false;
-
-      function say(cls, text) {
-        log.insertAdjacentHTML('beforeend', '<div class="bubble ' + cls + '">' + esc(text) + '</div>');
-        log.scrollTop = log.scrollHeight;
-      }
-      function topWin() {
-        return Store.state.profile.wins.filter(function (w) { return w.id === chosen[0]; })[0] || null;
-      }
-
-      var CANNED = [
-        'What actually broke first?',
-        'And what did you do about it, in the order you did it?',
-        'Last one. How did it end, with a number if you have one?'
-      ];
-
-      function opener() {
-        var w = topWin();
-        if (!AI.ready()) {
-          return Promise.resolve(w ? 'You are leading with "' + w.text + '". What actually broke first?' : CANNED[0]);
-        }
-        return AI.storyTurn(parsed, w, [{ role: 'user', content: 'Ask me your first question.' }]);
-      }
-
-      opener().then(function (line) { say('ai', line); })
-        .catch(function () { say('ai', CANNED[0]); });
-
-      v.querySelector('#story-form').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var i = v.querySelector('#story-q');
-        var text = i.value.trim();
-        if (!text || thinking) return;
-        say('me', text);
-        history.push({ role: 'user', content: text });
-        i.value = '';
-        asked += 1;
-
-        if (!AI.ready()) {
-          setTimeout(function () {
-            if (asked < CANNED.length) say('ai', CANNED[asked]);
-            else say('ai', 'That is the story. It goes on your page and into the first message.');
-          }, 380);
-          return;
-        }
-
-        thinking = true;
-        say('ai', '\u2026');
-        var bubble = log.lastElementChild;
-        AI.storyTurn(parsed, topWin(), history).then(function (line) {
-          bubble.textContent = line;
-          history.push({ role: 'assistant', content: line });
-        }).catch(function (err) {
-          bubble.textContent = asked < CANNED.length ? CANNED[asked] : 'Got it.';
-          UI.toast('Claude did not answer (' + err.message + ').');
-        }).then(function () { thinking = false; });
-      });
-
       v.querySelector('#back').addEventListener('click', function () { stage = 1; paint(); });
-      v.querySelector('#skip-story').addEventListener('click', create);
-      v.querySelector('#create').addEventListener('click', create);
-
-      function make(text) {
+      v.querySelector('#create').addEventListener('click', function () {
+        if (!chosen.length) { UI.toast('Pick at least one win to lead with.'); return; }
         var c = Store.createCampaign({
           listing: listing, parsed: parsed, winIds: chosen.slice(),
-          story: text || '', postingUrl: postingUrl
+          story: '', postingUrl: postingUrl
         });
-        UI.toast(c.company + ' added. Three people to look at.');
-        Router.go('/c/' + c.id);
-      }
-
-      function create() {
-        if (!chosen.length) { UI.toast('Pick at least one win to lead with.'); return; }
-        var plain = history.filter(function (m) { return m.role === 'user'; })
-          .map(function (m) { return m.content; }).join(' ');
-        if (!AI.ready() || !history.length) return make(plain);
-
-        var btn = v.querySelector('#create');
-        btn.disabled = true;
-        btn.textContent = 'Writing it up\u2026';
-        AI.storySummary(parsed, topWin(), history)
-          .then(function (text) { make(text); })
-          .catch(function () { make(plain); });
-      }
+        Store.setMatch(c.id, match);
+        Store.buildAgenda(c.id);
+        var gaps = Store.matchScore(c).gaps.length;
+        UI.toast(c.company + ' added. ' + (gaps ? gaps + ' gaps to talk through.' : 'Time to nail down your stories.'));
+        Router.go('/c/' + c.id + '/prep');
+      });
     }
 
     paint();

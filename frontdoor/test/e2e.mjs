@@ -196,6 +196,21 @@ window.AI_FETCH = function (url, init) {
                short: 'first seven figure deal', where: 'Kettle, 2024', tags: ['enterprise', 'acv'] }],
       tools: ['Salesforce', 'Gong'], voice: ['Short lines', 'Numbers first']
     });
+  } else if (schema && schema.properties && schema.properties.requirements) {
+    var wins = (window.Store && Store.state.profile.wins) || [];
+    text = JSON.stringify({
+      requirements: [
+        { text: '5+ years of SaaS sales', priority: 'must', winIds: wins[0] ? [wins[0].id] : [], strength: 'strong', note: 'Eight years, three roles.' },
+        { text: 'Sold through a pricing change', priority: 'must', winIds: wins[0] ? [wins[0].id] : [], strength: 'strong', note: 'Did exactly this at Brightline.' },
+        { text: 'Managed a team through a reorg', priority: 'nice', winIds: [], strength: 'none', note: 'Nothing on the resume about managing.' }
+      ],
+      leadWith: wins.slice(0, 3).map(function (w) { return w.id; })
+    });
+  } else if (schema && schema.properties && schema.properties.complete) {
+    window.__prepTurns = (window.__prepTurns || 0) + 1;
+    text = window.__prepTurns > 2
+      ? JSON.stringify({ reply: 'Got it.', story: 'The forecast broke first. I rebuilt discovery around the new deal math and finished at 112%.', complete: true })
+      : JSON.stringify({ reply: 'What broke first?', story: '', complete: false });
   } else if (schema && schema.properties && schema.properties.body) {
     text = JSON.stringify({ reply: 'Cut it to four lines.', body: 'Marcus, four lines and one ask.' });
   } else {
@@ -302,25 +317,6 @@ await group('The model in the rest of the app', async (page) => {
     const call = await page.evaluate(() => window.__calls[window.__calls.length - 1]);
     if (!call.body.output_config.format.schema.required.includes('body')) throw new Error('no rewrite schema');
   });
-  await step('the story chat asks the model its questions', async () => {
-    await page.goto(BASE + '#/new', { waitUntil: 'networkidle' });
-    await page.waitForSelector('#listing', { timeout: 5000 });
-    await page.click('#use-sample');
-    await page.click('#read');
-    await page.waitForSelector('#story-form', { timeout: 8000 });
-    await page.waitForTimeout(500);
-    const first = await page.locator('.bubble.ai').first().textContent();
-    if (!/What broke first/.test(first)) throw new Error('opened with "' + first + '"');
-  });
-  await step('answers become the story on the company', async () => {
-    await page.fill('#story-q', 'The forecast broke.');
-    await page.press('#story-q', 'Enter');
-    await page.waitForTimeout(600);
-    await page.click('#create');
-    await page.waitForSelector('.task', { timeout: 8000 });
-    const story = await page.evaluate(() => Store.campaigns()[0].story);
-    if (!story) throw new Error('no story kept');
-  });
 });
 
 await group('Reading the posting from its link', async (page) => {
@@ -356,9 +352,12 @@ await group('Reading the posting from its link', async (page) => {
   });
   await step('a fetched posting parses and creates the company', async () => {
     await page.click('#read');
-    await page.waitForSelector('#wins', { timeout: 10000 });
-    await page.click('#skip-story');
-    await page.waitForSelector('.task', { timeout: 10000 });
+    await page.waitForSelector('#wins', { timeout: 12000 });
+    await page.click('#create');
+    await page.waitForSelector('.agitem', { timeout: 10000 });
+    const id = await page.evaluate(() => Store.campaigns()[0].id);
+    await page.goto(BASE + '#/c/' + id, { waitUntil: 'networkidle' });
+    await page.waitForSelector('.task', { timeout: 6000 });
     const c = await page.evaluate(() => Store.campaigns()[0]);
     if (c.company !== 'Acme') throw new Error('company: ' + c.company);
     if (c.postingUrl !== 'https://jobs.example.com/ae') throw new Error('link not kept: ' + c.postingUrl);
@@ -379,6 +378,124 @@ await group('Reading the posting from its link', async (page) => {
     if (!/would not load/.test(t)) throw new Error('message was: ' + t);
     if (await page.locator('#post-msg.ok').count()) throw new Error('reported as success');
     if (await page.locator('#post-get:disabled').count()) throw new Error('button left disabled');
+  });
+});
+
+await group('Matching the listing against the resume', async (page) => {
+  await page.addInitScript(STUB);
+  await signIn(page, false);
+  await step('a listing with no model still lines up on keywords', async () => {
+    await page.click('#use-example');
+    await page.click('#read');
+    await page.waitForSelector('#roles', { timeout: 8000 });
+    await page.click('#done-import');
+    await page.waitForSelector('#listing', { timeout: 5000 });
+    await page.click('#use-sample');
+    await page.click('#read');
+    await page.waitForSelector('.matchrow', { timeout: 10000 });
+    const rows = await page.locator('.matchrow').count();
+    if (rows < 3) throw new Error(rows + ' requirements lined up');
+    const label = await page.locator('.cap', { hasText: 'Matched' }).textContent();
+    if (!/keywords/.test(label)) throw new Error('claims ' + label);
+  });
+  await step('every row says covered or not, and the bar agrees', async () => {
+    const strengths = await page.evaluate(() =>
+      [...document.querySelectorAll('.matchrow')].map(r => r.className.replace('matchrow ', '')));
+    if (!strengths.every(s => ['strong', 'partial', 'none'].includes(s))) throw new Error(strengths.join(','));
+    const width = await page.locator('.matchbar-fill').evaluate(e => e.style.width);
+    if (!/%$/.test(width)) throw new Error('bar width ' + width);
+  });
+  await step('with a model it matches line by line and says so', async () => {
+    await page.evaluate(() => { window.__useKey(); window.__calls = []; });
+    await page.click('#back');
+    await page.waitForSelector('#listing', { timeout: 5000 });
+    await page.click('#read');
+    await page.waitForSelector('.matchrow', { timeout: 12000 });
+    const label = await page.locator('.cap', { hasText: 'Matched' }).textContent();
+    if (!/Claude/.test(label)) throw new Error('claims ' + label);
+    const rows = await page.locator('.matchrow').count();
+    if (rows !== 3) throw new Error(rows + ' rows from the model');
+    if (!(await page.locator('.matchrow.none .mr-none').count())) throw new Error('the gap is not shown as a gap');
+    const note = await page.locator('.mr-note').first().textContent();
+    if (!note.trim()) throw new Error('no note on the evidence');
+  });
+  await step('the request hands the model the wins by id', async () => {
+    const call = await page.evaluate(() => window.__calls.filter(c => c.body.output_config &&
+      c.body.output_config.format.schema.properties.requirements)[0]);
+    if (!call) throw new Error('no match request');
+    if (!/w_|Their wins, by id/.test(call.body.messages[0].content)) throw new Error('wins not sent with ids');
+    const props = call.body.output_config.format.schema.properties.requirements.items.properties;
+    if (!props.strength.enum.includes('none')) throw new Error('no honest gap option in the schema');
+  });
+  await step('creating the company lands on prep with an agenda', async () => {
+    await page.click('#create');
+    await page.waitForSelector('.agitem', { timeout: 10000 });
+    const items = await page.evaluate(() => Store.campaigns()[0].agenda);
+    if (items.length < 4) throw new Error(items.length + ' agenda items');
+    if (!items.some(i => i.kind === 'gap')) throw new Error('the gap did not become an agenda item');
+    if (!items.some(i => i.kind === 'story')) throw new Error('no story items');
+  });
+});
+
+await group('Prep, the conversation that fills the gaps', async (page) => {
+  await page.addInitScript(STUB);
+  await signIn(page);
+  await page.evaluate(() => {
+    window.__useKey();
+    var c = Store.campaign('c_acme');
+    Store.setMatch('c_acme', [
+      { id: 'r1', text: 'Sold through a pricing change', priority: 'must', winIds: [c.winIds[0]], strength: 'strong', note: '' },
+      { id: 'r2', text: 'Managed a team', priority: 'nice', winIds: [], strength: 'none', note: '' }
+    ]);
+    c.agenda = [];
+    Store.buildAgenda('c_acme');
+  });
+  await step('the agenda covers both the wins and the gaps', async () => {
+    await page.goto(BASE + '#/c/c_acme/prep', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.agitem', { timeout: 6000 });
+    const kinds = await page.locator('.ag-kind').allTextContents();
+    if (!kinds.includes('Gap')) throw new Error('no gap on the agenda: ' + kinds.join(','));
+    if (!kinds.includes('Story')) throw new Error('no story on the agenda');
+  });
+  await step('it opens by asking something specific', async () => {
+    await page.waitForFunction(() => {
+      const b = document.querySelector('.bubble.ai');
+      return b && b.textContent && b.textContent !== '\u2026';
+    }, { timeout: 12000 });
+    const first = await page.locator('.bubble.ai').first().textContent();
+    if (!/broke first/.test(first)) throw new Error('opened with "' + first + '"');
+  });
+  await step('answers keep going until there is a story worth keeping', async () => {
+    for (let i = 0; i < 3; i++) {
+      await page.fill('#ask-q', 'The forecast broke and I rewrote discovery.');
+      await page.press('#ask-q', 'Enter');
+      await page.waitForTimeout(700);
+    }
+    const saved = await page.evaluate(() => Store.campaign('c_acme').agenda.filter(a => a.done).length);
+    if (!saved) throw new Error('nothing was saved');
+  });
+  await step('a saved story ticks the item off and shows up in your words', async () => {
+    if (!(await page.locator('.agitem.done').count())) throw new Error('nothing ticked off');
+    if (!(await page.locator('.storyline').count())) throw new Error('not shown back');
+    const chip = await page.locator('#prep-chip').textContent();
+    if (!/of/.test(chip)) throw new Error('progress chip reads "' + chip + '"');
+  });
+  await step('you can bank what you said without the model agreeing', async () => {
+    const open = await page.locator('.agitem:not(.done)').first();
+    await open.click();
+    await page.waitForTimeout(400);
+    await page.fill('#ask-q', 'I ran the SMB pod for two quarters during the reorg.');
+    await page.press('#ask-q', 'Enter');
+    await page.waitForTimeout(600);
+    await page.click('#save-it');
+    await page.waitForTimeout(400);
+    const stories = await page.evaluate(() => Store.stories(Store.campaign('c_acme')).map(s => s.text));
+    if (!stories.some(t => /SMB pod/.test(t))) throw new Error('not banked: ' + stories.join(' | '));
+  });
+  await step('prep is in the sidebar and on the checklist', async () => {
+    if (!(await page.locator('.nav-item[data-key="prep"]').count())) throw new Error('no nav item');
+    const done = await page.evaluate(() => Store.campaign('c_acme').tasks.filter(t => t.id === 't7')[0].on);
+    if (!done) throw new Error('checklist not ticked');
   });
 });
 
@@ -417,14 +534,17 @@ await group('Cold start, all the way through', async (page) => {
   await step('the listing picks wins out of the parsed resume', async () => {
     await page.click('#use-sample');
     await page.click('#read');
-    await page.waitForSelector('#wins', { timeout: 8000 });
+    await page.waitForSelector('#wins', { timeout: 12000 });
     const picked = await page.locator('.opt[aria-pressed="true"]').count();
     if (picked !== 3) throw new Error(picked + ' picked');
     const why = await page.locator('.opt[aria-pressed="true"] em').first().textContent();
     if (!/Matches the listing/.test(why)) throw new Error('not matched: ' + why);
   });
   await step('the company is created with nobody on it yet', async () => {
-    await page.click('#skip-story');
+    await page.click('#create');
+    await page.waitForSelector('.agitem', { timeout: 8000 });
+    const id = await page.evaluate(() => Store.campaigns()[0].id);
+    await page.goto(BASE + '#/c/' + id, { waitUntil: 'networkidle' });
     await page.waitForSelector('.task', { timeout: 6000 });
     const c = await page.evaluate(() => Store.campaigns()[0]);
     if (c.company !== 'Acme') throw new Error('company: ' + c.company);
@@ -580,20 +700,13 @@ await group('Add a company from a listing', async (page) => {
     await page.waitForTimeout(160);
     if ((await page.locator('.opt[aria-pressed="true"]').count()) !== 3) throw new Error('did not reselect');
   });
-  await step('the chat collects the story', async () => {
-    if (!(await page.locator('.bubble.ai').count())) throw new Error('assistant did not open');
-    await page.fill('#story-q', 'Forty per cent of the team quit inside two quarters.');
-    await page.press('#story-q', 'Enter');
-    await page.waitForTimeout(500);
-    if (!(await page.locator('.bubble.me').count())) throw new Error('answer not recorded');
-  });
-  await step('creating it lands on the new company', async () => {
+  await step('creating it lands on prep with something to work on', async () => {
     await page.click('#create');
-    await page.waitForSelector('.task', { timeout: 6000 });
+    await page.waitForSelector('.agitem', { timeout: 8000 });
     const n = await page.evaluate(() => Store.campaigns().length);
     if (n !== 2) throw new Error(n + ' campaigns');
-    const story = await page.evaluate(() => Store.campaigns()[0].story);
-    if (!story.includes('Forty per cent')) throw new Error('story lost');
+    const agenda = await page.evaluate(() => Store.campaigns()[0].agenda.length);
+    if (!agenda) throw new Error('no agenda built');
   });
   await step('the new company suggests three people to find', async () => {
     const s = await page.evaluate(() => Store.campaigns()[0].suggested.map(x => x.persona));
@@ -935,7 +1048,7 @@ await group('Mobile, 390px', async (page) => {
     if (m.w > 70) throw new Error('rail did not collapse (w=' + m.w + ')');
     if (m.h < 600) throw new Error('rail is not full height (h=' + m.h + ')');
     if (m.hidden !== 'none') throw new Error('labels still showing on the rail');
-    if (m.n < 8) throw new Error('only ' + m.n + ' nav items');
+    if (m.n < 9) throw new Error('only ' + m.n + ' nav items');
     if (!m.labelled) throw new Error('a rail icon has no tooltip');
   });
   await step('the builder is usable narrow', async () => {

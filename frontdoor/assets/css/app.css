@@ -1333,3 +1333,64 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .input.mono { font-family: var(--mono); font-size: 12.5px; }
 .link-ic { color: var(--ink-3); font-size: 15px; display: grid; place-items: center; width: 18px; }
 .lookup-in:disabled, .lookup button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ==========================================================================
+   Match: what they asked for against what you have
+   ========================================================================== */
+.matchbar { height: 6px; border-radius: var(--r-full); background: var(--sunk); overflow: hidden; }
+.matchbar-fill {
+  height: 100%; background: var(--pos); border-radius: var(--r-full);
+  transition: width var(--t-4) var(--ease);
+}
+.matchrow {
+  display: grid; grid-template-columns: 10px minmax(0, 1fr) minmax(0, 1.1fr); gap: var(--s-3);
+  align-items: start; padding: var(--s-4) 0; border-top: 1px solid var(--line);
+}
+.matchrow:first-child { border-top: none; padding-top: 0; }
+@media (max-width: 720px) { .matchrow { grid-template-columns: 10px minmax(0, 1fr); } .matchrow .mr-have { grid-column: 2; } }
+.mr-dot { width: 10px; height: 10px; border-radius: var(--r-full); margin-top: 5px; background: var(--line-3); }
+.matchrow.strong .mr-dot { background: var(--pos); }
+.matchrow.partial .mr-dot { background: var(--warn); }
+.matchrow.none .mr-dot { background: var(--neg); }
+.mr-ask b { display: block; font-size: var(--fs-base); font-weight: 550; line-height: 1.45; }
+.mr-must {
+  font-style: normal; font-family: var(--mono); font-size: 9.5px; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--ink-4);
+}
+.mr-have { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
+.mr-none { font-size: var(--fs-sm); color: var(--neg); }
+.mr-note { flex-basis: 100%; font-size: var(--fs-sm); color: var(--ink-3); line-height: 1.5; }
+
+/* ==========================================================================
+   Prep: the agenda and the conversation
+   ========================================================================== */
+.prep { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: var(--s-4); align-items: start; }
+@media (max-width: 940px) { .prep { grid-template-columns: minmax(0, 1fr); } }
+.agitem {
+  display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: var(--s-3); align-items: start;
+  width: 100%; text-align: left; padding: var(--s-3); border-radius: var(--r-2);
+  border: 1px solid var(--line); background: var(--panel); cursor: pointer;
+  transition: border-color var(--t-1) var(--ease), box-shadow var(--t-1) var(--ease), transform var(--t-1) var(--ease);
+}
+.agitem:hover { box-shadow: var(--e-2); transform: translateX(2px); }
+.agitem.on { border-color: var(--ac); box-shadow: 0 0 0 1px var(--ac-edge); }
+.ag-tick {
+  width: 16px; height: 16px; border-radius: var(--r-full); border: 1.5px solid var(--line-3);
+  margin-top: 2px; display: grid; place-items: center; font-size: 10px; color: #fff;
+  transition: background var(--t-2) var(--ease), border-color var(--t-2) var(--ease);
+}
+.agitem.done .ag-tick { background: var(--pos); border-color: var(--pos); }
+.agitem.done .ag-tick::after { content: "✓"; }
+.agitem.done .ag-label { color: var(--ink-3); }
+.ag-main { min-width: 0; }
+.ag-kind {
+  display: block; font-family: var(--mono); font-size: 9.5px; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--ink-4); margin-bottom: 1px;
+}
+.agitem.done .ag-kind { color: var(--pos); }
+.ag-label { display: block; font-size: var(--fs-sm); line-height: 1.45; }
+.prep-talk { min-height: 440px; display: flex; flex-direction: column; }
+.prep-talk .assist-log { flex: 1; max-height: none; }
+.prep-talk .assist-head b { font-size: var(--fs-sm); }
+/* bubbles hug their text even when the log is told to fill the card */
+.prep-talk .assist-log { align-content: start; }

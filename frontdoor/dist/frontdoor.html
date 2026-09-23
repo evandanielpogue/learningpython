@@ -1437,6 +1437,67 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .link-ic { color: var(--ink-3); font-size: 15px; display: grid; place-items: center; width: 18px; }
 .lookup-in:disabled, .lookup button:disabled { opacity: .5; cursor: not-allowed; }
 
+/* ==========================================================================
+   Match: what they asked for against what you have
+   ========================================================================== */
+.matchbar { height: 6px; border-radius: var(--r-full); background: var(--sunk); overflow: hidden; }
+.matchbar-fill {
+  height: 100%; background: var(--pos); border-radius: var(--r-full);
+  transition: width var(--t-4) var(--ease);
+}
+.matchrow {
+  display: grid; grid-template-columns: 10px minmax(0, 1fr) minmax(0, 1.1fr); gap: var(--s-3);
+  align-items: start; padding: var(--s-4) 0; border-top: 1px solid var(--line);
+}
+.matchrow:first-child { border-top: none; padding-top: 0; }
+@media (max-width: 720px) { .matchrow { grid-template-columns: 10px minmax(0, 1fr); } .matchrow .mr-have { grid-column: 2; } }
+.mr-dot { width: 10px; height: 10px; border-radius: var(--r-full); margin-top: 5px; background: var(--line-3); }
+.matchrow.strong .mr-dot { background: var(--pos); }
+.matchrow.partial .mr-dot { background: var(--warn); }
+.matchrow.none .mr-dot { background: var(--neg); }
+.mr-ask b { display: block; font-size: var(--fs-base); font-weight: 550; line-height: 1.45; }
+.mr-must {
+  font-style: normal; font-family: var(--mono); font-size: 9.5px; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--ink-4);
+}
+.mr-have { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
+.mr-none { font-size: var(--fs-sm); color: var(--neg); }
+.mr-note { flex-basis: 100%; font-size: var(--fs-sm); color: var(--ink-3); line-height: 1.5; }
+
+/* ==========================================================================
+   Prep: the agenda and the conversation
+   ========================================================================== */
+.prep { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: var(--s-4); align-items: start; }
+@media (max-width: 940px) { .prep { grid-template-columns: minmax(0, 1fr); } }
+.agitem {
+  display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: var(--s-3); align-items: start;
+  width: 100%; text-align: left; padding: var(--s-3); border-radius: var(--r-2);
+  border: 1px solid var(--line); background: var(--panel); cursor: pointer;
+  transition: border-color var(--t-1) var(--ease), box-shadow var(--t-1) var(--ease), transform var(--t-1) var(--ease);
+}
+.agitem:hover { box-shadow: var(--e-2); transform: translateX(2px); }
+.agitem.on { border-color: var(--ac); box-shadow: 0 0 0 1px var(--ac-edge); }
+.ag-tick {
+  width: 16px; height: 16px; border-radius: var(--r-full); border: 1.5px solid var(--line-3);
+  margin-top: 2px; display: grid; place-items: center; font-size: 10px; color: #fff;
+  transition: background var(--t-2) var(--ease), border-color var(--t-2) var(--ease);
+}
+.agitem.done .ag-tick { background: var(--pos); border-color: var(--pos); }
+.agitem.done .ag-tick::after { content: "✓"; }
+.agitem.done .ag-label { color: var(--ink-3); }
+.ag-main { min-width: 0; }
+.ag-kind {
+  display: block; font-family: var(--mono); font-size: 9.5px; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--ink-4); margin-bottom: 1px;
+}
+.agitem.done .ag-kind { color: var(--pos); }
+.ag-label { display: block; font-size: var(--fs-sm); line-height: 1.45; }
+.prep-talk { min-height: 440px; display: flex; flex-direction: column; }
+.prep-talk .assist-log { flex: 1; max-height: none; }
+.prep-talk .assist-head b { font-size: var(--fs-sm); }
+/* bubbles hug their text even when the log is told to fill the card */
+.prep-talk .assist-log { align-content: start; }
+
 </style>
 </head>
 <body>
@@ -1693,7 +1754,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   function taskSet() {
     return [
       { id: 't1', text: 'Paste the job listing',   sub: 'We read it for you',                     on: false },
-      { id: 't2', text: 'Confirm what you lead with', sub: 'Three wins, matched to the listing',  on: false },
+      { id: 't2', text: 'Check the match', sub: 'What they asked for, what you have',       on: false },
+      { id: 't7', text: 'Nail down your stories', sub: 'The detail a bullet leaves out',      on: false },
       { id: 't3', text: 'Add your contacts',       sub: 'Start with the three we found',          on: false },
       { id: 't4', text: 'Read the research',       sub: 'What they said, recently, in public',    on: false },
       { id: 't5', text: 'Build the sequence',      sub: 'Ten touches over two weeks',             on: false },
@@ -1714,6 +1776,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       winIds: ['w1', 'w3', 'w2'],
       story: 'Brightline repriced to seat based in the middle of my best year. Forty per cent of the team left inside two quarters. I rewrote discovery around the new deal math, took cycles from 30 days to 70 without losing the number, and finished at 112%.',
       pageTemplate: 'case',
+      match: [],
+      agenda: [],
       angles: clone(ANGLES),
       contacts: clone(CONTACTS),
       suggested: clone(SUGGESTED),
@@ -1802,6 +1866,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       }
       var c = seedCampaign();
       c.winIds = Store.rankWins(ACME_LISTING).slice(0, 3).map(function (r) { return r.win.id; });
+      c.match = Store.matchLocally(Store.parseListing(ACME_LISTING).requirements, ACME_LISTING);
       c.sections = clone(SECTIONS);
       c.tasks[0].on = true;
       c.tasks[1].on = true;
@@ -1847,7 +1912,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       lines.forEach(function (l) {
         if (/^[-–•*]\s+/.test(l)) {
           var b = l.replace(/^[-–•*]\s+/, '').replace(/\.$/, '');
-          if (b.length > 4 && out.requirements.length < 8) out.requirements.push(b.slice(0, 80));
+          if (b.length > 4 && out.requirements.length < 8) {
+            out.requirements.push(b.length > 84 ? b.slice(0, 80).replace(/\s\S*$/, '') + '\u2026' : b);
+          }
         }
       });
 
@@ -1891,6 +1958,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         winIds: (data.winIds || ranked.slice(0, 3).map(function (r) { return r.win.id; })),
         story: data.story || '',
         pageTemplate: 'case',
+        match: [],
+        agenda: [],
         angles: [],
         contacts: [],
         suggested: Store.suggestFor(data.company || parsed.company, parsed.role),
@@ -1933,6 +2002,88 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           found: 'Overlap in your history', why: 'A warm forward beats a cold email every time. Ask them to paste two lines.',
           email: '', linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'An introduction' }
       ];
+    },
+
+    /* ---- what the listing asks for against what you have -----------------
+       The model does this properly. Without one, tags are matched against the
+       requirement text, which is blunt but honest about being blunt. ------ */
+    matchLocally: function (requirements, listing) {
+      var wins = state.profile.wins;
+      var STOP = /^(the|and|for|with|you|your|our|that|this|from|into|able|have|has|will|who|are|was|were|they|them|their|a|an|of|to|in|on|at|as|by|or|it|is|be|do|not|all|any|can|how|what|when|more|most|than|then|through|across|using|used|use|help|helps|work|works|working|new|next|every|each|per|up|out|off|over|under|about|also|its)$/;
+      function words(t) {
+        return String(t).toLowerCase().replace(/[^a-z0-9+ ]/g, ' ').split(/\s+/)
+          .filter(function (w) { return w.length > 2 && !STOP.test(w); });
+      }
+      return (requirements || []).map(function (r) {
+        var hay = String(r).toLowerCase();
+        var rw = words(r);
+        var hits = wins.map(function (w) {
+          var tagHits = (w.tags || []).filter(function (t) { return hay.indexOf(t) > -1; }).length;
+          var ww = words(w.text + ' ' + w.short);
+          var shared = rw.filter(function (x) { return ww.indexOf(x) > -1; }).length;
+          return { id: w.id, n: tagHits * 2 + shared };
+        }).filter(function (x) { return x.n; }).sort(function (a, b) { return b.n - a.n; });
+        return {
+          id: uid('req'), text: r,
+          priority: /\b(\d\+? years|must|required|minimum)\b/i.test(r) ? 'must' : 'nice',
+          winIds: hits.slice(0, 2).map(function (x) { return x.id; }),
+          strength: hits.length && hits[0].n >= 3 ? 'strong' : hits.length ? 'partial' : 'none',
+          note: ''
+        };
+      });
+    },
+
+    setMatch: function (cid, match) {
+      var c = Store.campaign(cid); if (!c) return;
+      c.match = match || [];
+      Store.save();
+    },
+    matchScore: function (c) {
+      var m = (c && c.match) || [];
+      return {
+        total: m.length,
+        covered: m.filter(function (r) { return r.strength !== 'none'; }).length,
+        gaps: m.filter(function (r) { return r.strength === 'none'; })
+      };
+    },
+
+    /* ---- the things worth nailing down before you write ------------------ */
+    buildAgenda: function (cid) {
+      var c = Store.campaign(cid); if (!c) return [];
+      if (c.agenda && c.agenda.length) return c.agenda;
+      var items = [];
+
+      /* one per win you are leading with: the detail the bullet leaves out */
+      Store.campaignWins(c).forEach(function (w) {
+        items.push({ id: uid('ag'), kind: 'story', ref: w.id,
+          label: w.text, ask: 'What actually happened behind this', text: '', done: false });
+      });
+
+      /* one per thing the listing wants that nothing on the resume answers */
+      Store.matchScore(c).gaps.slice(0, 4).forEach(function (r) {
+        items.push({ id: uid('ag'), kind: 'gap', ref: r.id,
+          label: r.text, ask: 'Nothing on your resume answers this', text: '', done: false });
+      });
+
+      c.agenda = items;
+      Store.save();
+      return items;
+    },
+    answerAgenda: function (cid, id, text) {
+      var c = Store.campaign(cid); if (!c) return;
+      var it = (c.agenda || []).filter(function (x) { return x.id === id; })[0];
+      if (!it) return;
+      it.text = text;
+      it.done = !!(text && text.trim());
+      Store.save();
+    },
+    agendaProgress: function (c) {
+      var a = (c && c.agenda) || [];
+      return { done: a.filter(function (x) { return x.done; }).length, total: a.length };
+    },
+    /* everything they have told us, for the page and the messages */
+    stories: function (c) {
+      return ((c && c.agenda) || []).filter(function (x) { return x.done && x.text; });
     },
 
     /* ---- wins on an opportunity ------------------------------------------ */
@@ -3112,6 +3263,112 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         });
     },
 
+    /* ---- line the listing up against the resume -------------------------- */
+    matchListing: function (listing, requirements) {
+      var wins = Store.state.profile.wins.map(function (w) {
+        return w.id + ': ' + w.text + ' (' + (w.where || 'no date') + ')';
+      }).join('\n');
+      var roles = Store.state.profile.roles.map(function (r) {
+        return '- ' + r.title + ', ' + r.company + ', ' + r.span + ': ' + r.bullets.join('; ');
+      }).join('\n');
+
+      var sys = [
+        'You compare a job listing against one person\u2019s resume and say, line by line, where they',
+        'line up and where they do not.',
+        '',
+        'For every requirement the listing states, find the evidence on the resume and name it by id.',
+        'strong means the resume shows they have done this, with something concrete. partial means it',
+        'is adjacent or implied. none means there is nothing there, and you must say none rather than',
+        'stretch: an honest gap is the useful part of this.',
+        '',
+        'note is one short line, under 15 words, saying what the evidence actually is or what is',
+        'missing. Do not repeat the requirement back.',
+        '',
+        'leadWith is the three win ids that answer the most important requirements. Exactly three,',
+        'or fewer only if there are fewer wins.'
+      ].join('\n');
+
+      var schema = {
+        type: 'object',
+        additionalProperties: false,
+        required: ['requirements', 'leadWith'],
+        properties: {
+          requirements: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['text', 'priority', 'winIds', 'strength', 'note'],
+              properties: {
+                text: { type: 'string', description: 'The requirement, as the listing puts it, trimmed.' },
+                priority: { type: 'string', enum: ['must', 'nice'] },
+                winIds: { type: 'array', items: { type: 'string' }, description: 'Ids of the wins that evidence this. Empty when there is none.' },
+                strength: { type: 'string', enum: ['strong', 'partial', 'none'] },
+                note: { type: 'string' }
+              }
+            }
+          },
+          leadWith: { type: 'array', items: { type: 'string' }, description: 'Three win ids.' }
+        }
+      };
+
+      return AI.send({
+        system: sys,
+        schema: schema,
+        maxTokens: 4000,
+        messages: [{
+          role: 'user',
+          content: 'The listing:\n<listing>\n' + listing + '\n</listing>\n\n' +
+            'Their wins, by id:\n' + wins + '\n\nTheir roles:\n' + roles +
+            (requirements && requirements.length
+              ? '\n\nRequirements we already pulled out, if useful:\n- ' + requirements.join('\n- ')
+              : '')
+        }]
+      });
+    },
+
+    /* ---- the conversation that fills the gaps ---------------------------- */
+    prepTurn: function (campaign, item, history) {
+      var sys = [
+        'You are helping someone get ready to apply for a specific job. You work through one thing at',
+        'a time and you are after detail a resume bullet cannot hold: what broke, what they did, in',
+        'what order, what it cost, how it ended, and the number if there is one.',
+        '',
+        'Ask ONE question per message. Under 25 words. No preamble, no flattery, no summarising back',
+        'at length. If their answer is vague, ask the sharper version of the same question rather than',
+        'moving on. Two or three exchanges on one item is usually enough.',
+        '',
+        'When you have something they could actually say out loud to a hiring manager, put it in story',
+        'as three or four sentences in their own voice, first person, past tense, and set complete to',
+        'true. Until then story is an empty string and complete is false.',
+        '',
+        'If the item is a gap, something the listing wants that their resume does not show, do not',
+        'invent coverage. Look for the nearest real thing they have done and say plainly if there is',
+        'nothing. A gap they can speak to honestly beats a gap they have papered over.'
+      ].join('\n');
+
+      var head = 'Job: ' + campaign.role + ' at ' + campaign.company + '.\n' +
+        (item.kind === 'gap'
+          ? 'This is a gap. The listing asks for: "' + item.label + '". Their resume does not show it.'
+          : 'They are leading with this win: "' + item.label + '". Get the story behind it.');
+
+      return AI.send({
+        system: sys,
+        maxTokens: 900,
+        schema: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['reply', 'story', 'complete'],
+          properties: {
+            reply: { type: 'string', description: 'What you say next. One question, under 25 words, unless you are done.' },
+            story: { type: 'string', description: 'The finished story in their voice, or an empty string.' },
+            complete: { type: 'boolean' }
+          }
+        },
+        messages: [{ role: 'user', content: head }].concat(history)
+      });
+    },
+
     /* ---- the questions that turn a bullet into a story ------------------- */
     storyTurn: function (campaign, win, history) {
       var sys = [
@@ -3286,6 +3543,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     ] },
     { group: 'company', needsCampaign: true, items: [
       { key: 'opp',      icon: '◆', label: 'Summary',  href: '/c/:id', hint: 'the checklist and the numbers', sc: 'G then C' },
+      { key: 'prep',     icon: '◍', label: 'Prep',     href: '/c/:id/prep', hint: 'the stories behind your wins, and the gaps', sc: 'G then E' },
       { key: 'people',   icon: '◎', label: 'Contacts', href: '/c/:id/people',   count: 'contacts', hint: 'the people you are working, ranked', sc: 'G then P' },
       { key: 'research', icon: '◈', label: 'Research', href: '/c/:id/research', hint: 'what they said recently, in public', sc: 'G then R' },
       { key: 'sequence', icon: '≡', label: 'Sequence', href: '/c/:id/sequence', count: 'steps', hint: 'the touches and the days between them', sc: 'G then S' },
@@ -3844,7 +4102,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     ['Role and company', function (p) { return p.role ? p.role.split(',')[0] : 'found'; }],
     ['Where it sits', function (p) { return p.location || 'not stated'; }],
     ['What they are asking for', function (p) { return p.requirements.length + ' lines'; }],
-    ['Wins of yours that answer it', function (p, r) { return r.filter(function (x) { return x.score; }).length + ' matched'; }]
+    ['Where your résumé lines up', function (p, r, m) {
+      return (m || []).filter(function (x) { return x.strength !== 'none'; }).length + ' of ' + (m || []).length;
+    }]
   ];
 
   window.Views.newOpp = function () {
@@ -3854,7 +4114,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     var parsed = null;
     var ranked = [];
     var chosen = [];
-    var asked = 0;
+    var match = [];
+    var matchedBy = 'keywords';
 
     function paint() {
       var body;
@@ -3885,7 +4146,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             '<div class="hide mt5" id="scan-box"><p class="cap mb3">Reading the listing</p><div id="scan"></div></div>' +
           '</div>';
       } else {
-        var matched = ranked.filter(function (r) { return r.score > 0; });
+        var sc = { total: match.length, covered: match.filter(function (r) { return r.strength !== 'none'; }).length };
         body =
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb4">' +
@@ -3895,36 +4156,29 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
                 (parsed.req ? ' · Req ' + esc(parsed.req) : '') + '</p></div>' +
               '<button class="btn btn-ghost btn-sm" id="back">Paste a different one</button>' +
             '</div>' +
-            (parsed.requirements.length
-              ? '<div class="row wrap g2">' + parsed.requirements.slice(0, 6).map(function (r) {
-                  return '<span class="chip">' + esc(r.length > 44 ? r.slice(0, 42) + '…' : r) + '</span>';
-                }).join('') + '</div>'
-              : '<p class="hint">No bullet list in there, so we will go on the body text.</p>') +
+            (match.length
+              ? '<div class="matchbar"><div class="matchbar-fill" style="width:' +
+                Math.round((sc.covered / Math.max(1, sc.total)) * 100) + '%"></div></div>' +
+                '<p class="hint mt2">' + sc.covered + ' of ' + sc.total + ' things they asked for are answered by something on your résumé.</p>'
+              : '') +
+          '</div>' +
+
+          '<div class="card p6 mb4">' +
+            '<div class="row between wrap g3 mb2"><h3>Where you line up</h3>' +
+            '<span class="cap">' + (matchedBy === 'model' ? 'Matched by Claude' : 'Matched on keywords') + '</span></div>' +
+            '<p class="dim mb5" style="font-size:var(--fs-sm)">Line by line, what the listing asks for and what you have to answer it with. The gaps are the useful part.</p>' +
+            '<div id="match"></div>' +
           '</div>' +
 
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb2"><h3>What you lead with</h3>' +
             '<span class="cap" id="pick-count">' + chosen.length + ' of 3</span></div>' +
-            '<p class="dim mb5" style="font-size:var(--fs-sm)">' +
-            (matched.length
-              ? 'Picked by matching your résumé against the listing. Swap any of them.'
-              : 'Nothing in the listing lined up cleanly with your wins, so these are your strongest three. Swap any of them.') +
-            '</p>' +
+            '<p class="dim mb5" style="font-size:var(--fs-sm)">These three go on the page and open the first message. Swap any of them.</p>' +
             '<div class="grid" style="gap:var(--s-2)" id="wins"></div>' +
-          '</div>' +
-
-          '<div class="card assist-card mb4" style="min-height:280px">' +
-            '<div class="assist-head"><b>One more thing</b>' +
-            '<span class="hint">Answers here become the story on your page</span></div>' +
-            '<div class="assist-log" id="log"></div>' +
-            '<form class="assist-in" id="story-form">' +
-              '<input id="story-q" placeholder="Type your answer" autocomplete="off" aria-label="Your answer">' +
-              '<button type="submit" aria-label="Send">↑</button></form>' +
           '</div>' +
 
           '<div class="row g2 wrap">' +
             '<button class="btn btn-primary" id="create">Add ' + esc(parsed.company) + ' <span class="arr">→</span></button>' +
-            '<button class="btn btn-ghost" id="skip-story">Skip the story for now</button>' +
           '</div>';
       }
 
@@ -3992,26 +4246,77 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         parsed = Store.parseListing(listing);
         ranked = Store.rankWins(listing);
         chosen = ranked.slice(0, 3).map(function (r) { return r.win.id; });
+        match = Store.matchLocally(parsed.requirements, listing);
+        matchedBy = 'keywords';
         go.disabled = true;
+
         var box = v.querySelector('#scan-box');
         box.classList.remove('hide');
         v.querySelector('#scan').innerHTML = READ.map(function (s, i) {
           return '<div class="scan-line" id="sl' + i + '"><span class="dot"></span><span>' + esc(s[0]) + '</span><em><span class="skel"></span></em></div>';
         }).join('');
-        READ.forEach(function (s, i) {
-          setTimeout(function () {
-            var ln = v.querySelector('#sl' + i);
-            if (!ln) return;
-            ln.classList.add('done');
-            ln.querySelector('em').textContent = s[1](parsed, ranked);
-            if (i === READ.length - 1) setTimeout(function () { stage = 2; paint(); }, 420);
-          }, 320 * (i + 1));
-        });
+
+        function tick(i) {
+          var ln = v.querySelector('#sl' + i);
+          if (!ln) return;
+          ln.classList.add('done');
+          ln.querySelector('em').textContent = READ[i][1](parsed, ranked, match);
+        }
+        [0, 1, 2].forEach(function (i) { setTimeout(function () { tick(i); }, 320 * (i + 1)); });
+
+        function land() {
+          setTimeout(function () { tick(3); setTimeout(function () { stage = 2; paint(); }, 420); }, 300);
+        }
+        if (!AI.ready()) return land();
+
+        AI.matchListing(listing, parsed.requirements).then(function (out) {
+          if (out.requirements && out.requirements.length) {
+            match = out.requirements.map(function (r) {
+              return {
+                id: Store.uid('req'), text: r.text, priority: r.priority || 'nice',
+                winIds: (r.winIds || []).filter(function (id) {
+                  return Store.state.profile.wins.some(function (w) { return w.id === id; });
+                }),
+                strength: r.strength || 'none', note: r.note || ''
+              };
+            });
+            matchedBy = 'model';
+          }
+          var lead = (out.leadWith || []).filter(function (id) {
+            return Store.state.profile.wins.some(function (w) { return w.id === id; });
+          });
+          if (lead.length) chosen = lead.slice(0, 3);
+        }).catch(function (err) {
+          UI.toast('Claude could not match it (' + err.message + '). Fell back to keywords.');
+        }).then(land);
       });
     }
 
     function wireTwo(v) {
       var winsEl = v.querySelector('#wins');
+      var matchEl = v.querySelector('#match');
+
+      function paintMatch() {
+        if (!match.length) {
+          matchEl.innerHTML = '<p class="hint">The listing had no requirement list we could pull apart, so there is nothing to line up against. The wins below are your strongest three.</p>';
+          return;
+        }
+        matchEl.innerHTML = match.map(function (r) {
+          var wins = (r.winIds || []).map(function (id) {
+            return Store.state.profile.wins.filter(function (w) { return w.id === id; })[0];
+          }).filter(Boolean);
+          return '<div class="matchrow ' + r.strength + '">' +
+            '<span class="mr-dot" title="' + r.strength + '"></span>' +
+            '<div class="mr-ask"><b>' + esc(r.text) + '</b>' +
+              (r.priority === 'must' ? '<em class="mr-must">must have</em>' : '') + '</div>' +
+            '<div class="mr-have">' +
+              (wins.length
+                ? wins.map(function (w) { return '<span class="chip"><b class="mono">' + esc(w.metric) + '</b> ' + esc(w.short) + '</span>'; }).join('')
+                : '<span class="mr-none">nothing on your résumé</span>') +
+              (r.note ? '<span class="mr-note">' + esc(r.note) + '</span>' : '') +
+            '</div></div>';
+        }).join('');
+      }
 
       function paintWins() {
         winsEl.innerHTML = ranked.map(function (r) {
@@ -4026,6 +4331,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         }).join('');
         v.querySelector('#pick-count').textContent = chosen.length + ' of 3';
       }
+      paintMatch();
       paintWins();
 
       UI.on(v, 'click', '[data-win]', function (e, el) {
@@ -4036,92 +4342,19 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         paintWins();
       });
 
-      /* the chat is after the detail a resume bullet leaves out */
-      var log = v.querySelector('#log');
-      var history = [];
-      var thinking = false;
-
-      function say(cls, text) {
-        log.insertAdjacentHTML('beforeend', '<div class="bubble ' + cls + '">' + esc(text) + '</div>');
-        log.scrollTop = log.scrollHeight;
-      }
-      function topWin() {
-        return Store.state.profile.wins.filter(function (w) { return w.id === chosen[0]; })[0] || null;
-      }
-
-      var CANNED = [
-        'What actually broke first?',
-        'And what did you do about it, in the order you did it?',
-        'Last one. How did it end, with a number if you have one?'
-      ];
-
-      function opener() {
-        var w = topWin();
-        if (!AI.ready()) {
-          return Promise.resolve(w ? 'You are leading with "' + w.text + '". What actually broke first?' : CANNED[0]);
-        }
-        return AI.storyTurn(parsed, w, [{ role: 'user', content: 'Ask me your first question.' }]);
-      }
-
-      opener().then(function (line) { say('ai', line); })
-        .catch(function () { say('ai', CANNED[0]); });
-
-      v.querySelector('#story-form').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var i = v.querySelector('#story-q');
-        var text = i.value.trim();
-        if (!text || thinking) return;
-        say('me', text);
-        history.push({ role: 'user', content: text });
-        i.value = '';
-        asked += 1;
-
-        if (!AI.ready()) {
-          setTimeout(function () {
-            if (asked < CANNED.length) say('ai', CANNED[asked]);
-            else say('ai', 'That is the story. It goes on your page and into the first message.');
-          }, 380);
-          return;
-        }
-
-        thinking = true;
-        say('ai', '\u2026');
-        var bubble = log.lastElementChild;
-        AI.storyTurn(parsed, topWin(), history).then(function (line) {
-          bubble.textContent = line;
-          history.push({ role: 'assistant', content: line });
-        }).catch(function (err) {
-          bubble.textContent = asked < CANNED.length ? CANNED[asked] : 'Got it.';
-          UI.toast('Claude did not answer (' + err.message + ').');
-        }).then(function () { thinking = false; });
-      });
-
       v.querySelector('#back').addEventListener('click', function () { stage = 1; paint(); });
-      v.querySelector('#skip-story').addEventListener('click', create);
-      v.querySelector('#create').addEventListener('click', create);
-
-      function make(text) {
+      v.querySelector('#create').addEventListener('click', function () {
+        if (!chosen.length) { UI.toast('Pick at least one win to lead with.'); return; }
         var c = Store.createCampaign({
           listing: listing, parsed: parsed, winIds: chosen.slice(),
-          story: text || '', postingUrl: postingUrl
+          story: '', postingUrl: postingUrl
         });
-        UI.toast(c.company + ' added. Three people to look at.');
-        Router.go('/c/' + c.id);
-      }
-
-      function create() {
-        if (!chosen.length) { UI.toast('Pick at least one win to lead with.'); return; }
-        var plain = history.filter(function (m) { return m.role === 'user'; })
-          .map(function (m) { return m.content; }).join(' ');
-        if (!AI.ready() || !history.length) return make(plain);
-
-        var btn = v.querySelector('#create');
-        btn.disabled = true;
-        btn.textContent = 'Writing it up\u2026';
-        AI.storySummary(parsed, topWin(), history)
-          .then(function (text) { make(text); })
-          .catch(function () { make(plain); });
-      }
+        Store.setMatch(c.id, match);
+        Store.buildAgenda(c.id);
+        var gaps = Store.matchScore(c).gaps.length;
+        UI.toast(c.company + ' added. ' + (gaps ? gaps + ' gaps to talk through.' : 'Time to nail down your stories.'));
+        Router.go('/c/' + c.id + '/prep');
+      });
     }
 
     paint();
@@ -4524,6 +4757,207 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     }
 
     paint();
+  };
+})(window, document);
+
+;
+/* assets/js/views/prep.js */
+/* ==========================================================================
+   views/prep.js — the conversation before you write anything.
+
+   Two jobs, worked one item at a time: get the story behind each win you are
+   leading with, and find something real to say about the things the listing
+   asked for that your resume does not answer. What comes out goes on the page
+   and into the messages.
+   ========================================================================== */
+(function (window, document) {
+  'use strict';
+
+  var esc = UI.esc;
+  window.Views = window.Views || {};
+
+  /* what to ask when there is no model to ask it */
+  var CANNED = {
+    story: ['What actually happened? Start where it went wrong.',
+            'What did you do about it, in the order you did it?',
+            'How did it end? A number if you have one.'],
+    gap: ['Nothing on your résumé answers this. What is the closest thing you have done?',
+          'What did that look like day to day?',
+          'If you had to say this out loud in an interview, how would you put it?']
+  };
+
+  window.Views.prep = function (params) {
+    var c = Store.campaign(params.id);
+    if (!c) return Router.go('/', true);
+    Store.touch(c.id);
+
+    var agenda = Store.buildAgenda(c.id);
+    var openId = (agenda.filter(function (x) { return !x.done; })[0] || agenda[0] || {}).id;
+    var history = [];
+    var turns = 0;
+    var busy = false;
+
+    var v = Shell.mount({
+      nav: 'prep',
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Prep' }],
+      actions: '<span class="chip" id="prep-chip"></span>' +
+               '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/page">See the page</a>',
+      html: '<div class="page-head"><h1>Before you write</h1>' +
+            '<p>A résumé bullet is the headline. This is where the rest of it comes out, one thing at a time.</p></div>' +
+            (agenda.length
+              ? '<div class="prep"><div id="agenda"></div><div id="talk"></div></div>'
+              : '<div class="card"><div class="empty"><span class="art">◈</span>' +
+                '<h2>Nothing to work on yet</h2><p>Add a company from a listing and the things worth nailing down show up here.</p>' +
+                '<a class="btn btn-primary btn-lg" href="#/new">Add a company <span class="arr">→</span></a></div></div>')
+    });
+    if (!agenda.length) return;
+
+    function item() { return agenda.filter(function (x) { return x.id === openId; })[0] || agenda[0]; }
+
+    /* ---------------- the list of things to get through ---------------- */
+    function paintAgenda() {
+      var pr = Store.agendaProgress(c);
+      v.querySelector('#agenda').innerHTML =
+        '<div class="card p5">' +
+          '<div class="row between wrap g2 mb4"><h3>To get through</h3>' +
+          '<span class="cap">' + pr.done + ' of ' + pr.total + '</span></div>' +
+          '<div class="col g2">' + agenda.map(function (a) {
+            return '<button class="agitem' + (a.id === openId ? ' on' : '') + (a.done ? ' done' : '') +
+              '" data-ag="' + a.id + '">' +
+              '<span class="ag-tick"></span>' +
+              '<span class="ag-main"><span class="ag-kind">' + (a.kind === 'gap' ? 'Gap' : 'Story') + '</span>' +
+              '<span class="ag-label">' + esc(a.label) + '</span></span></button>';
+          }).join('') + '</div>' +
+          (pr.done === pr.total
+            ? '<a class="btn btn-primary btn-sm mt4" href="#/c/' + c.id + '/sequence">Go and write it <span class="arr">→</span></a>'
+            : '') +
+        '</div>' +
+        (Store.stories(c).length
+          ? '<div class="card p5 mt4"><p class="cap mb3">In your words</p>' +
+            Store.stories(c).map(function (a) {
+              return '<p class="storyline">' + esc(a.text) + '</p>';
+            }).join('') + '</div>'
+          : '');
+
+      var chip = document.getElementById('prep-chip');
+      if (chip) {
+        chip.className = 'chip' + (pr.done === pr.total ? ' chip-pos' : '');
+        chip.innerHTML = '<b>' + pr.done + '</b> of <b>' + pr.total + '</b> nailed down';
+      }
+    }
+
+    /* ---------------- the conversation ---------------- */
+    function paintTalk() {
+      var a = item();
+      v.querySelector('#talk').innerHTML =
+        '<div class="card assist-card prep-talk">' +
+          '<div class="assist-head">' +
+            '<b>' + (a.kind === 'gap' ? 'They asked for: ' : 'Your win: ') + esc(a.label) + '</b>' +
+            '<span class="hint">' + esc(a.ask) + '</span>' +
+          '</div>' +
+          '<div class="assist-log" id="log"></div>' +
+          '<form class="assist-in" id="ask-form">' +
+            '<input id="ask-q" placeholder="Answer in your own words" autocomplete="off" aria-label="Your answer">' +
+            '<button type="submit" aria-label="Send">↑</button></form>' +
+        '</div>' +
+        '<div class="row g2 wrap mt3">' +
+          '<button class="btn btn-secondary btn-sm" id="save-it">Save what I said</button>' +
+          '<button class="btn btn-ghost btn-sm" id="skip-it">Skip this one</button>' +
+        '</div>';
+      wireTalk();
+    }
+
+    function say(cls, text) {
+      var log = v.querySelector('#log');
+      log.insertAdjacentHTML('beforeend', '<div class="bubble ' + cls + '">' + esc(text) + '</div>');
+      log.scrollTop = log.scrollHeight;
+      return log.lastElementChild;
+    }
+
+    function open(id) {
+      openId = id;
+      history = [];
+      turns = 0;
+      paintAgenda();
+      paintTalk();
+
+      var a = item();
+      if (a.done && a.text) {
+        say('ai', 'You already answered this one:');
+        say('me', a.text);
+        say('ai', 'Say more and it gets replaced, or pick another on the left.');
+        return;
+      }
+      if (!AI.ready()) return say('ai', CANNED[a.kind][0]);
+
+      busy = true;
+      var b = say('ai', '…');
+      AI.prepTurn(c, a, [{ role: 'user', content: 'Ask me your first question.' }])
+        .then(function (out) { b.textContent = out.reply; history.push({ role: 'assistant', content: out.reply }); })
+        .catch(function () { b.textContent = CANNED[a.kind][0]; })
+        .then(function () { busy = false; });
+    }
+
+    function wireTalk() {
+      v.querySelector('#ask-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var i = v.querySelector('#ask-q');
+        var text = i.value.trim();
+        if (!text || busy) return;
+        say('me', text);
+        history.push({ role: 'user', content: text });
+        i.value = '';
+        turns += 1;
+
+        var a = item();
+        if (!AI.ready()) {
+          /* no model: bank what they typed and walk the canned questions */
+          Store.answerAgenda(c.id, a.id, history.filter(function (m) { return m.role === 'user'; })
+            .map(function (m) { return m.content; }).join(' '));
+          paintAgenda();
+          setTimeout(function () {
+            if (turns < CANNED[a.kind].length) say('ai', CANNED[a.kind][turns]);
+            else say('ai', 'Good. That is banked. Pick the next one on the left.');
+          }, 380);
+          return;
+        }
+
+        busy = true;
+        var b = say('ai', '…');
+        AI.prepTurn(c, a, history).then(function (out) {
+          b.textContent = out.reply;
+          history.push({ role: 'assistant', content: out.reply });
+          if (out.complete && out.story) {
+            Store.answerAgenda(c.id, a.id, out.story);
+            Store.completeTask(c.id, 't7');
+            paintAgenda();
+            say('ai', 'Saved. Pick the next one on the left.');
+          }
+        }).catch(function (err) {
+          b.textContent = 'That did not go through: ' + err.message;
+        }).then(function () { busy = false; });
+      });
+
+      v.querySelector('#save-it').addEventListener('click', function () {
+        var said = history.filter(function (m) { return m.role === 'user'; })
+          .map(function (m) { return m.content; }).join(' ');
+        if (!said) { UI.toast('Say something first.'); return; }
+        Store.answerAgenda(c.id, item().id, said);
+        Store.completeTask(c.id, 't7');
+        paintAgenda();
+        UI.toast('Saved in your words.');
+      });
+      v.querySelector('#skip-it').addEventListener('click', function () {
+        var next = agenda.filter(function (x) { return !x.done && x.id !== openId; })[0];
+        if (next) open(next.id);
+        else UI.toast('That is everything.');
+      });
+    }
+
+    UI.on(v, 'click', '[data-ag]', function (e, el) { open(el.dataset.ag); });
+
+    paintAgenda();
+    open(openId);
   };
 })(window, document);
 
@@ -5779,6 +6213,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     .add('/settings', Views.settings)
     .add('/templates', Views.templates)
     .add('/c/:id',          Views.opportunity)
+    .add('/c/:id/prep',     Views.prep)
     .add('/c/:id/people',   Views.people)
     .add('/c/:id/research', Views.research)
     .add('/c/:id/sequence', Views.sequence)
@@ -5795,6 +6230,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     if (cid) {
       items.push(
         { group: 'Go to', icon: '◆', label: 'Company summary', hint: 'G C', run: function () { Router.go('/c/' + cid); } },
+        { group: 'Go to', icon: '◍', label: 'Prep, the stories behind your wins', hint: 'G E', run: function () { Router.go('/c/' + cid + '/prep'); } },
         { group: 'Go to', icon: '◎', label: 'Contacts', hint: 'G P', run: function () { Router.go('/c/' + cid + '/people'); } },
         { group: 'Go to', icon: '◈', label: 'Research on the company and the people', hint: 'G R', run: function () { Router.go('/c/' + cid + '/research'); } },
         { group: 'Go to', icon: '≡', label: 'The fourteen day sequence', hint: 'G S', run: function () { Router.go('/c/' + cid + '/sequence'); } },
@@ -5839,6 +6275,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       else if (k === 'c' && cid) Router.go('/c/' + cid);
       else if (k === 'n') Router.go('/new');
       else if (k === 'p' && cid) Router.go('/c/' + cid + '/people');
+      else if (k === 'e' && cid) Router.go('/c/' + cid + '/prep');
       else if (k === 's' && cid) Router.go('/c/' + cid + '/sequence');
       else if (k === 'r' && cid) Router.go('/c/' + cid + '/research');
       else if (k === 't') Router.go('/templates');

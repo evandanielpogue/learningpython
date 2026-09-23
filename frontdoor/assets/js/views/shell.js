@@ -14,6 +14,7 @@
     ] },
     { group: 'company', needsCampaign: true, items: [
       { key: 'opp',      icon: '◆', label: 'Summary',  href: '/c/:id', hint: 'the checklist and the numbers', sc: 'G then C' },
+      { key: 'prep',     icon: '◍', label: 'Prep',     href: '/c/:id/prep', hint: 'the stories behind your wins, and the gaps', sc: 'G then E' },
       { key: 'people',   icon: '◎', label: 'Contacts', href: '/c/:id/people',   count: 'contacts', hint: 'the people you are working, ranked', sc: 'G then P' },
       { key: 'research', icon: '◈', label: 'Research', href: '/c/:id/research', hint: 'what they said recently, in public', sc: 'G then R' },
       { key: 'sequence', icon: '≡', label: 'Sequence', href: '/c/:id/sequence', count: 'steps', hint: 'the touches and the days between them', sc: 'G then S' },

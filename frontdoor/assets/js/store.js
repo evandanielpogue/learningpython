@@ -227,7 +227,8 @@
   function taskSet() {
     return [
       { id: 't1', text: 'Paste the job listing',   sub: 'We read it for you',                     on: false },
-      { id: 't2', text: 'Confirm what you lead with', sub: 'Three wins, matched to the listing',  on: false },
+      { id: 't2', text: 'Check the match', sub: 'What they asked for, what you have',       on: false },
+      { id: 't7', text: 'Nail down your stories', sub: 'The detail a bullet leaves out',      on: false },
       { id: 't3', text: 'Add your contacts',       sub: 'Start with the three we found',          on: false },
       { id: 't4', text: 'Read the research',       sub: 'What they said, recently, in public',    on: false },
       { id: 't5', text: 'Build the sequence',      sub: 'Ten touches over two weeks',             on: false },
@@ -248,6 +249,8 @@
       winIds: ['w1', 'w3', 'w2'],
       story: 'Brightline repriced to seat based in the middle of my best year. Forty per cent of the team left inside two quarters. I rewrote discovery around the new deal math, took cycles from 30 days to 70 without losing the number, and finished at 112%.',
       pageTemplate: 'case',
+      match: [],
+      agenda: [],
       angles: clone(ANGLES),
       contacts: clone(CONTACTS),
       suggested: clone(SUGGESTED),
@@ -336,6 +339,7 @@
       }
       var c = seedCampaign();
       c.winIds = Store.rankWins(ACME_LISTING).slice(0, 3).map(function (r) { return r.win.id; });
+      c.match = Store.matchLocally(Store.parseListing(ACME_LISTING).requirements, ACME_LISTING);
       c.sections = clone(SECTIONS);
       c.tasks[0].on = true;
       c.tasks[1].on = true;
@@ -381,7 +385,9 @@
       lines.forEach(function (l) {
         if (/^[-–•*]\s+/.test(l)) {
           var b = l.replace(/^[-–•*]\s+/, '').replace(/\.$/, '');
-          if (b.length > 4 && out.requirements.length < 8) out.requirements.push(b.slice(0, 80));
+          if (b.length > 4 && out.requirements.length < 8) {
+            out.requirements.push(b.length > 84 ? b.slice(0, 80).replace(/\s\S*$/, '') + '\u2026' : b);
+          }
         }
       });
 
@@ -425,6 +431,8 @@
         winIds: (data.winIds || ranked.slice(0, 3).map(function (r) { return r.win.id; })),
         story: data.story || '',
         pageTemplate: 'case',
+        match: [],
+        agenda: [],
         angles: [],
         contacts: [],
         suggested: Store.suggestFor(data.company || parsed.company, parsed.role),
@@ -467,6 +475,88 @@
           found: 'Overlap in your history', why: 'A warm forward beats a cold email every time. Ask them to paste two lines.',
           email: '', linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'An introduction' }
       ];
+    },
+
+    /* ---- what the listing asks for against what you have -----------------
+       The model does this properly. Without one, tags are matched against the
+       requirement text, which is blunt but honest about being blunt. ------ */
+    matchLocally: function (requirements, listing) {
+      var wins = state.profile.wins;
+      var STOP = /^(the|and|for|with|you|your|our|that|this|from|into|able|have|has|will|who|are|was|were|they|them|their|a|an|of|to|in|on|at|as|by|or|it|is|be|do|not|all|any|can|how|what|when|more|most|than|then|through|across|using|used|use|help|helps|work|works|working|new|next|every|each|per|up|out|off|over|under|about|also|its)$/;
+      function words(t) {
+        return String(t).toLowerCase().replace(/[^a-z0-9+ ]/g, ' ').split(/\s+/)
+          .filter(function (w) { return w.length > 2 && !STOP.test(w); });
+      }
+      return (requirements || []).map(function (r) {
+        var hay = String(r).toLowerCase();
+        var rw = words(r);
+        var hits = wins.map(function (w) {
+          var tagHits = (w.tags || []).filter(function (t) { return hay.indexOf(t) > -1; }).length;
+          var ww = words(w.text + ' ' + w.short);
+          var shared = rw.filter(function (x) { return ww.indexOf(x) > -1; }).length;
+          return { id: w.id, n: tagHits * 2 + shared };
+        }).filter(function (x) { return x.n; }).sort(function (a, b) { return b.n - a.n; });
+        return {
+          id: uid('req'), text: r,
+          priority: /\b(\d\+? years|must|required|minimum)\b/i.test(r) ? 'must' : 'nice',
+          winIds: hits.slice(0, 2).map(function (x) { return x.id; }),
+          strength: hits.length && hits[0].n >= 3 ? 'strong' : hits.length ? 'partial' : 'none',
+          note: ''
+        };
+      });
+    },
+
+    setMatch: function (cid, match) {
+      var c = Store.campaign(cid); if (!c) return;
+      c.match = match || [];
+      Store.save();
+    },
+    matchScore: function (c) {
+      var m = (c && c.match) || [];
+      return {
+        total: m.length,
+        covered: m.filter(function (r) { return r.strength !== 'none'; }).length,
+        gaps: m.filter(function (r) { return r.strength === 'none'; })
+      };
+    },
+
+    /* ---- the things worth nailing down before you write ------------------ */
+    buildAgenda: function (cid) {
+      var c = Store.campaign(cid); if (!c) return [];
+      if (c.agenda && c.agenda.length) return c.agenda;
+      var items = [];
+
+      /* one per win you are leading with: the detail the bullet leaves out */
+      Store.campaignWins(c).forEach(function (w) {
+        items.push({ id: uid('ag'), kind: 'story', ref: w.id,
+          label: w.text, ask: 'What actually happened behind this', text: '', done: false });
+      });
+
+      /* one per thing the listing wants that nothing on the resume answers */
+      Store.matchScore(c).gaps.slice(0, 4).forEach(function (r) {
+        items.push({ id: uid('ag'), kind: 'gap', ref: r.id,
+          label: r.text, ask: 'Nothing on your resume answers this', text: '', done: false });
+      });
+
+      c.agenda = items;
+      Store.save();
+      return items;
+    },
+    answerAgenda: function (cid, id, text) {
+      var c = Store.campaign(cid); if (!c) return;
+      var it = (c.agenda || []).filter(function (x) { return x.id === id; })[0];
+      if (!it) return;
+      it.text = text;
+      it.done = !!(text && text.trim());
+      Store.save();
+    },
+    agendaProgress: function (c) {
+      var a = (c && c.agenda) || [];
+      return { done: a.filter(function (x) { return x.done; }).length, total: a.length };
+    },
+    /* everything they have told us, for the page and the messages */
+    stories: function (c) {
+      return ((c && c.agenda) || []).filter(function (x) { return x.done && x.text; });
     },
 
     /* ---- wins on an opportunity ------------------------------------------ */

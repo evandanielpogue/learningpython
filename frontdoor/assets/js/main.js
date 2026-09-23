@@ -17,6 +17,7 @@
     .add('/settings', Views.settings)
     .add('/templates', Views.templates)
     .add('/c/:id',          Views.opportunity)
+    .add('/c/:id/prep',     Views.prep)
     .add('/c/:id/people',   Views.people)
     .add('/c/:id/research', Views.research)
     .add('/c/:id/sequence', Views.sequence)
@@ -33,6 +34,7 @@
     if (cid) {
       items.push(
         { group: 'Go to', icon: '◆', label: 'Company summary', hint: 'G C', run: function () { Router.go('/c/' + cid); } },
+        { group: 'Go to', icon: '◍', label: 'Prep, the stories behind your wins', hint: 'G E', run: function () { Router.go('/c/' + cid + '/prep'); } },
         { group: 'Go to', icon: '◎', label: 'Contacts', hint: 'G P', run: function () { Router.go('/c/' + cid + '/people'); } },
         { group: 'Go to', icon: '◈', label: 'Research on the company and the people', hint: 'G R', run: function () { Router.go('/c/' + cid + '/research'); } },
         { group: 'Go to', icon: '≡', label: 'The fourteen day sequence', hint: 'G S', run: function () { Router.go('/c/' + cid + '/sequence'); } },
@@ -77,6 +79,7 @@
       else if (k === 'c' && cid) Router.go('/c/' + cid);
       else if (k === 'n') Router.go('/new');
       else if (k === 'p' && cid) Router.go('/c/' + cid + '/people');
+      else if (k === 'e' && cid) Router.go('/c/' + cid + '/prep');
       else if (k === 's' && cid) Router.go('/c/' + cid + '/sequence');
       else if (k === 'r' && cid) Router.go('/c/' + cid + '/research');
       else if (k === 't') Router.go('/templates');
