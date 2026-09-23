@@ -29,7 +29,7 @@
     root.innerHTML =
       '<div class="auth">' +
         '<div class="auth-main"><div class="auth-box">' +
-          '<div class="brand"><span class="glyph"></span><b>Frontdoor</b></div>' +
+          '<div class="brand">' + Icon.mark(26) + '<b>Frontdoor</b></div>' +
           '<h1>' + (signup ? 'Start with one company' : 'Welcome back') + '</h1>' +
           '<p class="sub">' + (signup
             ? 'Pick a company you actually want to work at. We will build the rest around it.'

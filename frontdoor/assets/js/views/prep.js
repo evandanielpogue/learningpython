@@ -40,6 +40,7 @@
                '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/page">See the page</a>',
       html: '<div class="page-head"><h1>Before you write</h1>' +
             '<p>A résumé bullet is the headline. This is where the rest of it comes out, one thing at a time.</p></div>' +
+            UI.tipHTML('prep-specifics') +
             (agenda.length
               ? '<div class="prep"><div id="agenda"></div><div id="talk"></div></div>'
               : '<div class="card"><div class="empty"><span class="art">◈</span>' +

@@ -29,6 +29,7 @@
       html:
         '<div class="page-head"><h1>Who you are working</h1>' +
         '<p>Ranked top to bottom. The order is the order you reach out in, so put the person with the least to lose from helping you at the top.</p></div>' +
+        UI.tipHTML('find-contacts', { q: 'hiring ' + c.role + ' at ' + c.company }) +
         '<div id="found"></div>' +
         '<div class="split"><div id="list"></div><div id="detail"></div></div>'
     });

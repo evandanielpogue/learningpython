@@ -12,7 +12,8 @@
 
   function chIcon(ch) {
     if (ch === 'LinkedIn') return UI.liMark(11);
-    return { Email: '✉', Call: '☏', Reply: '↩', ATS: '▤', Text: '💬' }[ch] || '•';
+    var name = { Email: 'email', Call: 'call', Reply: 'reply', ATS: 'ats', Text: 'text' }[ch];
+    return name ? Icon.svg(name, 12) : '';
   }
 
   var EDITS = [
@@ -50,6 +51,7 @@
                '<button class="btn btn-secondary btn-sm" id="preview">Preview</button>',
       html: '<div class="page-head"><h1>Sequence</h1>' +
             '<p>Ten touches over two weeks. Change the order, the timing, who each one goes to, and what it says.</p></div>' +
+            UI.tipHTML('sequence-touches') +
             '<div id="seq-mount"></div>'
     });
 

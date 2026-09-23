@@ -22,6 +22,7 @@
       html:
         '<div class="page-head"><h1>What they said, recently, in public</h1>' +
         '<p>Nobody replies to a message that could have been sent to anyone. Take a line from here and the first sentence is already specific.</p></div>' +
+        UI.tipHTML('research-where') +
         '<div class="subtabs" id="subtabs"></div>' +
         '<div id="feed"></div>'
     });

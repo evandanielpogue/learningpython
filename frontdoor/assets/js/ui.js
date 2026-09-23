@@ -34,6 +34,62 @@
       'c0-1.24-.02-2.83-1.75-2.83-1.75 0-2.02 1.34-2.02 2.74v5.28H9.6v-11z"/></svg></span>';
   };
 
+  /* ---- tips ------------------------------------------------------------
+     A tactic worth knowing, shown where you would use it. Dismissed once and
+     it stays dismissed, because a tip you have read is clutter. -------- */
+  var TIPS = {
+    'find-contacts': {
+      title: 'How to find who is actually hiring',
+      body: 'Search LinkedIn for <b>hiring [role] at [company]</b> and filter to Posts. ' +
+        'The people posting the role are the hiring manager and the recruiter, and a reply to ' +
+        'their post lands better than anything sent through the portal.',
+      cta: { label: 'Run that search', href: 'https://www.linkedin.com/search/results/content/?keywords=' }
+    },
+    'prep-specifics': {
+      title: 'Numbers beat adjectives',
+      body: 'Anything you would say out loud in an interview belongs here. ' +
+        'What broke, what you did, what it cost, how it ended. The number matters less than the fact you remember it.'
+    },
+    'research-where': {
+      title: 'Where the good lines come from',
+      body: 'Their last three posts, a podcast, the pricing page, the changelog, the careers page. ' +
+        'Anything they said in public this quarter is fair game and almost nobody bothers to read it.'
+    },
+    'sequence-touches': {
+      title: 'Two touches per person, then stop',
+      body: 'Three is where helpful turns into a problem. If two messages and a reply get you nothing, ' +
+        'the answer is no and the next company is worth more than the third message.'
+    }
+  };
+
+  UI.tipSeen = function (id) {
+    try { return window.localStorage.getItem('frontdoor.tip.' + id) === '1'; }
+    catch (e) { return false; }
+  };
+  /* opts.q fills a search-shaped cta in, so the tip is one click from useful */
+  UI.tipHTML = function (id, opts) {
+    var t = TIPS[id];
+    if (!t || UI.tipSeen(id)) return '';
+    var href = t.cta ? t.cta.href + (opts && opts.q ? encodeURIComponent(opts.q) : '') : '';
+    return '<div class="tip" data-tip="' + id + '">' +
+      '<span class="tip-ic">' + (window.Icon ? Icon.svg('idea', 16) : '') + '</span>' +
+      '<div class="tip-body"><b>' + UI.esc(t.title) + '</b><p>' + t.body + '</p>' +
+        (t.cta ? '<a class="tip-cta" href="' + UI.esc(href) + '" target="_blank" rel="noopener noreferrer">' +
+          UI.esc(t.cta.label) + ' \u2197</a>' : '') +
+      '</div>' +
+      '<button class="icon-btn" data-tip-close="' + id + '" aria-label="Dismiss this tip" title="Got it">' +
+        (window.Icon ? Icon.svg('close', 14) : '\u2715') + '</button></div>';
+  };
+  /* one listener for every tip on the page */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-tip-close]');
+    if (!b) return;
+    var id = b.dataset.tipClose;
+    try { window.localStorage.setItem('frontdoor.tip.' + id, '1'); } catch (err) {}
+    var box = b.closest('.tip');
+    if (box) { box.classList.add('going'); setTimeout(function () { box.remove(); }, 180); }
+  });
+
   /* ---- toasts --------------------------------------------------------- */
   var toastHost;
   UI.toast = function (msg, kind) {

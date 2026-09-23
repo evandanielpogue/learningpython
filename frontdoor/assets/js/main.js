@@ -16,6 +16,7 @@
     .add('/import',  Views.importer)
     .add('/settings', Views.settings)
     .add('/templates', Views.templates)
+    .add('/brand',     Views.brand)
     .add('/c/:id',          Views.opportunity)
     .add('/c/:id/prep',     Views.prep)
     .add('/c/:id/people',   Views.people)
@@ -44,6 +45,7 @@
     items.push(
       { group: 'Go to', icon: '❏', label: 'Message templates', run: function () { Router.go('/templates'); } },
       { group: 'Go to', icon: '⚙', label: 'Settings', run: function () { Router.go('/settings'); } },
+      { group: 'Go to', icon: '◆', label: 'The brand: colours, icons, type', run: function () { Router.go('/brand'); } },
       { group: 'Do', icon: '↑', label: 'Import a résumé or LinkedIn profile', run: function () { Router.go('/import'); } }
     );
     if (cid) {

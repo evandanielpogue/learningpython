@@ -220,7 +220,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   .nav-group { margin-bottom: var(--s-3); }
   .nav-item { justify-content: center; padding: 9px 0; gap: 0; }
   .nav-item .nav-label, .nav-item .nav-count { display: none; }
-  .nav-item .nav-ico { font-size: 15px; }
+  .nav-item .nav-ico { width: 18px; }
   .user-btn { justify-content: center; padding: var(--s-2) 0; }
   /* specificity has to beat the desktop rule further down the file, or the
      name and email keep laying out behind the collapsed rail and push the
@@ -237,15 +237,16 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 }
 
 .brand { display: flex; align-items: center; gap: var(--s-2); padding: 0 var(--s-2); flex: none; }
-.brand .glyph {
-  width: 24px; height: 24px; border-radius: var(--r-1); background: var(--solid);
-  position: relative; flex: none;
-}
-.brand .glyph::after {
-  content: ""; position: absolute; top: 7px; right: 6px; width: 9px; height: 9px;
-  border-radius: 2px; background: var(--ac);
-}
+.brand .mark { flex: none; display: block; }
 .brand b { font-size: var(--fs-md); font-weight: 650; letter-spacing: -.03em; }
+
+/* every icon is currentColor on a 24 grid, so it takes the colour of the
+   thing it sits in and nothing else */
+.ic { display: block; flex: none; }
+.nav-item .nav-ico { width: 18px; height: 18px; display: grid; place-items: center; color: var(--ink-3); flex: none; }
+.nav-item[aria-current="page"] .nav-ico { color: var(--brand); }
+.nav-item:hover .nav-ico { color: var(--ink-2); }
+.sc-ch .ic { display: inline-block; vertical-align: -2px; }
 
 .side-search {
   display: flex; align-items: center; gap: var(--s-2); width: 100%;
@@ -270,8 +271,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 }
 .nav-item:hover { background: var(--sunk); color: var(--ink); text-decoration: none; }
 .nav-item[aria-current="page"] { background: var(--sunk); color: var(--ink); font-weight: 600; }
-.nav-item .nav-ico { width: 16px; display: grid; place-items: center; color: var(--ink-3); flex: none; font-size: 13px; }
-.nav-item[aria-current="page"] .nav-ico { color: var(--ac); }
+
 .nav-item .nav-count { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--ink-4); }
 
 .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding-top: var(--s-3); }
@@ -1394,3 +1394,63 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .prep-talk .assist-head b { font-size: var(--fs-sm); }
 /* bubbles hug their text even when the log is told to fill the card */
 .prep-talk .assist-log { align-content: start; }
+
+/* ---- tips ---------------------------------------------------------------
+   A tactic where you would use it. Brand wash, never a modal, gone for good
+   once dismissed. ------------------------------------------------------- */
+.tip {
+  display: grid; grid-template-columns: 18px minmax(0, 1fr) 26px; gap: var(--s-3);
+  align-items: start; padding: var(--s-4); margin-bottom: var(--s-4);
+  background: var(--brand-wash); border: 1px solid var(--brand-line);
+  border-radius: var(--r-3); animation: tipIn var(--t-3) var(--ease);
+}
+@keyframes tipIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.tip.going { opacity: 0; transform: translateY(-4px); transition: opacity var(--t-2) var(--ease), transform var(--t-2) var(--ease); }
+.tip-ic { color: var(--brand); margin-top: 1px; }
+.tip-body b { display: block; font-size: var(--fs-base); font-weight: 620; color: var(--brand-ink); margin-bottom: 3px; }
+.tip-body p { font-size: var(--fs-sm); line-height: 1.6; color: var(--ink-2); }
+.tip-body p b { display: inline; font-family: var(--mono); font-size: 12px; font-weight: 500;
+  background: var(--panel); border: 1px solid var(--brand-line); border-radius: var(--r-1);
+  padding: 1px 5px; color: var(--brand-ink); }
+.tip-cta {
+  display: inline-block; margin-top: var(--s-3); font-size: var(--fs-sm); font-weight: 550;
+  color: var(--brand-ink);
+}
+.tip .icon-btn { color: var(--brand); }
+.tip .icon-btn:hover { background: var(--panel); }
+
+/* ---- the brand reference page ------------------------------------------- */
+.brandhero { display: flex; gap: var(--s-7); align-items: center; flex-wrap: wrap; margin-bottom: var(--s-6); }
+.brandhero-mark {
+  width: 132px; height: 132px; display: grid; place-items: center; flex: none;
+  background: var(--sunk); border: 1px solid var(--line); border-radius: var(--r-4);
+}
+.brand-line { font-size: var(--fs-lg); color: var(--brand); font-weight: 550; margin-top: 2px; }
+.markrow { display: flex; gap: var(--s-3); flex-wrap: wrap; padding-top: var(--s-5); border-top: 1px solid var(--line); }
+.markbox {
+  width: 80px; height: 80px; display: grid; place-items: center; gap: 4px; align-content: center;
+  border: 1px solid var(--line); border-radius: var(--r-2); background: var(--panel);
+}
+.markbox em { font-style: normal; font-family: var(--mono); font-size: 10px; color: var(--ink-4); }
+.markbox.dark { background: var(--solid); color: #fff; }
+.markbox.dark em { color: rgba(255, 255, 255, .5); }
+
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--s-3); }
+.swatch {
+  display: grid; gap: 2px; padding: var(--s-3); border: 1px solid var(--line);
+  border-radius: var(--r-2); background: var(--panel);
+}
+.sw-chip { height: 42px; border-radius: var(--r-1); border: 1px solid rgba(15, 18, 20, .08); margin-bottom: var(--s-2); }
+.swatch b { font-size: var(--fs-sm); font-weight: 600; }
+.swatch code { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+.swatch em { font-style: normal; font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.45; }
+.sw-tok { font-size: 10px; color: var(--ink-4); margin-top: 2px; }
+
+.iconwall { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: var(--s-2); }
+.iconcell {
+  display: grid; place-items: center; gap: 6px; padding: var(--s-4) var(--s-2);
+  border: 1px solid var(--line); border-radius: var(--r-2); color: var(--ink-2);
+  transition: color var(--t-1) var(--ease), border-color var(--t-1) var(--ease);
+}
+.iconcell:hover { color: var(--brand); border-color: var(--brand-line); }
+.iconcell em { font-style: normal; font-family: var(--mono); font-size: 9.5px; color: var(--ink-4); }

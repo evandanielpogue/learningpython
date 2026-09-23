@@ -1,6 +1,19 @@
 /* ==========================================================================
    Frontdoor — design tokens
-   Light-mode product. Every value is defined here; nothing hard-codes a colour.
+
+   The brand is a door with the light left on. Two colours carry it:
+
+     Threshold  a deep teal blue. Every link, focus ring, active row and
+                number you are meant to read. Dark enough to set text on
+                white (5.8:1) and to take white text back (5.8:1).
+     Porch      a warm amber. The light in the mark, and the mark only, plus
+                anything asking for attention. It is 2.8:1 on white, so it
+                never carries text; the warn ink does that.
+
+   Ink is near black with a cool cast, because the door is the solid thing on
+   the page and a button should look like the door, not like a link.
+
+   Nothing hard-codes a colour. Change it here and it changes everywhere.
    ========================================================================== */
 
 :root {
@@ -12,7 +25,7 @@
   --overlay:       rgba(17, 18, 21, .38);
 
   /* ---- ink ------------------------------------------------------------ */
-  --ink:           #111215;
+  --ink:           #0F1214;
   --ink-2:         #555963;
   --ink-3:         #868B96;
   --ink-4:         #B0B4BD;
@@ -23,27 +36,41 @@
   --line-2:        #D6D8DD;
   --line-3:        #C2C5CC;
 
-  /* ---- accent (selection, focus, active state, links) ----------------- */
-  --ac:            #4C6FFF;
-  --ac-hover:      #3A5BEA;
-  --ac-wash:       #EEF2FF;
-  --ac-line:       #C7D3FF;
+  /* ---- brand ---------------------------------------------------------- */
+  /* Threshold: links, focus, the active row, any number worth reading */
+  --brand:         #0D6E88;   /* 5.8:1 on white, both directions */
+  --brand-deep:    #0A5E76;   /* hover, pressed */
+  --brand-ink:     #0B5265;   /* text on a brand wash */
+  --brand-wash:    #E9F3F7;
+  --brand-line:    #BCD9E4;
+  /* Porch: the light in the mark. Graphic use only, never text on white */
+  --porch:         #D98A18;
+  --porch-deep:    #B4720C;
+  --porch-wash:    #FDF3E3;
 
-  /* ---- primary action is near-black, not accent ----------------------- */
-  --solid:         #17181C;
-  --solid-hover:   #000000;
+  /* the app refers to the accent by role, so the brand can move under it */
+  --ac:            var(--brand);
+  --ac-hover:      var(--brand-deep);
+  --ac-wash:       var(--brand-wash);
+  --ac-line:       var(--brand-line);
+  --ac-edge:       var(--brand-line);
+
+  /* ---- primary action is the door, not a link ------------------------- */
+  --solid:         #15181C;
+  --solid-hover:   #0A0C0F;
 
   /* ---- semantic ------------------------------------------------------- */
-  --pos:           #0F8A5F;   --pos-wash: #E4F4EC;   --pos-line: #B7E2CE;
-  --warn:          #A66A00;   --warn-wash: #FCF2E0;  --warn-line: #EFD8A8;
-  --neg:           #C8372E;   --neg-wash: #FCEAE8;   --neg-line: #F2C6C1;
+  --pos:           #0F7A50;   --pos-wash: #E5F3EC;   --pos-line: #B4DEC9;
+  --warn:          #9A6206;   --warn-wash: #FDF3E3;  --warn-line: #EDD3A2;
+  --neg:           #BE3226;   --neg-wash: #FBEAE8;   --neg-line: #F0C4BF;
 
-  /* ---- persona colours (assigned, never decorative) ------------------- */
-  --p-peer:        #0F8A5F;
-  --p-recruiter:   #7B4FD0;
-  --p-manager:     #4C6FFF;
-  --p-exec:        #A66A00;
-  --p-tie:         #BE4463;
+  /* ---- persona colours (assigned, never decorative) -------------------
+     Five people, five hues, all dark enough to take white initials. */
+  --p-peer:        #14785C;   /* the one with least to lose  */
+  --p-recruiter:   #6B4FC4;   /* the one who owns the req    */
+  --p-manager:     #0D6E88;   /* the one who owns the number */
+  --p-exec:        #9A6206;   /* the one above them          */
+  --p-tie:         #B03F63;   /* the one who already knows you */
 
   /* ---- spacing: 4px base ---------------------------------------------- */
   --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 20px;

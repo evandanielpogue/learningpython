@@ -12,7 +12,20 @@
 /* assets/css/tokens.css */
 /* ==========================================================================
    Frontdoor — design tokens
-   Light-mode product. Every value is defined here; nothing hard-codes a colour.
+
+   The brand is a door with the light left on. Two colours carry it:
+
+     Threshold  a deep teal blue. Every link, focus ring, active row and
+                number you are meant to read. Dark enough to set text on
+                white (5.8:1) and to take white text back (5.8:1).
+     Porch      a warm amber. The light in the mark, and the mark only, plus
+                anything asking for attention. It is 2.8:1 on white, so it
+                never carries text; the warn ink does that.
+
+   Ink is near black with a cool cast, because the door is the solid thing on
+   the page and a button should look like the door, not like a link.
+
+   Nothing hard-codes a colour. Change it here and it changes everywhere.
    ========================================================================== */
 
 :root {
@@ -24,7 +37,7 @@
   --overlay:       rgba(17, 18, 21, .38);
 
   /* ---- ink ------------------------------------------------------------ */
-  --ink:           #111215;
+  --ink:           #0F1214;
   --ink-2:         #555963;
   --ink-3:         #868B96;
   --ink-4:         #B0B4BD;
@@ -35,27 +48,41 @@
   --line-2:        #D6D8DD;
   --line-3:        #C2C5CC;
 
-  /* ---- accent (selection, focus, active state, links) ----------------- */
-  --ac:            #4C6FFF;
-  --ac-hover:      #3A5BEA;
-  --ac-wash:       #EEF2FF;
-  --ac-line:       #C7D3FF;
+  /* ---- brand ---------------------------------------------------------- */
+  /* Threshold: links, focus, the active row, any number worth reading */
+  --brand:         #0D6E88;   /* 5.8:1 on white, both directions */
+  --brand-deep:    #0A5E76;   /* hover, pressed */
+  --brand-ink:     #0B5265;   /* text on a brand wash */
+  --brand-wash:    #E9F3F7;
+  --brand-line:    #BCD9E4;
+  /* Porch: the light in the mark. Graphic use only, never text on white */
+  --porch:         #D98A18;
+  --porch-deep:    #B4720C;
+  --porch-wash:    #FDF3E3;
 
-  /* ---- primary action is near-black, not accent ----------------------- */
-  --solid:         #17181C;
-  --solid-hover:   #000000;
+  /* the app refers to the accent by role, so the brand can move under it */
+  --ac:            var(--brand);
+  --ac-hover:      var(--brand-deep);
+  --ac-wash:       var(--brand-wash);
+  --ac-line:       var(--brand-line);
+  --ac-edge:       var(--brand-line);
+
+  /* ---- primary action is the door, not a link ------------------------- */
+  --solid:         #15181C;
+  --solid-hover:   #0A0C0F;
 
   /* ---- semantic ------------------------------------------------------- */
-  --pos:           #0F8A5F;   --pos-wash: #E4F4EC;   --pos-line: #B7E2CE;
-  --warn:          #A66A00;   --warn-wash: #FCF2E0;  --warn-line: #EFD8A8;
-  --neg:           #C8372E;   --neg-wash: #FCEAE8;   --neg-line: #F2C6C1;
+  --pos:           #0F7A50;   --pos-wash: #E5F3EC;   --pos-line: #B4DEC9;
+  --warn:          #9A6206;   --warn-wash: #FDF3E3;  --warn-line: #EDD3A2;
+  --neg:           #BE3226;   --neg-wash: #FBEAE8;   --neg-line: #F0C4BF;
 
-  /* ---- persona colours (assigned, never decorative) ------------------- */
-  --p-peer:        #0F8A5F;
-  --p-recruiter:   #7B4FD0;
-  --p-manager:     #4C6FFF;
-  --p-exec:        #A66A00;
-  --p-tie:         #BE4463;
+  /* ---- persona colours (assigned, never decorative) -------------------
+     Five people, five hues, all dark enough to take white initials. */
+  --p-peer:        #14785C;   /* the one with least to lose  */
+  --p-recruiter:   #6B4FC4;   /* the one who owns the req    */
+  --p-manager:     #0D6E88;   /* the one who owns the number */
+  --p-exec:        #9A6206;   /* the one above them          */
+  --p-tie:         #B03F63;   /* the one who already knows you */
 
   /* ---- spacing: 4px base ---------------------------------------------- */
   --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 20px;
@@ -323,7 +350,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   .nav-group { margin-bottom: var(--s-3); }
   .nav-item { justify-content: center; padding: 9px 0; gap: 0; }
   .nav-item .nav-label, .nav-item .nav-count { display: none; }
-  .nav-item .nav-ico { font-size: 15px; }
+  .nav-item .nav-ico { width: 18px; }
   .user-btn { justify-content: center; padding: var(--s-2) 0; }
   /* specificity has to beat the desktop rule further down the file, or the
      name and email keep laying out behind the collapsed rail and push the
@@ -340,15 +367,16 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 }
 
 .brand { display: flex; align-items: center; gap: var(--s-2); padding: 0 var(--s-2); flex: none; }
-.brand .glyph {
-  width: 24px; height: 24px; border-radius: var(--r-1); background: var(--solid);
-  position: relative; flex: none;
-}
-.brand .glyph::after {
-  content: ""; position: absolute; top: 7px; right: 6px; width: 9px; height: 9px;
-  border-radius: 2px; background: var(--ac);
-}
+.brand .mark { flex: none; display: block; }
 .brand b { font-size: var(--fs-md); font-weight: 650; letter-spacing: -.03em; }
+
+/* every icon is currentColor on a 24 grid, so it takes the colour of the
+   thing it sits in and nothing else */
+.ic { display: block; flex: none; }
+.nav-item .nav-ico { width: 18px; height: 18px; display: grid; place-items: center; color: var(--ink-3); flex: none; }
+.nav-item[aria-current="page"] .nav-ico { color: var(--brand); }
+.nav-item:hover .nav-ico { color: var(--ink-2); }
+.sc-ch .ic { display: inline-block; vertical-align: -2px; }
 
 .side-search {
   display: flex; align-items: center; gap: var(--s-2); width: 100%;
@@ -373,8 +401,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 }
 .nav-item:hover { background: var(--sunk); color: var(--ink); text-decoration: none; }
 .nav-item[aria-current="page"] { background: var(--sunk); color: var(--ink); font-weight: 600; }
-.nav-item .nav-ico { width: 16px; display: grid; place-items: center; color: var(--ink-3); flex: none; font-size: 13px; }
-.nav-item[aria-current="page"] .nav-ico { color: var(--ac); }
+
 .nav-item .nav-count { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--ink-4); }
 
 .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding-top: var(--s-3); }
@@ -1498,6 +1525,66 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 /* bubbles hug their text even when the log is told to fill the card */
 .prep-talk .assist-log { align-content: start; }
 
+/* ---- tips ---------------------------------------------------------------
+   A tactic where you would use it. Brand wash, never a modal, gone for good
+   once dismissed. ------------------------------------------------------- */
+.tip {
+  display: grid; grid-template-columns: 18px minmax(0, 1fr) 26px; gap: var(--s-3);
+  align-items: start; padding: var(--s-4); margin-bottom: var(--s-4);
+  background: var(--brand-wash); border: 1px solid var(--brand-line);
+  border-radius: var(--r-3); animation: tipIn var(--t-3) var(--ease);
+}
+@keyframes tipIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.tip.going { opacity: 0; transform: translateY(-4px); transition: opacity var(--t-2) var(--ease), transform var(--t-2) var(--ease); }
+.tip-ic { color: var(--brand); margin-top: 1px; }
+.tip-body b { display: block; font-size: var(--fs-base); font-weight: 620; color: var(--brand-ink); margin-bottom: 3px; }
+.tip-body p { font-size: var(--fs-sm); line-height: 1.6; color: var(--ink-2); }
+.tip-body p b { display: inline; font-family: var(--mono); font-size: 12px; font-weight: 500;
+  background: var(--panel); border: 1px solid var(--brand-line); border-radius: var(--r-1);
+  padding: 1px 5px; color: var(--brand-ink); }
+.tip-cta {
+  display: inline-block; margin-top: var(--s-3); font-size: var(--fs-sm); font-weight: 550;
+  color: var(--brand-ink);
+}
+.tip .icon-btn { color: var(--brand); }
+.tip .icon-btn:hover { background: var(--panel); }
+
+/* ---- the brand reference page ------------------------------------------- */
+.brandhero { display: flex; gap: var(--s-7); align-items: center; flex-wrap: wrap; margin-bottom: var(--s-6); }
+.brandhero-mark {
+  width: 132px; height: 132px; display: grid; place-items: center; flex: none;
+  background: var(--sunk); border: 1px solid var(--line); border-radius: var(--r-4);
+}
+.brand-line { font-size: var(--fs-lg); color: var(--brand); font-weight: 550; margin-top: 2px; }
+.markrow { display: flex; gap: var(--s-3); flex-wrap: wrap; padding-top: var(--s-5); border-top: 1px solid var(--line); }
+.markbox {
+  width: 80px; height: 80px; display: grid; place-items: center; gap: 4px; align-content: center;
+  border: 1px solid var(--line); border-radius: var(--r-2); background: var(--panel);
+}
+.markbox em { font-style: normal; font-family: var(--mono); font-size: 10px; color: var(--ink-4); }
+.markbox.dark { background: var(--solid); color: #fff; }
+.markbox.dark em { color: rgba(255, 255, 255, .5); }
+
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--s-3); }
+.swatch {
+  display: grid; gap: 2px; padding: var(--s-3); border: 1px solid var(--line);
+  border-radius: var(--r-2); background: var(--panel);
+}
+.sw-chip { height: 42px; border-radius: var(--r-1); border: 1px solid rgba(15, 18, 20, .08); margin-bottom: var(--s-2); }
+.swatch b { font-size: var(--fs-sm); font-weight: 600; }
+.swatch code { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+.swatch em { font-style: normal; font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.45; }
+.sw-tok { font-size: 10px; color: var(--ink-4); margin-top: 2px; }
+
+.iconwall { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: var(--s-2); }
+.iconcell {
+  display: grid; place-items: center; gap: 6px; padding: var(--s-4) var(--s-2);
+  border: 1px solid var(--line); border-radius: var(--r-2); color: var(--ink-2);
+  transition: color var(--t-1) var(--ease), border-color var(--t-1) var(--ease);
+}
+.iconcell:hover { color: var(--brand); border-color: var(--brand-line); }
+.iconcell em { font-style: normal; font-family: var(--mono); font-size: 9.5px; color: var(--ink-4); }
+
 </style>
 </head>
 <body>
@@ -1505,7 +1592,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   <!-- Boot frame. Replaced by the router on first resolve. -->
   <div class="auth">
     <div class="auth-main"><div class="auth-box">
-      <div class="brand"><span class="glyph"></span><b>Frontdoor</b></div>
+      <div class="brand"><svg class="mark" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M4 4.4A2.4 2.4 0 0 1 6.4 2h7.2A2.4 2.4 0 0 1 16 4.4V22H4Z" fill="#15181C"/><rect x="18" y="2" width="2.6" height="20" rx="1.3" fill="#D98A18"/><circle cx="12.9" cy="12.6" r="1.25" fill="#fff"/></svg><b>Frontdoor</b></div>
       <h1>Welcome back</h1>
       <p class="sub">Loading your workspace.</p>
       <div class="col g3" aria-hidden="true">
@@ -1524,6 +1611,96 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   </div>
 </noscript>
 <script>
+/* assets/js/icons.js */
+/* ==========================================================================
+   icons.js — the icon set and the mark.
+
+   One 24 grid, one 1.7 stroke, round caps and joins, drawn to read at 16px.
+   Everything inherits currentColor, so an icon is coloured by the thing it
+   sits in and never carries a colour of its own. Text glyphs were doing this
+   job before, which meant the set changed shape with the font.
+   ========================================================================== */
+(function (window) {
+  'use strict';
+
+  /* paths only; the wrapper supplies the svg, stroke and size */
+  var P = {
+    /* navigation */
+    overview:  '<path d="M4 6.5h6.5v5H4zM13.5 6.5H20v11h-6.5zM4 14.5h6.5v3H4z"/>',
+    company:   '<path d="M4.5 20V5.2a1.2 1.2 0 0 1 1.2-1.2h7.6a1.2 1.2 0 0 1 1.2 1.2V20"/><path d="M14.5 10.5h3.8A1.2 1.2 0 0 1 19.5 11.7V20"/><path d="M3 20h18M8 8h3M8 11.5h3M8 15h3"/>',
+    prep:      '<path d="M20 14.5a2 2 0 0 1-2 2h-6.5L7 20v-3.5H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2Z"/><path d="M9 8.5h6M9 12h3.5"/>',
+    contacts:  '<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/><path d="M16 5.8a3 3 0 0 1 0 5.4M17.5 14.6a5.5 5.5 0 0 1 3 4.9"/>',
+    research:  '<circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8 20.5 20.5"/><path d="M8.6 11.4l1.8 1.8 3.4-3.6"/>',
+    sequence:  '<circle cx="6" cy="6.5" r="2"/><circle cx="6" cy="17.5" r="2"/><path d="M6 8.5v7"/><path d="M11 6.5h9M11 17.5h9M11 12h6"/>',
+    page:      '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9h17M7 13h6M7 16h9"/>',
+    templates: '<rect x="7.5" y="3.5" width="13" height="13" rx="2"/><path d="M16.5 20.5h-10a3 3 0 0 1-3-3v-10"/>',
+    settings:  '<path d="M4 7.5h4M12.5 7.5H20M4 16.5h9M17 16.5h3"/><circle cx="10.2" cy="7.5" r="2.2"/><circle cx="14.8" cy="16.5" r="2.2"/>',
+    search:    '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/>',
+
+    /* channels */
+    email:     '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.6 6.5 12 13l8.4-6.5"/>',
+    call:      '<path d="M6.3 4h3l1.6 4-2 1.4a10.5 10.5 0 0 0 5.7 5.7l1.4-2 4 1.6v3a1.7 1.7 0 0 1-1.9 1.7A15.6 15.6 0 0 1 4.6 5.9 1.7 1.7 0 0 1 6.3 4Z"/>',
+    reply:     '<path d="M9 5.5 3.5 11 9 16.5"/><path d="M3.5 11h10.8a5.7 5.7 0 0 1 5.7 5.7V19"/>',
+    ats:       '<path d="M3.5 13.5h4l1.2 2.5h6.6l1.2-2.5h4"/><path d="M5.6 5.2A1.5 1.5 0 0 1 7 4.2h10a1.5 1.5 0 0 1 1.4 1l2.1 8.3v4A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5v-4Z"/>',
+    text:      '<path d="M20.5 13.5a2 2 0 0 1-2 2H9l-4.5 3.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2Z"/>',
+
+    /* actions and states */
+    plus:      '<path d="M12 5v14M5 12h14"/>',
+    arrow:     '<path d="M4.5 12h14M13 6.5 18.5 12 13 17.5"/>',
+    check:     '<path d="M5 12.5 9.5 17 19 7"/>',
+    upload:    '<path d="M12 16.5V4.5M7.5 9 12 4.5 16.5 9"/><path d="M4.5 15v3.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V15"/>',
+    link:      '<path d="M10.5 13.5a4 4 0 0 0 5.7 0l2.6-2.6a4 4 0 1 0-5.7-5.7l-1.4 1.4"/><path d="M13.5 10.5a4 4 0 0 0-5.7 0l-2.6 2.6a4 4 0 1 0 5.7 5.7l1.4-1.4"/>',
+    close:     '<path d="M6 6l12 12M18 6 6 18"/>',
+    copy:      '<rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 5.5h-9a2 2 0 0 0-2 2v9"/>',
+    play:      '<path d="M8.5 5.5 18 12l-9.5 6.5Z"/>',
+    idea:      '<path d="M9.5 18.5h5M10 21h4"/><path d="M12 2.8a6.2 6.2 0 0 1 3.7 11.2c-.6.45-.95 1.05-.95 1.7v.3h-5.5v-.3c0-.65-.35-1.25-.95-1.7A6.2 6.2 0 0 1 12 2.8Z"/>'
+  };
+
+  /* the light source in the mark, and anything that wants a filled look */
+  var FILLED = { play: 1 };
+
+  window.Icon = {
+    has: function (name) { return !!P[name]; },
+
+    /* an icon inherits its colour; it never sets one */
+    svg: function (name, size) {
+      var d = P[name];
+      if (!d) return '';
+      var n = size || 18;
+      return '<svg class="ic" viewBox="0 0 24 24" width="' + n + '" height="' + n + '" ' +
+        'fill="' + (FILLED[name] ? 'currentColor' : 'none') + '" stroke="currentColor" ' +
+        'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" ' +
+        'aria-hidden="true" focusable="false">' + d + '</svg>';
+    },
+
+    /* The mark: a door, with the light left on beside it.
+       Solid enough to survive a 16px favicon. */
+    mark: function (size, mono) {
+      var n = size || 24;
+      var door = mono ? 'currentColor' : 'var(--solid)';
+      var light = mono ? 'currentColor' : 'var(--porch)';
+      return '<svg class="mark" viewBox="0 0 24 24" width="' + n + '" height="' + n + '" ' +
+        'aria-hidden="true" focusable="false">' +
+        '<path d="M4 4.4A2.4 2.4 0 0 1 6.4 2h7.2A2.4 2.4 0 0 1 16 4.4V22H4Z" fill="' + door + '"/>' +
+        '<rect x="18" y="2" width="2.6" height="20" rx="1.3" fill="' + light + '"' +
+          (mono ? ' opacity=".55"' : '') + '/>' +
+        '<circle cx="12.9" cy="12.6" r="1.25" fill="#fff"' + (mono ? ' opacity=".9"' : '') + '/>' +
+        '</svg>';
+    },
+
+    /* the same mark as a data URI, for the tab */
+    favicon: function () {
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
+        '<rect width="24" height="24" rx="5" fill="#15181C"/>' +
+        '<path d="M5.5 6.2A1.9 1.9 0 0 1 7.4 4.3h5.3a1.9 1.9 0 0 1 1.9 1.9V20H5.5Z" fill="#fff"/>' +
+        '<rect x="16.1" y="4.3" width="2.4" height="15.7" rx="1.2" fill="#D98A18"/>' +
+        '<circle cx="11.9" cy="12.6" r="1.1" fill="#15181C"/></svg>';
+      return 'data:image/svg+xml,' + encodeURIComponent(svg);
+    }
+  };
+})(window);
+
+;
 /* assets/js/store.js */
 /* ==========================================================================
    store.js — application state
@@ -2665,6 +2842,62 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       'c0-1.24-.02-2.83-1.75-2.83-1.75 0-2.02 1.34-2.02 2.74v5.28H9.6v-11z"/></svg></span>';
   };
 
+  /* ---- tips ------------------------------------------------------------
+     A tactic worth knowing, shown where you would use it. Dismissed once and
+     it stays dismissed, because a tip you have read is clutter. -------- */
+  var TIPS = {
+    'find-contacts': {
+      title: 'How to find who is actually hiring',
+      body: 'Search LinkedIn for <b>hiring [role] at [company]</b> and filter to Posts. ' +
+        'The people posting the role are the hiring manager and the recruiter, and a reply to ' +
+        'their post lands better than anything sent through the portal.',
+      cta: { label: 'Run that search', href: 'https://www.linkedin.com/search/results/content/?keywords=' }
+    },
+    'prep-specifics': {
+      title: 'Numbers beat adjectives',
+      body: 'Anything you would say out loud in an interview belongs here. ' +
+        'What broke, what you did, what it cost, how it ended. The number matters less than the fact you remember it.'
+    },
+    'research-where': {
+      title: 'Where the good lines come from',
+      body: 'Their last three posts, a podcast, the pricing page, the changelog, the careers page. ' +
+        'Anything they said in public this quarter is fair game and almost nobody bothers to read it.'
+    },
+    'sequence-touches': {
+      title: 'Two touches per person, then stop',
+      body: 'Three is where helpful turns into a problem. If two messages and a reply get you nothing, ' +
+        'the answer is no and the next company is worth more than the third message.'
+    }
+  };
+
+  UI.tipSeen = function (id) {
+    try { return window.localStorage.getItem('frontdoor.tip.' + id) === '1'; }
+    catch (e) { return false; }
+  };
+  /* opts.q fills a search-shaped cta in, so the tip is one click from useful */
+  UI.tipHTML = function (id, opts) {
+    var t = TIPS[id];
+    if (!t || UI.tipSeen(id)) return '';
+    var href = t.cta ? t.cta.href + (opts && opts.q ? encodeURIComponent(opts.q) : '') : '';
+    return '<div class="tip" data-tip="' + id + '">' +
+      '<span class="tip-ic">' + (window.Icon ? Icon.svg('idea', 16) : '') + '</span>' +
+      '<div class="tip-body"><b>' + UI.esc(t.title) + '</b><p>' + t.body + '</p>' +
+        (t.cta ? '<a class="tip-cta" href="' + UI.esc(href) + '" target="_blank" rel="noopener noreferrer">' +
+          UI.esc(t.cta.label) + ' \u2197</a>' : '') +
+      '</div>' +
+      '<button class="icon-btn" data-tip-close="' + id + '" aria-label="Dismiss this tip" title="Got it">' +
+        (window.Icon ? Icon.svg('close', 14) : '\u2715') + '</button></div>';
+  };
+  /* one listener for every tip on the page */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-tip-close]');
+    if (!b) return;
+    var id = b.dataset.tipClose;
+    try { window.localStorage.setItem('frontdoor.tip.' + id, '1'); } catch (err) {}
+    var box = b.closest('.tip');
+    if (box) { box.classList.add('going'); setTimeout(function () { box.remove(); }, 180); }
+  });
+
   /* ---- toasts --------------------------------------------------------- */
   var toastHost;
   UI.toast = function (msg, kind) {
@@ -3539,19 +3772,19 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
      collapsed rail, where the label is hidden and an icon alone is a guess. */
   var NAV = [
     { group: 'Workspace', items: [
-      { key: 'home', icon: '◉', label: 'Overview', href: '/', hint: 'every company you are working', sc: 'G then O' }
+      { key: 'home', icon: 'overview', label: 'Overview', href: '/', hint: 'every company you are working', sc: 'G then O' }
     ] },
     { group: 'company', needsCampaign: true, items: [
-      { key: 'opp',      icon: '◆', label: 'Summary',  href: '/c/:id', hint: 'the checklist and the numbers', sc: 'G then C' },
-      { key: 'prep',     icon: '◍', label: 'Prep',     href: '/c/:id/prep', hint: 'the stories behind your wins, and the gaps', sc: 'G then E' },
-      { key: 'people',   icon: '◎', label: 'Contacts', href: '/c/:id/people',   count: 'contacts', hint: 'the people you are working, ranked', sc: 'G then P' },
-      { key: 'research', icon: '◈', label: 'Research', href: '/c/:id/research', hint: 'what they said recently, in public', sc: 'G then R' },
-      { key: 'sequence', icon: '≡', label: 'Sequence', href: '/c/:id/sequence', count: 'steps', hint: 'the touches and the days between them', sc: 'G then S' },
-      { key: 'page',     icon: '▤', label: 'Page',     href: '/c/:id/page', hint: 'the public page you send them to' }
+      { key: 'opp',      icon: 'company', label: 'Summary',  href: '/c/:id', hint: 'the checklist and the numbers', sc: 'G then C' },
+      { key: 'prep',     icon: 'prep', label: 'Prep',     href: '/c/:id/prep', hint: 'the stories behind your wins, and the gaps', sc: 'G then E' },
+      { key: 'people',   icon: 'contacts', label: 'Contacts', href: '/c/:id/people',   count: 'contacts', hint: 'the people you are working, ranked', sc: 'G then P' },
+      { key: 'research', icon: 'research', label: 'Research', href: '/c/:id/research', hint: 'what they said recently, in public', sc: 'G then R' },
+      { key: 'sequence', icon: 'sequence', label: 'Sequence', href: '/c/:id/sequence', count: 'steps', hint: 'the touches and the days between them', sc: 'G then S' },
+      { key: 'page',     icon: 'page', label: 'Page',     href: '/c/:id/page', hint: 'the public page you send them to' }
     ] },
     { group: 'Library', items: [
-      { key: 'templates', icon: '❏', label: 'Templates', href: '/templates', hint: 'messages you reuse across steps', sc: 'G then T' },
-      { key: 'settings',  icon: '⚙', label: 'Settings',  href: '/settings', hint: 'your name, photo and history' }
+      { key: 'templates', icon: 'templates', label: 'Templates', href: '/templates', hint: 'messages you reuse across steps', sc: 'G then T' },
+      { key: 'settings',  icon: 'settings', label: 'Settings',  href: '/settings', hint: 'your name, photo and history' }
     ] }
   ];
 
@@ -3581,8 +3814,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     root.innerHTML =
       '<div class="shell">' +
         '<aside class="sidebar">' +
-          '<a class="brand" href="#/" title="Frontdoor — back to the overview"><span class="glyph"></span><b>Frontdoor</b></a>' +
-          '<button class="side-search" id="side-search" title="Search and jump anywhere  (\u2318K)"><span>⌕</span><span>Search</span><kbd>⌘K</kbd></button>' +
+          '<a class="brand" href="#/" title="Frontdoor — back to the overview">' + Icon.mark(24) + '<b>Frontdoor</b></a>' +
+          '<button class="side-search" id="side-search" title="Search and jump anywhere  (\u2318K)">' + Icon.svg('search', 15) + '<span>Search</span><kbd>⌘K</kbd></button>' +
           '<nav class="side-nav" id="side-nav" aria-label="Sections"></nav>' +
           '<div class="side-foot">' +
             '<button class="user-btn" id="user-btn" title="' + esc(u.name) + ' — account, settings and sign out">' +
@@ -3627,7 +3860,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         return '<a class="nav-item" href="#' + href + '" data-key="' + n.key + '"' +
           ' title="' + esc(tip(n)) + '"' +
           (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
-          '<span class="nav-ico">' + n.icon + '</span>' +
+          '<span class="nav-ico">' + Icon.svg(n.icon, 17) + '</span>' +
           '<span class="nav-label">' + esc(n.label) + '</span>' +
           (count ? '<span class="nav-count">' + count + '</span>' : '') + '</a>';
       }).join('');
@@ -3699,7 +3932,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     root.innerHTML =
       '<div class="auth">' +
         '<div class="auth-main"><div class="auth-box">' +
-          '<div class="brand"><span class="glyph"></span><b>Frontdoor</b></div>' +
+          '<div class="brand">' + Icon.mark(26) + '<b>Frontdoor</b></div>' +
           '<h1>' + (signup ? 'Start with one company' : 'Welcome back') + '</h1>' +
           '<p class="sub">' + (signup
             ? 'Pick a company you actually want to work at. We will build the rest around it.'
@@ -4804,6 +5037,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
                '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/page">See the page</a>',
       html: '<div class="page-head"><h1>Before you write</h1>' +
             '<p>A résumé bullet is the headline. This is where the rest of it comes out, one thing at a time.</p></div>' +
+            UI.tipHTML('prep-specifics') +
             (agenda.length
               ? '<div class="prep"><div id="agenda"></div><div id="talk"></div></div>'
               : '<div class="card"><div class="empty"><span class="art">◈</span>' +
@@ -4994,6 +5228,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       html:
         '<div class="page-head"><h1>Who you are working</h1>' +
         '<p>Ranked top to bottom. The order is the order you reach out in, so put the person with the least to lose from helping you at the top.</p></div>' +
+        UI.tipHTML('find-contacts', { q: 'hiring ' + c.role + ' at ' + c.company }) +
         '<div id="found"></div>' +
         '<div class="split"><div id="list"></div><div id="detail"></div></div>'
     });
@@ -5302,6 +5537,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       html:
         '<div class="page-head"><h1>What they said, recently, in public</h1>' +
         '<p>Nobody replies to a message that could have been sent to anyone. Take a line from here and the first sentence is already specific.</p></div>' +
+        UI.tipHTML('research-where') +
         '<div class="subtabs" id="subtabs"></div>' +
         '<div id="feed"></div>'
     });
@@ -5423,7 +5659,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
   function chIcon(ch) {
     if (ch === 'LinkedIn') return UI.liMark(11);
-    return { Email: '✉', Call: '☏', Reply: '↩', ATS: '▤', Text: '💬' }[ch] || '•';
+    var name = { Email: 'email', Call: 'call', Reply: 'reply', ATS: 'ats', Text: 'text' }[ch];
+    return name ? Icon.svg(name, 12) : '';
   }
 
   var EDITS = [
@@ -5461,6 +5698,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
                '<button class="btn btn-secondary btn-sm" id="preview">Preview</button>',
       html: '<div class="page-head"><h1>Sequence</h1>' +
             '<p>Ten touches over two weeks. Change the order, the timing, who each one goes to, and what it says.</p></div>' +
+            UI.tipHTML('sequence-touches') +
             '<div id="seq-mount"></div>'
     });
 
@@ -6193,6 +6431,118 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 })(window, document);
 
 ;
+/* assets/js/views/brand.js */
+/* ==========================================================================
+   views/brand.js — the brand, on one screen.
+
+   Not a product page: it is the reference, reachable from the command
+   palette, so the next person to touch this reads the rules rather than
+   guessing them from a screenshot.
+   ========================================================================== */
+(function (window, document) {
+  'use strict';
+
+  var esc = UI.esc;
+  window.Views = window.Views || {};
+
+  var SWATCHES = [
+    { group: 'Brand', note: 'Threshold carries every link, focus ring and active row. Porch is the light in the mark and nothing else.',
+      items: [
+        ['--brand', 'Threshold', '#0D6E88', '5.8:1 on white, both ways'],
+        ['--brand-deep', 'Threshold deep', '#0A5E76', 'hover and pressed'],
+        ['--brand-wash', 'Threshold wash', '#E9F3F7', 'tips, active fills'],
+        ['--porch', 'Porch', '#D98A18', 'graphic only, never text'],
+        ['--solid', 'Door', '#15181C', 'primary buttons']
+      ] },
+    { group: 'Ink and surface', note: 'Four inks, three lines. If a fifth is needed the layout is wrong.',
+      items: [
+        ['--ink', 'Ink', '#0F1214', 'headings and body'],
+        ['--ink-2', 'Ink 2', '#555963', 'secondary text'],
+        ['--ink-3', 'Ink 3', '#868B96', 'labels, captions'],
+        ['--ink-4', 'Ink 4', '#B0B4BD', 'placeholders'],
+        ['--bg', 'Canvas', '#F7F7F8', 'the app behind the cards'],
+        ['--panel', 'Panel', '#FFFFFF', 'cards, inputs, sheets']
+      ] },
+    { group: 'Semantic', note: 'Meaning, never decoration. A green chip means it happened.',
+      items: [
+        ['--pos', 'Positive', '#0F7A50', 'replied, done, covered'],
+        ['--warn', 'Warning', '#9A6206', 'due, needs a name'],
+        ['--neg', 'Negative', '#BE3226', 'gaps, delete, errors']
+      ] },
+    { group: 'The five people', note: 'One hue each, assigned by who they are to you. All dark enough to take white initials.',
+      items: [
+        ['--p-peer', 'Peer', '#14785C', 'least to lose by helping'],
+        ['--p-recruiter', 'Recruiter', '#6B4FC4', 'owns the req'],
+        ['--p-manager', 'Hiring manager', '#0D6E88', 'owns the number'],
+        ['--p-exec', 'Skip level', '#9A6206', 'one above them'],
+        ['--p-tie', 'Shared tie', '#B03F63', 'already knows you']
+      ] }
+  ];
+
+  var ICONS = ['overview', 'company', 'prep', 'contacts', 'research', 'sequence', 'page',
+               'templates', 'settings', 'search', 'email', 'call', 'reply', 'ats', 'text',
+               'plus', 'arrow', 'check', 'upload', 'link', 'close', 'copy', 'play', 'idea'];
+
+  window.Views.brand = function () {
+    var html =
+      '<div class="page-head"><h1>The brand</h1>' +
+      '<p>A door, with the light left on. Everything here is a token: change it in one file and it changes everywhere.</p></div>' +
+
+      '<div class="card p6 mb4">' +
+        '<div class="brandhero">' +
+          '<div class="brandhero-mark">' + Icon.mark(96) + '</div>' +
+          '<div>' +
+            '<h2 style="font-size:var(--fs-2xl);letter-spacing:-.035em">Frontdoor</h2>' +
+            '<p class="brand-line">Go in the front.</p>' +
+            '<p class="dim mt3" style="font-size:var(--fs-sm);max-width:52ch">The applicant tracking system is the back of the queue. ' +
+            'The mark is a door with a light beside it, because the promise is that someone is expecting you.</p>' +
+          '</div>' +
+        '</div>' +
+        '<div class="markrow">' +
+          '<span class="markbox">' + Icon.mark(40) + '<em>40</em></span>' +
+          '<span class="markbox">' + Icon.mark(24) + '<em>24</em></span>' +
+          '<span class="markbox">' + Icon.mark(16) + '<em>16</em></span>' +
+          '<span class="markbox dark">' + Icon.mark(24, true) + '<em>mono</em></span>' +
+          '<span class="markbox"><img src="' + Icon.favicon() + '" width="24" height="24" alt="favicon"><em>tab</em></span>' +
+        '</div>' +
+      '</div>' +
+
+      SWATCHES.map(function (s) {
+        return '<div class="card p6 mb4">' +
+          '<h3 class="mb2">' + esc(s.group) + '</h3>' +
+          '<p class="dim mb5" style="font-size:var(--fs-sm)">' + esc(s.note) + '</p>' +
+          '<div class="swatches">' + s.items.map(function (i) {
+            return '<div class="swatch">' +
+              '<span class="sw-chip" style="background:var(' + i[0] + ')"></span>' +
+              '<b>' + esc(i[1]) + '</b>' +
+              '<code>' + esc(i[2]) + '</code>' +
+              '<em>' + esc(i[3]) + '</em>' +
+              '<span class="sw-tok mono">' + esc(i[0]) + '</span>' +
+            '</div>';
+          }).join('') + '</div></div>';
+      }).join('') +
+
+      '<div class="card p6 mb4">' +
+        '<h3 class="mb2">Icons</h3>' +
+        '<p class="dim mb5" style="font-size:var(--fs-sm)">One 24 grid, 1.7 stroke, round caps. Every icon inherits currentColor, so it is coloured by what it sits in and never carries a colour of its own.</p>' +
+        '<div class="iconwall">' + ICONS.map(function (n) {
+          return '<span class="iconcell">' + Icon.svg(n, 20) + '<em>' + esc(n) + '</em></span>';
+        }).join('') + '</div>' +
+      '</div>' +
+
+      '<div class="card p6">' +
+        '<h3 class="mb2">Type</h3>' +
+        '<p class="dim mb5" style="font-size:var(--fs-sm)">Instrument Sans for everything you read, JetBrains Mono for anything you would copy: numbers, ids, drafts, keys.</p>' +
+        '<p style="font-size:var(--fs-3xl);letter-spacing:-.035em;font-weight:680;line-height:1.1">Five people, ten touches</p>' +
+        '<p style="font-size:var(--fs-lg);color:var(--ink-2);margin-top:var(--s-3)">One company at a time, worked properly.</p>' +
+        '<p class="mono mt4" style="font-size:13px;color:var(--ink-2)">112% · $1.2M · 30→70 · day 3 of 14</p>' +
+      '</div>';
+
+    Shell.mount({ nav: '', crumbs: [{ label: 'The brand' }], html: html });
+  };
+})(window, document);
+
+;
 /* assets/js/main.js */
 /* ==========================================================================
    main.js — wiring. Routes, palette contents, keyboard shortcuts, boot.
@@ -6212,6 +6562,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     .add('/import',  Views.importer)
     .add('/settings', Views.settings)
     .add('/templates', Views.templates)
+    .add('/brand',     Views.brand)
     .add('/c/:id',          Views.opportunity)
     .add('/c/:id/prep',     Views.prep)
     .add('/c/:id/people',   Views.people)
@@ -6240,6 +6591,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     items.push(
       { group: 'Go to', icon: '❏', label: 'Message templates', run: function () { Router.go('/templates'); } },
       { group: 'Go to', icon: '⚙', label: 'Settings', run: function () { Router.go('/settings'); } },
+      { group: 'Go to', icon: '◆', label: 'The brand: colours, icons, type', run: function () { Router.go('/brand'); } },
       { group: 'Do', icon: '↑', label: 'Import a résumé or LinkedIn profile', run: function () { Router.go('/import'); } }
     );
     if (cid) {

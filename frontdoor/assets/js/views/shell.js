@@ -10,19 +10,19 @@
      collapsed rail, where the label is hidden and an icon alone is a guess. */
   var NAV = [
     { group: 'Workspace', items: [
-      { key: 'home', icon: '◉', label: 'Overview', href: '/', hint: 'every company you are working', sc: 'G then O' }
+      { key: 'home', icon: 'overview', label: 'Overview', href: '/', hint: 'every company you are working', sc: 'G then O' }
     ] },
     { group: 'company', needsCampaign: true, items: [
-      { key: 'opp',      icon: '◆', label: 'Summary',  href: '/c/:id', hint: 'the checklist and the numbers', sc: 'G then C' },
-      { key: 'prep',     icon: '◍', label: 'Prep',     href: '/c/:id/prep', hint: 'the stories behind your wins, and the gaps', sc: 'G then E' },
-      { key: 'people',   icon: '◎', label: 'Contacts', href: '/c/:id/people',   count: 'contacts', hint: 'the people you are working, ranked', sc: 'G then P' },
-      { key: 'research', icon: '◈', label: 'Research', href: '/c/:id/research', hint: 'what they said recently, in public', sc: 'G then R' },
-      { key: 'sequence', icon: '≡', label: 'Sequence', href: '/c/:id/sequence', count: 'steps', hint: 'the touches and the days between them', sc: 'G then S' },
-      { key: 'page',     icon: '▤', label: 'Page',     href: '/c/:id/page', hint: 'the public page you send them to' }
+      { key: 'opp',      icon: 'company', label: 'Summary',  href: '/c/:id', hint: 'the checklist and the numbers', sc: 'G then C' },
+      { key: 'prep',     icon: 'prep', label: 'Prep',     href: '/c/:id/prep', hint: 'the stories behind your wins, and the gaps', sc: 'G then E' },
+      { key: 'people',   icon: 'contacts', label: 'Contacts', href: '/c/:id/people',   count: 'contacts', hint: 'the people you are working, ranked', sc: 'G then P' },
+      { key: 'research', icon: 'research', label: 'Research', href: '/c/:id/research', hint: 'what they said recently, in public', sc: 'G then R' },
+      { key: 'sequence', icon: 'sequence', label: 'Sequence', href: '/c/:id/sequence', count: 'steps', hint: 'the touches and the days between them', sc: 'G then S' },
+      { key: 'page',     icon: 'page', label: 'Page',     href: '/c/:id/page', hint: 'the public page you send them to' }
     ] },
     { group: 'Library', items: [
-      { key: 'templates', icon: '❏', label: 'Templates', href: '/templates', hint: 'messages you reuse across steps', sc: 'G then T' },
-      { key: 'settings',  icon: '⚙', label: 'Settings',  href: '/settings', hint: 'your name, photo and history' }
+      { key: 'templates', icon: 'templates', label: 'Templates', href: '/templates', hint: 'messages you reuse across steps', sc: 'G then T' },
+      { key: 'settings',  icon: 'settings', label: 'Settings',  href: '/settings', hint: 'your name, photo and history' }
     ] }
   ];
 
@@ -52,8 +52,8 @@
     root.innerHTML =
       '<div class="shell">' +
         '<aside class="sidebar">' +
-          '<a class="brand" href="#/" title="Frontdoor — back to the overview"><span class="glyph"></span><b>Frontdoor</b></a>' +
-          '<button class="side-search" id="side-search" title="Search and jump anywhere  (\u2318K)"><span>⌕</span><span>Search</span><kbd>⌘K</kbd></button>' +
+          '<a class="brand" href="#/" title="Frontdoor — back to the overview">' + Icon.mark(24) + '<b>Frontdoor</b></a>' +
+          '<button class="side-search" id="side-search" title="Search and jump anywhere  (\u2318K)">' + Icon.svg('search', 15) + '<span>Search</span><kbd>⌘K</kbd></button>' +
           '<nav class="side-nav" id="side-nav" aria-label="Sections"></nav>' +
           '<div class="side-foot">' +
             '<button class="user-btn" id="user-btn" title="' + esc(u.name) + ' — account, settings and sign out">' +
@@ -98,7 +98,7 @@
         return '<a class="nav-item" href="#' + href + '" data-key="' + n.key + '"' +
           ' title="' + esc(tip(n)) + '"' +
           (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
-          '<span class="nav-ico">' + n.icon + '</span>' +
+          '<span class="nav-ico">' + Icon.svg(n.icon, 17) + '</span>' +
           '<span class="nav-label">' + esc(n.label) + '</span>' +
           (count ? '<span class="nav-count">' + count + '</span>' : '') + '</a>';
       }).join('');

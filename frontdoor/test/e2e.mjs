@@ -499,6 +499,74 @@ await group('Prep, the conversation that fills the gaps', async (page) => {
   });
 });
 
+/* -------------------------------------------------------------- brand -- */
+await group('Brand, icons and tips', async (page) => {
+  await signIn(page);
+  await step('the mark is drawn, not a coloured box', async () => {
+    const mark = await page.locator('.brand .mark').count();
+    if (!mark) throw new Error('no mark in the sidebar');
+    if (await page.locator('.brand .glyph').count()) throw new Error('the old glyph is still there');
+  });
+  await step('every nav item carries a real icon', async () => {
+    const n = await page.locator('.nav-item').count();
+    const svgs = await page.locator('.nav-item .nav-ico svg').count();
+    if (svgs !== n) throw new Error(svgs + ' icons for ' + n + ' items');
+    const stroke = await page.locator('.nav-item .nav-ico svg').first().getAttribute('stroke');
+    if (stroke !== 'currentColor') throw new Error('icon hard-codes a colour: ' + stroke);
+  });
+  await step('the active item takes the brand colour', async () => {
+    const c = await page.locator('.nav-item[aria-current="page"] .nav-ico').evaluate(e => getComputedStyle(e).color);
+    if (c !== 'rgb(13, 110, 136)') throw new Error('active icon is ' + c);
+  });
+  await step('the accent everywhere is the brand, not the old blue', async () => {
+    const ac = await page.evaluate(() =>
+      getComputedStyle(document.documentElement).getPropertyValue('--ac').trim());
+    const brand = await page.evaluate(() =>
+      getComputedStyle(document.documentElement).getPropertyValue('--brand').trim());
+    if (brand !== '#0D6E88') throw new Error('brand is ' + brand);
+    if (!/brand|#0D6E88/.test(ac)) throw new Error('--ac is ' + ac);
+  });
+  await step('the tab has the mark as its icon', async () => {
+    const href = await page.locator('link[rel="icon"]').getAttribute('href');
+    if (!/^data:image\/svg/.test(href || '')) throw new Error('favicon is ' + href);
+    if (!/D98A18/i.test(href)) throw new Error('favicon is missing the porch light');
+  });
+  await step('the contacts tip carries the search that finds the poster', async () => {
+    await page.goto(BASE + '#/c/c_acme/people', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.tip', { timeout: 5000 });
+    const href = await page.locator('.tip-cta').first().getAttribute('href');
+    if (!/linkedin\.com\/search\/results\/content/.test(href)) throw new Error('cta goes to ' + href);
+    if (!/hiring%20Mid-Market/.test(href)) throw new Error('search is not filled in: ' + href);
+    const body = await page.locator('.tip-body').first().textContent();
+    if (!/filter to Posts/i.test(body)) throw new Error('the tactic is missing: ' + body.slice(0, 60));
+  });
+  await step('the brand page documents what the app actually uses', async () => {
+    await page.goto(BASE + '#/brand', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.swatch', { timeout: 5000 });
+    const swatches = await page.locator('.swatch').count();
+    if (swatches < 15) throw new Error(swatches + ' swatches');
+    const icons = await page.locator('.iconcell svg').count();
+    if (icons < 20) throw new Error(icons + ' icons on the sheet');
+    /* the sheet must show the real token value, not a hard-coded copy */
+    const shown = await page.locator('.swatch').first().locator('code').textContent();
+    const live = await page.locator('.swatch').first().locator('.sw-chip')
+      .evaluate(e => getComputedStyle(e).backgroundColor);
+    if (live !== 'rgb(13, 110, 136)') throw new Error('chip renders ' + live);
+    if (shown.toUpperCase() !== '#0D6E88') throw new Error('sheet says ' + shown);
+  });
+  await step('a dismissed tip stays dismissed', async () => {
+    await page.goto(BASE + '#/c/c_acme/people', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.tip', { timeout: 5000 });
+    await page.locator('[data-tip-close]').first().click();
+    await page.waitForTimeout(320);
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+    const tips = await page.evaluate(() =>
+      [...document.querySelectorAll('.tip')].map(t => t.dataset.tip));
+    if (tips.includes('find-contacts')) throw new Error('it came back');
+  });
+});
+
 /* ---------------------------------------------------------- cold start -- */
 await group('Cold start, all the way through', async (page) => {
   await step('a new account lands on the resume screen with nothing in it', async () => {
