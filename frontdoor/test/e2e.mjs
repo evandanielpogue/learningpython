@@ -166,6 +166,24 @@ window.AI_FETCH = function (url, init) {
   window.__calls = window.__calls || [];
   window.__calls.push({ url: url, headers: init.headers, body: body });
 
+  if (body.tools && body.tools.some(function (t) { return t.name === 'web_fetch'; })) {
+    var link = body.messages[0].content;
+    var fail = /blocked/.test(link);
+    return Promise.resolve({
+      ok: true, status: 200,
+      text: function () { return Promise.resolve(JSON.stringify({
+        content: fail
+          ? [{ type: 'web_fetch_tool_result', tool_use_id: 't1',
+               content: { type: 'web_fetch_tool_result_error', error_code: 'url_not_accessible' } }]
+          : [{ type: 'server_tool_use', id: 't1', name: 'web_fetch', input: { url: 'https://jobs.example.com/ae' } },
+             { type: 'web_fetch_tool_result', tool_use_id: 't1',
+               content: { type: 'web_fetch_result', url: 'https://jobs.example.com/ae',
+                          content: { type: 'document' } } },
+             { type: 'text', text: 'Mid-Market Account Executive\\nAcme | Chicago, hybrid | Req 4821\\n\\n- 5+ years of SaaS sales, at least two in mid-market\\n- Experience selling through a pricing change\\n- A track record of quota attainment' }],
+        stop_reason: 'end_turn'
+      })); }
+    });
+  }
   var schema = body.output_config && body.output_config.format && body.output_config.format.schema;
   var text;
   if (schema && schema.properties && schema.properties.roles) {
@@ -302,6 +320,65 @@ await group('The model in the rest of the app', async (page) => {
     await page.waitForSelector('.task', { timeout: 8000 });
     const story = await page.evaluate(() => Store.campaigns()[0].story);
     if (!story) throw new Error('no story kept');
+  });
+});
+
+await group('Reading the posting from its link', async (page) => {
+  await page.addInitScript(STUB);
+  await signIn(page);
+  await step('without a model it says why, and does not pretend', async () => {
+    await page.goto(BASE + '#/new', { waitUntil: 'networkidle' });
+    await page.waitForSelector('#post-url', { timeout: 5000 });
+    if (!(await page.locator('#post-get').isDisabled())) throw new Error('offered to fetch with no model');
+    const t = await page.locator('#post-msg').textContent();
+    if (!/not allowed to read another/.test(t)) throw new Error('no explanation: ' + t);
+  });
+  await step('with a model, a link fills the listing box', async () => {
+    await page.evaluate(() => { window.__useKey(); window.__calls = []; });
+    /* same hash, so the router will not re-resolve on its own */
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('#post-get:not([disabled])', { timeout: 5000 });
+    await page.fill('#post-url', 'https://jobs.example.com/ae');
+    await page.click('#post-get');
+    await page.waitForFunction(() => /Read it/.test(document.querySelector('#post-msg').textContent), { timeout: 15000 });
+    const text = await page.inputValue('#listing');
+    if (!/Mid-Market Account Executive/.test(text)) throw new Error('listing not filled: ' + text.slice(0, 60));
+    if (!(await page.locator('#post-msg.ok').count())) throw new Error('not flagged as a success');
+  });
+  await step('the fetch is asked for the documented way', async () => {
+    const call = await page.evaluate(() => window.__calls[0]);
+    const tool = call.body.tools[0];
+    if (tool.type !== 'web_fetch_20250910') throw new Error('tool type: ' + tool.type);
+    if (tool.name !== 'web_fetch') throw new Error('tool name: ' + tool.name);
+    if (!tool.max_uses || !tool.max_content_tokens) throw new Error('no limits set on the fetch');
+    if (!call.body.messages[0].content.includes('https://jobs.example.com/ae'))
+      throw new Error('url not in the user message, so it cannot be fetched');
+  });
+  await step('a fetched posting parses and creates the company', async () => {
+    await page.click('#read');
+    await page.waitForSelector('#wins', { timeout: 10000 });
+    await page.click('#skip-story');
+    await page.waitForSelector('.task', { timeout: 10000 });
+    const c = await page.evaluate(() => Store.campaigns()[0]);
+    if (c.company !== 'Acme') throw new Error('company: ' + c.company);
+    if (c.postingUrl !== 'https://jobs.example.com/ae') throw new Error('link not kept: ' + c.postingUrl);
+  });
+  await step('the summary links back to the posting', async () => {
+    const href = await page.locator('a[target="_blank"]').first().getAttribute('href');
+    if (href !== 'https://jobs.example.com/ae') throw new Error('href: ' + href);
+    const rel = await page.locator('a[target="_blank"]').first().getAttribute('rel');
+    if (!/noopener/.test(rel || '')) throw new Error('rel=' + rel);
+  });
+  await step('a page that will not load says so plainly', async () => {
+    await page.goto(BASE + '#/new', { waitUntil: 'networkidle' });
+    await page.waitForSelector('#post-url', { timeout: 5000 });
+    await page.fill('#post-url', 'https://blocked.example.com/ae');
+    await page.click('#post-get');
+    await page.waitForFunction(() => /Paste the text/.test(document.querySelector('#post-msg').textContent), { timeout: 15000 });
+    const t = await page.locator('#post-msg').textContent();
+    if (!/would not load/.test(t)) throw new Error('message was: ' + t);
+    if (await page.locator('#post-msg.ok').count()) throw new Error('reported as success');
+    if (await page.locator('#post-get:disabled').count()) throw new Error('button left disabled');
   });
 });
 

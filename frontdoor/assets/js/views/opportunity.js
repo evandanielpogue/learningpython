@@ -21,6 +21,7 @@
   window.Views.newOpp = function () {
     var stage = 1;
     var listing = '';
+    var postingUrl = '';
     var parsed = null;
     var ranked = [];
     var chosen = [];
@@ -33,7 +34,20 @@
         body =
           '<div class="card p6">' +
             '<h3 class="mb2">Paste the job listing</h3>' +
-            '<p class="dim mb5" style="font-size:var(--fs-sm)">All of it. The boring requirements section is the part that tells us which of your wins to lead with.</p>' +
+            '<p class="dim mb4" style="font-size:var(--fs-sm)">All of it. The boring requirements section is the part that tells us which of your wins to lead with.</p>' +
+
+            '<div class="lookup">' +
+              '<span class="link-ic">\u26ad</span>' +
+              '<input class="lookup-in" id="post-url" placeholder="Link to the posting" autocomplete="off" spellcheck="false" value="' + esc(postingUrl) + '">' +
+              '<button class="btn btn-secondary btn-sm" type="button" id="post-get"' + (AI.ready() ? '' : ' disabled') + '>Read the link</button>' +
+            '</div>' +
+            '<p class="' + (AI.ready() ? 'hint' : 'lookup-msg') + ' mb4" id="post-msg" style="margin-top:var(--s-2)">' +
+              (AI.ready()
+                ? 'We read the page and drop the text below. Sites that build the listing in the browser, LinkedIn among them, will not give it up.'
+                : 'A browser is not allowed to read another site\u2019s page, so this needs a model to fetch it. <a href="#/settings">Turn one on</a>, or paste the text.') +
+            '</p>' +
+
+            '<div class="or"><span>the posting</span></div>' +
             '<textarea class="input listing-in" id="listing" placeholder="Paste the whole posting here" spellcheck="false"></textarea>' +
             '<div class="row between wrap mt4 g3">' +
               '<button class="btn btn-ghost btn-sm" id="use-sample">Use an example listing</button>' +
@@ -105,6 +119,40 @@
         listing = ta.value;
         go.disabled = ta.value.trim().length < 40;
       });
+      var url = v.querySelector('#post-url');
+      var get = v.querySelector('#post-get');
+      var pmsg = v.querySelector('#post-msg');
+
+      function grab() {
+        var link = url.value.trim();
+        if (!link) { pmsg.className = 'lookup-msg'; pmsg.textContent = 'Paste the link first.'; return; }
+        postingUrl = link;
+        get.disabled = true;
+        get.textContent = 'Reading\u2026';
+        pmsg.className = 'hint';
+        pmsg.textContent = 'Fetching the page. This takes a few seconds.';
+        AI.fetchPosting(link).then(function (out) {
+          ta.value = out.text;
+          listing = out.text;
+          go.disabled = listing.trim().length < 40;
+          pmsg.className = 'lookup-msg ok';
+          var host = '';
+          try { host = new URL(out.url).hostname.replace(/^www\./, ''); } catch (e) {}
+          pmsg.textContent = 'Read it' + (host ? ' from ' + host : '') + '. Check it looks right, then read it in.';
+        }).catch(function (err) {
+          pmsg.className = 'lookup-msg';
+          pmsg.textContent = err.message + ' Paste the text below instead.';
+          ta.focus();
+        }).then(function () {
+          get.disabled = false;
+          get.textContent = 'Read the link';
+        });
+      }
+      if (get && AI.ready()) {
+        get.addEventListener('click', grab);
+        url.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); grab(); } });
+      }
+
       v.querySelector('#use-sample').addEventListener('click', function () {
         ta.value = Store.SAMPLE_LISTING;
         listing = ta.value;
@@ -225,7 +273,8 @@
 
       function make(text) {
         var c = Store.createCampaign({
-          listing: listing, parsed: parsed, winIds: chosen.slice(), story: text || ''
+          listing: listing, parsed: parsed, winIds: chosen.slice(),
+          story: text || '', postingUrl: postingUrl
         });
         UI.toast(c.company + ' added. Three people to look at.');
         Router.go('/c/' + c.id);
@@ -288,7 +337,9 @@
       '<div class="page-head">' +
         '<div class="row between wrap g3">' +
           '<div><h1>' + esc(c.company) + '</h1>' +
-          '<p>' + esc(c.role) + (c.location ? ' · ' + esc(c.location) : '') + '</p></div>' +
+          '<p>' + esc(c.role) + (c.location ? ' · ' + esc(c.location) : '') +
+          (c.postingUrl ? ' · <a href="' + esc(c.postingUrl) + '" target="_blank" rel="noopener noreferrer">the posting \u2197</a>' : '') +
+          '</p></div>' +
         '</div>' +
       '</div>' +
 

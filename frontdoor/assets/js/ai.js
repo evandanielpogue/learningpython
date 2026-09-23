@@ -181,6 +181,92 @@
       });
     },
 
+    /* ---- fetching a posting from its link --------------------------------
+       A browser cannot read another site's page: the job boards do not send
+       CORS headers, so fetch() from here is refused before it starts. The
+       model's server side web fetch does the reading instead. It cannot run
+       JavaScript, so sites that render their listing client side, and sites
+       behind a login, still come back empty and say so. ------------------- */
+    postingErrors: {
+      url_not_accessible: 'That page would not load. Job boards often block anything that is not a browser, and anything behind a login is out of reach.',
+      url_not_allowed: 'That address is not one we are allowed to fetch.',
+      url_not_in_prior_context: 'The link did not make it through. Try pasting it again.',
+      url_too_long: 'That link is too long to fetch.',
+      invalid_tool_input: 'That does not look like a web address.',
+      unsupported_content_type: 'We can read web pages and PDFs, nothing else.',
+      too_many_requests: 'Rate limited. Give it a minute.',
+      max_uses_exceeded: 'Gave up after two tries.',
+      unavailable: 'The fetch failed on their end.'
+    },
+
+    fetchPosting: function (url) {
+      var c = cfg();
+      if (!AI.ready()) return Promise.reject(new Error('not configured'));
+
+      var sys = [
+        'You are given a link to a job posting. Fetch it and return the posting as plain text.',
+        '',
+        'Return the posting only. Start with the job title, then a line with the company, location',
+        'and any requisition number. Then the body, keeping the responsibilities and requirements as',
+        'the bullet list they already are. Drop the site navigation, the cookie notice, the "apply',
+        'now" furniture, the benefits boilerplate and anything about other roles.',
+        '',
+        'Do not summarise, do not comment, do not add a preamble. If the page is not a job posting,',
+        'or the text is not there, reply with exactly: NOT_A_POSTING'
+      ].join('\n');
+
+      var body = {
+        model: c.model || 'claude-opus-5',
+        max_tokens: 4000,
+        system: sys,
+        messages: [{ role: 'user', content: 'Here is the posting: ' + url }],
+        tools: [{
+          type: 'web_fetch_20250910',
+          name: 'web_fetch',
+          max_uses: 2,
+          max_content_tokens: 20000
+        }]
+      };
+
+      var url2 = c.mode === 'proxy' ? c.proxy.trim() : ENDPOINT;
+      var headers = { 'content-type': 'application/json' };
+      if (c.mode === 'key') {
+        headers['x-api-key'] = c.key.trim();
+        headers['anthropic-version'] = VERSION;
+        headers['anthropic-dangerous-direct-browser-access'] = 'true';
+      }
+
+      var doFetch = window.AI_FETCH || window.fetch.bind(window);
+      return doFetch(url2, { method: 'POST', headers: headers, body: JSON.stringify(body) })
+        .then(function (res) {
+          return res.text().then(function (raw) {
+            var data = null;
+            try { data = JSON.parse(raw); } catch (e) {}
+            if (!res.ok) {
+              var m = (data && data.error && data.error.message) || ('HTTP ' + res.status);
+              if (res.status === 401) m = 'That key was rejected.';
+              throw new Error(m);
+            }
+            if (!data) throw new Error('The response was not JSON.');
+
+            /* a failed fetch comes back as a 200 with an error block in it */
+            var blocks = data.content || [];
+            var result = blocks.filter(function (b) { return b.type === 'web_fetch_tool_result'; })[0];
+            if (result && result.content && result.content.type === 'web_fetch_tool_result_error') {
+              throw new Error(AI.postingErrors[result.content.error_code] || 'The fetch failed.');
+            }
+            if (!result) throw new Error('The model did not try to fetch that link.');
+
+            var text = blocks.filter(function (b) { return b.type === 'text'; })
+              .map(function (b) { return b.text; }).join('\n').trim();
+            if (!text || /NOT_A_POSTING/.test(text)) {
+              throw new Error('There was no job posting on that page. Sites that build the listing in the browser, LinkedIn among them, come back blank.');
+            }
+            return { text: text, url: (result.content && result.content.url) || url };
+          });
+        });
+    },
+
     /* ---- the questions that turn a bullet into a story ------------------- */
     storyTurn: function (campaign, win, history) {
       var sys = [

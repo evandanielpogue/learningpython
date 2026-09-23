@@ -1331,3 +1331,5 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   border: 1px solid var(--warn-line); border-radius: var(--r-2); padding: var(--s-3) var(--s-4);
 }
 .input.mono { font-family: var(--mono); font-size: 12.5px; }
+.link-ic { color: var(--ink-3); font-size: 15px; display: grid; place-items: center; width: 18px; }
+.lookup-in:disabled, .lookup button:disabled { opacity: .5; cursor: not-allowed; }
