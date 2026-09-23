@@ -268,7 +268,8 @@
       profile: blankProfile(),
       templates: clone(TEMPLATES),
       campaigns: [],
-      lastCampaign: null
+      lastCampaign: null,
+      ai: { mode: 'off', key: '', proxy: '', model: 'claude-opus-5' }
     };
   }
 
@@ -617,6 +618,33 @@
         if (avg >= 15) out.voice.traits.push('Full sentences');
         out.voice.traits.push('One ask');
       }
+      return out;
+    },
+
+    /* the model returns content, not bookkeeping, so the ids are added here */
+    fromModel: function (data, source) {
+      var out = blankProfile();
+      out.imported = true;
+      out.source = source || 'your resume';
+      out.name = data.name || '';
+      out.email = data.email || '';
+      out.phone = data.phone || '';
+      out.location = data.location || '';
+      out.years = Math.max(0, Math.min(60, parseInt(data.years, 10) || 0));
+      out.roles = (data.roles || []).map(function (r) {
+        return {
+          id: uid('r'), title: r.title || '', company: r.company || '', span: r.span || '',
+          on: true, bullets: (r.bullets || []).filter(Boolean)
+        };
+      }).filter(function (r) { return r.title || r.company; });
+      out.wins = (data.wins || []).map(function (w) {
+        return {
+          id: uid('w'), text: w.text || '', metric: w.metric || '', short: w.short || '',
+          where: w.where || '', tags: (w.tags || []).map(function (t) { return String(t).toLowerCase(); })
+        };
+      }).filter(function (w) { return w.metric && w.text; }).slice(0, 12);
+      out.stack = (data.tools || []).filter(Boolean).slice(0, 14);
+      out.voice = { traits: (data.voice || []).filter(Boolean).slice(0, 4) };
       return out;
     },
 

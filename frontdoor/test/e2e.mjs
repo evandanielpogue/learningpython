@@ -157,6 +157,154 @@ if (!hasPdfjs) {
   expect404 = false;
 }
 
+/* ----------------------------------------------------------- the model -- */
+/* A stub transport stands in for the API: no key, no network, and it asserts
+   the request we actually send is the shape the API documents. */
+const STUB = `
+window.AI_FETCH = function (url, init) {
+  var body = JSON.parse(init.body);
+  window.__calls = window.__calls || [];
+  window.__calls.push({ url: url, headers: init.headers, body: body });
+
+  var schema = body.output_config && body.output_config.format && body.output_config.format.schema;
+  var text;
+  if (schema && schema.properties && schema.properties.roles) {
+    text = JSON.stringify({
+      name: 'Dana Whitfield', email: 'dana@example.com', phone: '415 555 0101',
+      location: 'Oakland, CA', years: 11,
+      roles: [{ title: 'Enterprise AE', company: 'Kettle', span: '2022 to now',
+                bullets: ['Closed the first seven figure deal in company history'] }],
+      wins: [{ text: 'Closed the first seven figure deal in company history', metric: '$1.4M',
+               short: 'first seven figure deal', where: 'Kettle, 2024', tags: ['enterprise', 'acv'] }],
+      tools: ['Salesforce', 'Gong'], voice: ['Short lines', 'Numbers first']
+    });
+  } else if (schema && schema.properties && schema.properties.body) {
+    text = JSON.stringify({ reply: 'Cut it to four lines.', body: 'Marcus, four lines and one ask.' });
+  } else {
+    text = 'What broke first?';
+  }
+  return Promise.resolve({
+    ok: true, status: 200,
+    text: function () { return Promise.resolve(JSON.stringify({
+      content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: text }],
+      stop_reason: 'end_turn'
+    })); }
+  });
+};
+window.__useKey = function () {
+  Store.state.ai = { mode: 'key', key: 'sk-ant-test', proxy: '', model: 'claude-opus-5' };
+  Store.save();
+};
+`;
+
+await group('Reading a resume with a model', async (page) => {
+  await page.addInitScript(STUB);
+  await signIn(page, false);
+  await page.waitForSelector('#drop', { timeout: 5000 });
+  await step('nothing is sent while no model is configured', async () => {
+    await page.click('#use-example');
+    await page.click('#read');
+    await page.waitForSelector('#roles', { timeout: 6000 });
+    const calls = await page.evaluate(() => (window.__calls || []).length);
+    if (calls) throw new Error(calls + ' requests with the model off');
+    const how = await page.evaluate(() => Store.state.profile.readBy);
+    if (how !== 'pattern') throw new Error('readBy=' + how);
+  });
+  await step('the screen says which one read it', async () => {
+    const t = await page.locator('.card').first().textContent();
+    if (!/Read by pattern matching/.test(t)) throw new Error('no marker: ' + t.slice(0, 60));
+  });
+  await step('with a key, the resume goes to the model instead', async () => {
+    await page.evaluate(() => { window.__useKey(); window.__calls = []; });
+    await page.click('#redo-import');
+    await page.waitForSelector('#drop', { timeout: 5000 });
+    await page.click('#use-example');
+    await page.click('#read');
+    await page.waitForSelector('#roles', { timeout: 8000 });
+    const pf = await page.evaluate(() => Store.state.profile);
+    if (pf.name !== 'Dana Whitfield') throw new Error('did not use the model: ' + pf.name);
+    if (pf.readBy !== 'model') throw new Error('readBy=' + pf.readBy);
+    if (!pf.roles[0].id || !pf.wins[0].id) throw new Error('ids were not filled in');
+    if (pf.years !== 11) throw new Error('years=' + pf.years);
+  });
+  await step('the request is the shape the API documents', async () => {
+    const call = await page.evaluate(() => window.__calls[0]);
+    if (call.url !== 'https://api.anthropic.com/v1/messages') throw new Error('url: ' + call.url);
+    if (call.headers['x-api-key'] !== 'sk-ant-test') throw new Error('no key header');
+    if (call.headers['anthropic-version'] !== '2023-06-01') throw new Error('no version header');
+    if (call.headers['anthropic-dangerous-direct-browser-access'] !== 'true') throw new Error('no browser header');
+    if (call.body.model !== 'claude-opus-5') throw new Error('model: ' + call.body.model);
+    const f = call.body.output_config.format;
+    if (f.type !== 'json_schema') throw new Error('format: ' + f.type);
+    if (f.schema.additionalProperties !== false) throw new Error('schema allows extra keys');
+    if (!f.schema.required.includes('wins')) throw new Error('wins not required');
+    if (!call.body.messages[0].content.includes('<resume>')) throw new Error('resume not sent');
+  });
+  await step('a model that errors falls back rather than blocking', async () => {
+    await page.evaluate(() => {
+      window.AI_FETCH = () => Promise.resolve({
+        ok: false, status: 401, text: () => Promise.resolve(JSON.stringify({ error: { message: 'bad key' } }))
+      });
+    });
+    await page.click('#redo-import');
+    await page.waitForSelector('#drop', { timeout: 5000 });
+    await page.click('#use-example');
+    await page.click('#read');
+    await page.waitForSelector('#roles', { timeout: 8000 });
+    const pf = await page.evaluate(() => Store.state.profile);
+    if (pf.readBy !== 'pattern') throw new Error('did not fall back');
+    if (pf.name !== 'Evan Pogue') throw new Error('fallback did not parse: ' + pf.name);
+  });
+});
+
+await group('The model in the rest of the app', async (page) => {
+  await page.addInitScript(STUB);
+  await signIn(page);
+  await page.evaluate(() => { window.__useKey(); window.__calls = []; });
+  await step('settings reports what is switched on', async () => {
+    await page.goto(BASE + '#/settings', { waitUntil: 'networkidle' });
+    await page.waitForSelector('#ai-state', { timeout: 5000 });
+    const t = await page.locator('#ai-state').textContent();
+    if (!/Opus 5/.test(t)) throw new Error('state reads "' + t + '"');
+    if (!(await page.locator('.warnbox').count())) throw new Error('no warning about the key living here');
+  });
+  await step('the key is never shown in the clear', async () => {
+    const type = await page.locator('#ai-key').getAttribute('type');
+    if (type !== 'password') throw new Error('key input type=' + type);
+  });
+  await step('the draft assistant rewrites through the model', async () => {
+    await page.goto(BASE + '#/c/c_acme/sequence', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.stepcard', { timeout: 5000 });
+    await page.locator('.stepcard').nth(3).click();
+    await page.waitForTimeout(260);
+    await page.locator('.sug', { hasText: 'Shorter' }).click();
+    await page.waitForTimeout(700);
+    const body = await page.inputValue('#body');
+    if (!/four lines and one ask/.test(body)) throw new Error('draft not replaced: ' + body.slice(0, 60));
+    const call = await page.evaluate(() => window.__calls[window.__calls.length - 1]);
+    if (!call.body.output_config.format.schema.required.includes('body')) throw new Error('no rewrite schema');
+  });
+  await step('the story chat asks the model its questions', async () => {
+    await page.goto(BASE + '#/new', { waitUntil: 'networkidle' });
+    await page.waitForSelector('#listing', { timeout: 5000 });
+    await page.click('#use-sample');
+    await page.click('#read');
+    await page.waitForSelector('#story-form', { timeout: 8000 });
+    await page.waitForTimeout(500);
+    const first = await page.locator('.bubble.ai').first().textContent();
+    if (!/What broke first/.test(first)) throw new Error('opened with "' + first + '"');
+  });
+  await step('answers become the story on the company', async () => {
+    await page.fill('#story-q', 'The forecast broke.');
+    await page.press('#story-q', 'Enter');
+    await page.waitForTimeout(600);
+    await page.click('#create');
+    await page.waitForSelector('.task', { timeout: 8000 });
+    const story = await page.evaluate(() => Store.campaigns()[0].story);
+    if (!story) throw new Error('no story kept');
+  });
+});
+
 /* ---------------------------------------------------------- cold start -- */
 await group('Cold start, all the way through', async (page) => {
   await step('a new account lands on the resume screen with nothing in it', async () => {

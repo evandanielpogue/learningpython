@@ -24,7 +24,6 @@
     var parsed = null;
     var ranked = [];
     var chosen = [];
-    var story = '';
     var asked = 0;
 
     function paint() {
@@ -160,46 +159,90 @@
         paintWins();
       });
 
-      /* the chat only wants one thing: the detail a résumé bullet leaves out */
+      /* the chat is after the detail a resume bullet leaves out */
       var log = v.querySelector('#log');
+      var history = [];
+      var thinking = false;
+
       function say(cls, text) {
         log.insertAdjacentHTML('beforeend', '<div class="bubble ' + cls + '">' + esc(text) + '</div>');
         log.scrollTop = log.scrollHeight;
       }
-      var top = Store.state.profile.wins.filter(function (w) { return w.id === chosen[0]; })[0];
-      var QS = [
-        top ? 'You are leading with "' + top.text + '". What actually broke first?' : 'What is the hardest thing you have fixed at work?',
+      function topWin() {
+        return Store.state.profile.wins.filter(function (w) { return w.id === chosen[0]; })[0] || null;
+      }
+
+      var CANNED = [
+        'What actually broke first?',
         'And what did you do about it, in the order you did it?',
         'Last one. How did it end, with a number if you have one?'
       ];
-      say('ai', QS[0]);
+
+      function opener() {
+        var w = topWin();
+        if (!AI.ready()) {
+          return Promise.resolve(w ? 'You are leading with "' + w.text + '". What actually broke first?' : CANNED[0]);
+        }
+        return AI.storyTurn(parsed, w, [{ role: 'user', content: 'Ask me your first question.' }]);
+      }
+
+      opener().then(function (line) { say('ai', line); })
+        .catch(function () { say('ai', CANNED[0]); });
 
       v.querySelector('#story-form').addEventListener('submit', function (e) {
         e.preventDefault();
         var i = v.querySelector('#story-q');
         var text = i.value.trim();
-        if (!text) return;
+        if (!text || thinking) return;
         say('me', text);
-        story += (story ? ' ' : '') + text;
+        history.push({ role: 'user', content: text });
         i.value = '';
         asked += 1;
-        setTimeout(function () {
-          if (asked < QS.length) say('ai', QS[asked]);
-          else say('ai', 'That is the story. It goes on your page and into the first message to the hiring manager.');
-        }, 380);
+
+        if (!AI.ready()) {
+          setTimeout(function () {
+            if (asked < CANNED.length) say('ai', CANNED[asked]);
+            else say('ai', 'That is the story. It goes on your page and into the first message.');
+          }, 380);
+          return;
+        }
+
+        thinking = true;
+        say('ai', '\u2026');
+        var bubble = log.lastElementChild;
+        AI.storyTurn(parsed, topWin(), history).then(function (line) {
+          bubble.textContent = line;
+          history.push({ role: 'assistant', content: line });
+        }).catch(function (err) {
+          bubble.textContent = asked < CANNED.length ? CANNED[asked] : 'Got it.';
+          UI.toast('Claude did not answer (' + err.message + ').');
+        }).then(function () { thinking = false; });
       });
 
       v.querySelector('#back').addEventListener('click', function () { stage = 1; paint(); });
       v.querySelector('#skip-story').addEventListener('click', create);
       v.querySelector('#create').addEventListener('click', create);
 
-      function create() {
-        if (!chosen.length) { UI.toast('Pick at least one win to lead with.'); return; }
+      function make(text) {
         var c = Store.createCampaign({
-          listing: listing, parsed: parsed, winIds: chosen.slice(), story: story
+          listing: listing, parsed: parsed, winIds: chosen.slice(), story: text || ''
         });
         UI.toast(c.company + ' added. Three people to look at.');
         Router.go('/c/' + c.id);
+      }
+
+      function create() {
+        if (!chosen.length) { UI.toast('Pick at least one win to lead with.'); return; }
+        var plain = history.filter(function (m) { return m.role === 'user'; })
+          .map(function (m) { return m.content; }).join(' ');
+        if (!AI.ready() || !history.length) return make(plain);
+
+        var btn = v.querySelector('#create');
+        btn.disabled = true;
+        btn.textContent = 'Writing it up\u2026';
+        AI.storySummary(parsed, topWin(), history)
+          .then(function (text) { make(text); })
+          .catch(function () { make(plain); });
       }
     }
 

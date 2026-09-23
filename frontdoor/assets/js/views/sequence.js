@@ -363,18 +363,29 @@
         log.insertAdjacentHTML('beforeend', '<div class="bubble ' + cls + '">' + esc(text) + '</div>');
         log.scrollTop = log.scrollHeight;
       }
+      function land(reply, text) {
+        v.querySelector('#log').lastElementChild.textContent = reply;
+        body.value = text;
+        words(); grow(); persist();
+        body.classList.remove('flash'); void body.offsetWidth; body.classList.add('flash');
+      }
       function ask(text) {
         if (!text.trim() || !body) return;
         say('me', text);
-        var lc = text.toLowerCase();
-        var hit = EDITS.filter(function (e) { return e.k.some(function (k) { return lc.indexOf(k) > -1; }); })[0] || EDITS[0];
         say('ai', 'Working on it');
-        setTimeout(function () {
-          v.querySelector('#log').lastElementChild.textContent = hit.reply;
-          body.value = hit.run(body.value);
-          words(); grow(); persist();
-          body.classList.remove('flash'); void body.offsetWidth; body.classList.add('flash');
-        }, 440);
+
+        if (!AI.ready()) {
+          var lc = text.toLowerCase();
+          var hit = EDITS.filter(function (e) { return e.k.some(function (k) { return lc.indexOf(k) > -1; }); })[0] || EDITS[0];
+          setTimeout(function () { land(hit.reply, hit.run(body.value)); }, 440);
+          return;
+        }
+
+        AI.rewrite(text, body.value, c, contactOf(s)).then(function (out) {
+          land(out.reply || 'Done.', out.body);
+        }).catch(function (err) {
+          v.querySelector('#log').lastElementChild.textContent = 'That did not go through: ' + err.message;
+        });
       }
       v.querySelectorAll('.sug').forEach(function (el) { el.addEventListener('click', function () { ask(el.textContent); }); });
       var form = v.querySelector('#assist-form');

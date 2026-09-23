@@ -148,6 +148,19 @@
         '</div>' +
       '</div>' +
 
+      '<div class="card p5 mb4" id="ai-card">' +
+        '<div class="row between wrap g3 mb3"><h3>Reading and writing</h3>' +
+        '<span class="chip' + (AI.ready() ? ' chip-pos' : '') + '" id="ai-state">' + esc(AI.describe()) + '</span></div>' +
+        '<p class="dim mb4" style="font-size:var(--fs-sm)">Claude reads your résumé, asks the questions that turn a bullet into a story, and rewrites drafts. Without it, résumés are read by pattern matching, which is worse.</p>' +
+        '<div class="segmented mb4" id="ai-mode">' +
+          ['off', 'key', 'proxy'].map(function (m) {
+            var label = m === 'off' ? 'No model' : m === 'key' ? 'My API key' : 'My server';
+            return '<button class="seg' + (Store.state.ai.mode === m ? ' on' : '') + '" data-mode="' + m + '">' + label + '</button>';
+          }).join('') +
+        '</div>' +
+        '<div id="ai-fields"></div>' +
+      '</div>' +
+
       '<div class="card p5 mb4">' +
         '<h3 class="mb3">How you write</h3>' +
         '<p class="dim mb4" style="font-size:var(--fs-sm)">Read off your own bullets. Every draft starts from this.</p>' +
@@ -205,6 +218,78 @@
     });
     var clear = v.querySelector('#photo-clear');
     if (clear) clear.addEventListener('click', function () { Store.setPhoto(null); Views.settings(); });
+
+    /* ---- model settings ---- */
+    function paintAI() {
+      var a = Store.state.ai;
+      var box = v.querySelector('#ai-fields');
+      var models = '<div class="field"><label for="ai-model">Model</label><select class="input" id="ai-model">' +
+        AI.MODELS.map(function (m) {
+          return '<option value="' + m.id + '"' + (m.id === a.model ? ' selected' : '') + '>' + esc(m.name) + ' — ' + esc(m.note) + '</option>';
+        }).join('') + '</select></div>';
+
+      if (a.mode === 'off') {
+        box.innerHTML = '<p class="hint">Résumés get read by pattern matching, the story chat asks the same three questions every time, and the assistant does canned edits. Everything still works, it is just dumber.</p>';
+        return;
+      }
+      if (a.mode === 'key') {
+        box.innerHTML =
+          '<div class="field mb3"><label for="ai-key">Anthropic API key</label>' +
+            '<input class="input mono" id="ai-key" type="password" autocomplete="off" spellcheck="false" ' +
+            'placeholder="sk-ant-..." value="' + esc(a.key) + '"></div>' +
+          models +
+          '<p class="warnbox mt3">This key is kept in this browser and sent straight to Anthropic from this page. ' +
+          'Anyone who can open this browser profile can read it, so use a key you can revoke, and do not ship this file to anyone with the key still in it.</p>' +
+          '<div class="row g2 wrap mt3"><button class="btn btn-secondary btn-sm" id="ai-test">Test it</button>' +
+          '<span class="hint" id="ai-msg"></span></div>';
+      } else {
+        box.innerHTML =
+          '<div class="field mb3"><label for="ai-proxy">Your endpoint</label>' +
+            '<input class="input mono" id="ai-proxy" autocomplete="off" spellcheck="false" ' +
+            'placeholder="https://your-server.example.com/claude" value="' + esc(a.proxy) + '"></div>' +
+          models +
+          '<p class="hint mt3">Your server holds the key and forwards the body to /v1/messages. Nothing secret sits in the browser. This is the shape a real deployment takes.</p>' +
+          '<div class="row g2 wrap mt3"><button class="btn btn-secondary btn-sm" id="ai-test">Test it</button>' +
+          '<span class="hint" id="ai-msg"></span></div>';
+      }
+
+      var key = box.querySelector('#ai-key');
+      if (key) key.addEventListener('change', function () { Store.state.ai.key = this.value.trim(); Store.save(); paintState(); });
+      var prox = box.querySelector('#ai-proxy');
+      if (prox) prox.addEventListener('change', function () { Store.state.ai.proxy = this.value.trim(); Store.save(); paintState(); });
+      var mod = box.querySelector('#ai-model');
+      if (mod) mod.addEventListener('change', function () { Store.state.ai.model = this.value; Store.save(); paintState(); });
+
+      var test = box.querySelector('#ai-test');
+      if (test) test.addEventListener('click', function () {
+        var out = box.querySelector('#ai-msg');
+        if (key) { Store.state.ai.key = key.value.trim(); }
+        if (prox) { Store.state.ai.proxy = prox.value.trim(); }
+        Store.save();
+        if (!AI.ready()) { out.textContent = 'Fill that in first.'; return; }
+        out.textContent = 'Asking...';
+        AI.test().then(function () {
+          out.textContent = 'Working.';
+          out.style.color = 'var(--pos)';
+          paintState();
+        }).catch(function (e) {
+          out.textContent = e.message;
+          out.style.color = 'var(--neg)';
+        });
+      });
+    }
+    function paintState() {
+      var chip = v.querySelector('#ai-state');
+      chip.textContent = AI.describe();
+      chip.className = 'chip' + (AI.ready() ? ' chip-pos' : '');
+    }
+    UI.on(v, 'click', '[data-mode]', function (e, el) {
+      Store.state.ai.mode = el.dataset.mode;
+      Store.save();
+      v.querySelectorAll('[data-mode]').forEach(function (b) { b.classList.toggle('on', b.dataset.mode === el.dataset.mode); });
+      paintAI(); paintState();
+    });
+    paintAI();
 
     v.querySelector('#s-reimport').addEventListener('click', function () { Router.go('/import'); });
     v.querySelector('#s-reset').addEventListener('click', function () {

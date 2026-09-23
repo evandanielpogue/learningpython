@@ -1419,6 +1419,22 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .drop.busy .drop-ic { background: var(--ac); border-color: var(--ac); color: #fff; animation: pulse 1s var(--ease) infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
 
+/* ---- segmented control and the key warning ------------------------------ */
+.segmented { display: inline-flex; padding: 3px; gap: 2px; background: var(--sunk); border: 1px solid var(--line); border-radius: var(--r-2); }
+.seg {
+  border: none; background: none; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+  font-size: var(--fs-sm); font-weight: 550; color: var(--ink-2);
+  transition: background var(--t-1) var(--ease), color var(--t-1) var(--ease);
+}
+.seg:hover { color: var(--ink); }
+.seg.on { background: var(--panel); color: var(--ink); box-shadow: var(--e-1); }
+.seg:active { transform: scale(.97); }
+.warnbox {
+  font-size: var(--fs-sm); line-height: 1.55; color: var(--warn); background: var(--warn-wash);
+  border: 1px solid var(--warn-line); border-radius: var(--r-2); padding: var(--s-3) var(--s-4);
+}
+.input.mono { font-family: var(--mono); font-size: 12.5px; }
+
 </style>
 </head>
 <body>
@@ -1716,7 +1732,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       profile: blankProfile(),
       templates: clone(TEMPLATES),
       campaigns: [],
-      lastCampaign: null
+      lastCampaign: null,
+      ai: { mode: 'off', key: '', proxy: '', model: 'claude-opus-5' }
     };
   }
 
@@ -2065,6 +2082,33 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         if (avg >= 15) out.voice.traits.push('Full sentences');
         out.voice.traits.push('One ask');
       }
+      return out;
+    },
+
+    /* the model returns content, not bookkeeping, so the ids are added here */
+    fromModel: function (data, source) {
+      var out = blankProfile();
+      out.imported = true;
+      out.source = source || 'your resume';
+      out.name = data.name || '';
+      out.email = data.email || '';
+      out.phone = data.phone || '';
+      out.location = data.location || '';
+      out.years = Math.max(0, Math.min(60, parseInt(data.years, 10) || 0));
+      out.roles = (data.roles || []).map(function (r) {
+        return {
+          id: uid('r'), title: r.title || '', company: r.company || '', span: r.span || '',
+          on: true, bullets: (r.bullets || []).filter(Boolean)
+        };
+      }).filter(function (r) { return r.title || r.company; });
+      out.wins = (data.wins || []).map(function (w) {
+        return {
+          id: uid('w'), text: w.text || '', metric: w.metric || '', short: w.short || '',
+          where: w.where || '', tags: (w.tags || []).map(function (t) { return String(t).toLowerCase(); })
+        };
+      }).filter(function (w) { return w.metric && w.text; }).slice(0, 12);
+      out.stack = (data.tools || []).filter(Boolean).slice(0, 14);
+      out.voice = { traits: (data.voice || []).filter(Boolean).slice(0, 4) };
       return out;
     },
 
@@ -2794,6 +2838,269 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 })(window, document);
 
 ;
+/* assets/js/ai.js */
+/* ==========================================================================
+   ai.js — the model layer.
+
+   Everything that needs judgement rather than pattern matching goes through
+   here: reading a resume, asking the follow up questions that turn a bullet
+   into a story, and rewriting a draft. One transport, three callers.
+
+   Two ways to reach the API:
+     key    the browser calls api.anthropic.com directly with a key you paste
+            into Settings. It never leaves this browser, but it does sit in
+            this browser, which is fine for your own testing and wrong for
+            anyone else's machine.
+     proxy  the browser calls a URL you host, and your server holds the key.
+            This is the shape a real deployment takes.
+
+   With neither configured the app falls back to reading resumes by pattern
+   matching, which is worse and says so.
+   ========================================================================== */
+(function (window) {
+  'use strict';
+
+  var ENDPOINT = 'https://api.anthropic.com/v1/messages';
+  var VERSION = '2023-06-01';
+
+  var MODELS = [
+    { id: 'claude-opus-5',   name: 'Opus 5',   note: 'Best at reading a messy resume' },
+    { id: 'claude-sonnet-5', name: 'Sonnet 5', note: 'Faster and cheaper, still good' },
+    { id: 'claude-haiku-4-5', name: 'Haiku 4.5', note: 'Cheapest. Misses things.' }
+  ];
+
+  /* ---- what a resume comes back as -------------------------------------- */
+  var RESUME_SCHEMA = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['name', 'email', 'phone', 'location', 'years', 'roles', 'wins', 'tools', 'voice'],
+    properties: {
+      name: { type: 'string', description: 'Their full name. Empty string if it is not in the document.' },
+      email: { type: 'string' },
+      phone: { type: 'string' },
+      location: { type: 'string', description: 'City and state or country, as written.' },
+      years: { type: 'integer', description: 'Total years of professional experience, worked out from the dates. 0 if unclear.' },
+      roles: {
+        type: 'array',
+        description: 'Every job, most recent first.',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['title', 'company', 'span', 'bullets'],
+          properties: {
+            title: { type: 'string' },
+            company: { type: 'string', description: 'Company, and location if given.' },
+            span: { type: 'string', description: 'Like "2023 to now" or "2021 to 2023".' },
+            bullets: {
+              type: 'array',
+              description: 'What they did there, cleaned up but not reworded.',
+              items: { type: 'string' }
+            }
+          }
+        }
+      },
+      wins: {
+        type: 'array',
+        description: 'Achievements with a number attached. One per distinct result, deduplicated.',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['text', 'metric', 'short', 'where', 'tags'],
+          properties: {
+            text: { type: 'string', description: 'The achievement in their own words.' },
+            metric: { type: 'string', description: 'Just the number, formatted tight: 112%, $1.2M, 30-70, Top 3.' },
+            short: { type: 'string', description: 'Five to nine words naming what the number measures, without repeating the number. Reads as a phrase: "through a pricing change", "territory ARR growth".' },
+            where: { type: 'string', description: 'Company and period it happened at.' },
+            tags: {
+              type: 'array',
+              description: 'Lowercase single words a job listing might use for this: pricing, quota, ramp, discovery, territory, enterprise, outbound, team.',
+              items: { type: 'string' }
+            }
+          }
+        }
+      },
+      tools: { type: 'array', description: 'Software and methodologies named.', items: { type: 'string' } },
+      voice: {
+        type: 'array',
+        description: 'Two to four short labels for how this person writes, read off their own bullets.',
+        items: { type: 'string' }
+      }
+    }
+  };
+
+  var RESUME_SYSTEM = [
+    'You read resumes and pull out what a job seeker would use to write to a hiring manager.',
+    '',
+    'Rules:',
+    '- Take what is on the page. Do not invent a title, a number, or a date that is not there.',
+    '- A win needs a number in it. "Grew the territory" is not a win. "Grew territory ARR 41%" is.',
+    '- Keep their words in text and bullets. You are extracting, not rewriting.',
+    '- short must not repeat the number that is already in metric, and must read as a phrase.',
+    '- If a field is not in the document, return an empty string or an empty array. Never guess.'
+  ].join('\n');
+
+  function cfg() {
+    return (Store.state.ai = Store.state.ai || { mode: 'off', key: '', proxy: '', model: 'claude-opus-5' });
+  }
+
+  var AI = {
+    MODELS: MODELS,
+    config: cfg,
+
+    /* is there anywhere to send a request */
+    ready: function () {
+      var c = cfg();
+      if (c.mode === 'key') return !!(c.key && c.key.trim());
+      if (c.mode === 'proxy') return !!(c.proxy && c.proxy.trim());
+      return false;
+    },
+    describe: function () {
+      var c = cfg();
+      if (c.mode === 'key') return 'Claude ' + (AI.modelName(c.model)) + ', called from this browser';
+      if (c.mode === 'proxy') return 'Claude ' + (AI.modelName(c.model)) + ', through your server';
+      return 'Pattern matching, no model';
+    },
+    modelName: function (id) {
+      var m = MODELS.filter(function (x) { return x.id === id; })[0];
+      return m ? m.name : id;
+    },
+
+    /* ---- the one request ------------------------------------------------- */
+    send: function (opts) {
+      var c = cfg();
+      if (!AI.ready()) return Promise.reject(new Error('not configured'));
+
+      var body = {
+        model: c.model || 'claude-opus-5',
+        max_tokens: opts.maxTokens || 8000,
+        messages: opts.messages
+      };
+      if (opts.system) body.system = opts.system;
+      if (opts.schema) body.output_config = { format: { type: 'json_schema', schema: opts.schema } };
+
+      var url = c.mode === 'proxy' ? c.proxy.trim() : ENDPOINT;
+      var headers = { 'content-type': 'application/json' };
+      if (c.mode === 'key') {
+        headers['x-api-key'] = c.key.trim();
+        headers['anthropic-version'] = VERSION;
+        /* the API blocks browser origins unless you say you meant it */
+        headers['anthropic-dangerous-direct-browser-access'] = 'true';
+      }
+
+      var doFetch = window.AI_FETCH || window.fetch.bind(window);
+      return doFetch(url, { method: 'POST', headers: headers, body: JSON.stringify(body) })
+        .then(function (res) {
+          return res.text().then(function (raw) {
+            var data = null;
+            try { data = JSON.parse(raw); } catch (e) {}
+            if (!res.ok) {
+              var msg = (data && data.error && data.error.message) || raw.slice(0, 160) || ('HTTP ' + res.status);
+              if (res.status === 401) msg = 'That key was rejected.';
+              if (res.status === 429) msg = 'Rate limited. Wait a moment and try again.';
+              throw new Error(msg);
+            }
+            if (!data) throw new Error('The response was not JSON.');
+            if (data.stop_reason === 'refusal') throw new Error('The model declined that one.');
+            /* thinking blocks come first on the current models */
+            var text = (data.content || []).filter(function (b) { return b.type === 'text'; })
+              .map(function (b) { return b.text; }).join('');
+            if (!text) throw new Error('The model returned nothing to use.');
+            if (!opts.schema) return text;
+            try { return JSON.parse(text); }
+            catch (e) { throw new Error('The model did not return the shape we asked for.'); }
+          });
+        });
+    },
+
+    /* ---- reading a resume ------------------------------------------------ */
+    readResume: function (text) {
+      return AI.send({
+        system: RESUME_SYSTEM,
+        schema: RESUME_SCHEMA,
+        maxTokens: 8000,
+        messages: [{ role: 'user', content: 'Here is the resume:\n\n<resume>\n' + text + '\n</resume>' }]
+      });
+    },
+
+    /* ---- the questions that turn a bullet into a story ------------------- */
+    storyTurn: function (campaign, win, history) {
+      var sys = [
+        'You are helping a job seeker turn one achievement from their resume into a story they can',
+        'tell a hiring manager. Ask one short question at a time. Three or four in total, then stop.',
+        '',
+        'Ask about what actually happened: what broke, what they did, what it cost, how it ended.',
+        'Never ask more than one thing in a message. Never flatter them. Never summarise back to',
+        'them at length. Keep every message under 25 words.',
+        '',
+        'When you have enough, say so in one line and stop asking.'
+      ].join('\n');
+
+      var intro = 'They are applying for ' + campaign.role + ' at ' + campaign.company + '.' +
+        (win ? ' They are leading with: "' + win.text + '".' : '');
+
+      return AI.send({
+        system: sys,
+        maxTokens: 400,
+        messages: [{ role: 'user', content: intro }].concat(history)
+      });
+    },
+
+    /* pull the answers together into something the page can print */
+    storySummary: function (campaign, win, history) {
+      var sys = 'Write what the person told you as three or four plain sentences, in their voice, ' +
+        'first person, past tense. No preamble, no heading, no flourish. Only what they said.';
+      return AI.send({
+        system: sys,
+        maxTokens: 500,
+        messages: history.concat([{ role: 'user', content: 'Write it up now, nothing else.' }])
+      });
+    },
+
+    /* ---- rewriting a draft ----------------------------------------------- */
+    rewrite: function (ask, draft, campaign, contact) {
+      var sys = [
+        'You edit one outreach message at a time for a job seeker. You get the current draft and',
+        'what they want changed. Return the whole message rewritten, and one short line saying what',
+        'you did.',
+        '',
+        'Hold to this: no greeting beyond their first name, no "I hope this finds you well", no',
+        'adjectives doing the work of facts, one ask at the end. Keep any real number that is already',
+        'there. Never invent a number, a name, or a claim that is not in the draft.'
+      ].join('\n');
+
+      var ctx = 'Company: ' + campaign.company + '\nRole: ' + campaign.role +
+        (contact ? '\nGoing to: ' + contact.name + ', ' + (contact.title || contact.persona) : '') +
+        '\n\nCurrent draft:\n' + draft + '\n\nWhat they want: ' + ask;
+
+      return AI.send({
+        system: sys,
+        maxTokens: 2000,
+        schema: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['reply', 'body'],
+          properties: {
+            reply: { type: 'string', description: 'One line, under 12 words, saying what you changed.' },
+            body: { type: 'string', description: 'The full rewritten message.' }
+          }
+        },
+        messages: [{ role: 'user', content: ctx }]
+      });
+    },
+
+    /* ---- settings -------------------------------------------------------- */
+    test: function () {
+      return AI.send({
+        maxTokens: 16,
+        messages: [{ role: 'user', content: 'Reply with the single word: ready' }]
+      });
+    }
+  };
+
+  window.AI = AI;
+})(window);
+
+;
 /* assets/js/router.js */
 /* ==========================================================================
    router.js — hash router with an auth guard
@@ -3269,6 +3576,19 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         '</div>' +
       '</div>' +
 
+      '<div class="card p5 mb4" id="ai-card">' +
+        '<div class="row between wrap g3 mb3"><h3>Reading and writing</h3>' +
+        '<span class="chip' + (AI.ready() ? ' chip-pos' : '') + '" id="ai-state">' + esc(AI.describe()) + '</span></div>' +
+        '<p class="dim mb4" style="font-size:var(--fs-sm)">Claude reads your résumé, asks the questions that turn a bullet into a story, and rewrites drafts. Without it, résumés are read by pattern matching, which is worse.</p>' +
+        '<div class="segmented mb4" id="ai-mode">' +
+          ['off', 'key', 'proxy'].map(function (m) {
+            var label = m === 'off' ? 'No model' : m === 'key' ? 'My API key' : 'My server';
+            return '<button class="seg' + (Store.state.ai.mode === m ? ' on' : '') + '" data-mode="' + m + '">' + label + '</button>';
+          }).join('') +
+        '</div>' +
+        '<div id="ai-fields"></div>' +
+      '</div>' +
+
       '<div class="card p5 mb4">' +
         '<h3 class="mb3">How you write</h3>' +
         '<p class="dim mb4" style="font-size:var(--fs-sm)">Read off your own bullets. Every draft starts from this.</p>' +
@@ -3327,6 +3647,78 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     var clear = v.querySelector('#photo-clear');
     if (clear) clear.addEventListener('click', function () { Store.setPhoto(null); Views.settings(); });
 
+    /* ---- model settings ---- */
+    function paintAI() {
+      var a = Store.state.ai;
+      var box = v.querySelector('#ai-fields');
+      var models = '<div class="field"><label for="ai-model">Model</label><select class="input" id="ai-model">' +
+        AI.MODELS.map(function (m) {
+          return '<option value="' + m.id + '"' + (m.id === a.model ? ' selected' : '') + '>' + esc(m.name) + ' — ' + esc(m.note) + '</option>';
+        }).join('') + '</select></div>';
+
+      if (a.mode === 'off') {
+        box.innerHTML = '<p class="hint">Résumés get read by pattern matching, the story chat asks the same three questions every time, and the assistant does canned edits. Everything still works, it is just dumber.</p>';
+        return;
+      }
+      if (a.mode === 'key') {
+        box.innerHTML =
+          '<div class="field mb3"><label for="ai-key">Anthropic API key</label>' +
+            '<input class="input mono" id="ai-key" type="password" autocomplete="off" spellcheck="false" ' +
+            'placeholder="sk-ant-..." value="' + esc(a.key) + '"></div>' +
+          models +
+          '<p class="warnbox mt3">This key is kept in this browser and sent straight to Anthropic from this page. ' +
+          'Anyone who can open this browser profile can read it, so use a key you can revoke, and do not ship this file to anyone with the key still in it.</p>' +
+          '<div class="row g2 wrap mt3"><button class="btn btn-secondary btn-sm" id="ai-test">Test it</button>' +
+          '<span class="hint" id="ai-msg"></span></div>';
+      } else {
+        box.innerHTML =
+          '<div class="field mb3"><label for="ai-proxy">Your endpoint</label>' +
+            '<input class="input mono" id="ai-proxy" autocomplete="off" spellcheck="false" ' +
+            'placeholder="https://your-server.example.com/claude" value="' + esc(a.proxy) + '"></div>' +
+          models +
+          '<p class="hint mt3">Your server holds the key and forwards the body to /v1/messages. Nothing secret sits in the browser. This is the shape a real deployment takes.</p>' +
+          '<div class="row g2 wrap mt3"><button class="btn btn-secondary btn-sm" id="ai-test">Test it</button>' +
+          '<span class="hint" id="ai-msg"></span></div>';
+      }
+
+      var key = box.querySelector('#ai-key');
+      if (key) key.addEventListener('change', function () { Store.state.ai.key = this.value.trim(); Store.save(); paintState(); });
+      var prox = box.querySelector('#ai-proxy');
+      if (prox) prox.addEventListener('change', function () { Store.state.ai.proxy = this.value.trim(); Store.save(); paintState(); });
+      var mod = box.querySelector('#ai-model');
+      if (mod) mod.addEventListener('change', function () { Store.state.ai.model = this.value; Store.save(); paintState(); });
+
+      var test = box.querySelector('#ai-test');
+      if (test) test.addEventListener('click', function () {
+        var out = box.querySelector('#ai-msg');
+        if (key) { Store.state.ai.key = key.value.trim(); }
+        if (prox) { Store.state.ai.proxy = prox.value.trim(); }
+        Store.save();
+        if (!AI.ready()) { out.textContent = 'Fill that in first.'; return; }
+        out.textContent = 'Asking...';
+        AI.test().then(function () {
+          out.textContent = 'Working.';
+          out.style.color = 'var(--pos)';
+          paintState();
+        }).catch(function (e) {
+          out.textContent = e.message;
+          out.style.color = 'var(--neg)';
+        });
+      });
+    }
+    function paintState() {
+      var chip = v.querySelector('#ai-state');
+      chip.textContent = AI.describe();
+      chip.className = 'chip' + (AI.ready() ? ' chip-pos' : '');
+    }
+    UI.on(v, 'click', '[data-mode]', function (e, el) {
+      Store.state.ai.mode = el.dataset.mode;
+      Store.save();
+      v.querySelectorAll('[data-mode]').forEach(function (b) { b.classList.toggle('on', b.dataset.mode === el.dataset.mode); });
+      paintAI(); paintState();
+    });
+    paintAI();
+
     v.querySelector('#s-reimport').addEventListener('click', function () { Router.go('/import'); });
     v.querySelector('#s-reset').addEventListener('click', function () {
       UI.confirm({ title: 'Clear all data?', body: 'Every company, the profile and the sign in all go. You will land back at the login screen.', confirm: 'Clear it', danger: true })
@@ -3371,7 +3763,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     var parsed = null;
     var ranked = [];
     var chosen = [];
-    var story = '';
     var asked = 0;
 
     function paint() {
@@ -3507,46 +3898,90 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         paintWins();
       });
 
-      /* the chat only wants one thing: the detail a résumé bullet leaves out */
+      /* the chat is after the detail a resume bullet leaves out */
       var log = v.querySelector('#log');
+      var history = [];
+      var thinking = false;
+
       function say(cls, text) {
         log.insertAdjacentHTML('beforeend', '<div class="bubble ' + cls + '">' + esc(text) + '</div>');
         log.scrollTop = log.scrollHeight;
       }
-      var top = Store.state.profile.wins.filter(function (w) { return w.id === chosen[0]; })[0];
-      var QS = [
-        top ? 'You are leading with "' + top.text + '". What actually broke first?' : 'What is the hardest thing you have fixed at work?',
+      function topWin() {
+        return Store.state.profile.wins.filter(function (w) { return w.id === chosen[0]; })[0] || null;
+      }
+
+      var CANNED = [
+        'What actually broke first?',
         'And what did you do about it, in the order you did it?',
         'Last one. How did it end, with a number if you have one?'
       ];
-      say('ai', QS[0]);
+
+      function opener() {
+        var w = topWin();
+        if (!AI.ready()) {
+          return Promise.resolve(w ? 'You are leading with "' + w.text + '". What actually broke first?' : CANNED[0]);
+        }
+        return AI.storyTurn(parsed, w, [{ role: 'user', content: 'Ask me your first question.' }]);
+      }
+
+      opener().then(function (line) { say('ai', line); })
+        .catch(function () { say('ai', CANNED[0]); });
 
       v.querySelector('#story-form').addEventListener('submit', function (e) {
         e.preventDefault();
         var i = v.querySelector('#story-q');
         var text = i.value.trim();
-        if (!text) return;
+        if (!text || thinking) return;
         say('me', text);
-        story += (story ? ' ' : '') + text;
+        history.push({ role: 'user', content: text });
         i.value = '';
         asked += 1;
-        setTimeout(function () {
-          if (asked < QS.length) say('ai', QS[asked]);
-          else say('ai', 'That is the story. It goes on your page and into the first message to the hiring manager.');
-        }, 380);
+
+        if (!AI.ready()) {
+          setTimeout(function () {
+            if (asked < CANNED.length) say('ai', CANNED[asked]);
+            else say('ai', 'That is the story. It goes on your page and into the first message.');
+          }, 380);
+          return;
+        }
+
+        thinking = true;
+        say('ai', '\u2026');
+        var bubble = log.lastElementChild;
+        AI.storyTurn(parsed, topWin(), history).then(function (line) {
+          bubble.textContent = line;
+          history.push({ role: 'assistant', content: line });
+        }).catch(function (err) {
+          bubble.textContent = asked < CANNED.length ? CANNED[asked] : 'Got it.';
+          UI.toast('Claude did not answer (' + err.message + ').');
+        }).then(function () { thinking = false; });
       });
 
       v.querySelector('#back').addEventListener('click', function () { stage = 1; paint(); });
       v.querySelector('#skip-story').addEventListener('click', create);
       v.querySelector('#create').addEventListener('click', create);
 
-      function create() {
-        if (!chosen.length) { UI.toast('Pick at least one win to lead with.'); return; }
+      function make(text) {
         var c = Store.createCampaign({
-          listing: listing, parsed: parsed, winIds: chosen.slice(), story: story
+          listing: listing, parsed: parsed, winIds: chosen.slice(), story: text || ''
         });
         UI.toast(c.company + ' added. Three people to look at.');
         Router.go('/c/' + c.id);
+      }
+
+      function create() {
+        if (!chosen.length) { UI.toast('Pick at least one win to lead with.'); return; }
+        var plain = history.filter(function (m) { return m.role === 'user'; })
+          .map(function (m) { return m.content; }).join(' ');
+        if (!AI.ready() || !history.length) return make(plain);
+
+        var btn = v.querySelector('#create');
+        btn.disabled = true;
+        btn.textContent = 'Writing it up\u2026';
+        AI.storySummary(parsed, topWin(), history)
+          .then(function (text) { make(text); })
+          .catch(function () { make(plain); });
       }
     }
 
@@ -3833,11 +4268,29 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       });
 
       go.addEventListener('click', function () {
-        parsed = Store.parseResume(ta.value, pending === Store.EXAMPLE_RESUME ? 'the example resume' : 'your resume');
-        Store.applyResume(parsed);
-        step = 2;
-        paint();
-        UI.toast(parsed.roles.length + ' roles and ' + parsed.wins.length + ' wins.');
+        var src = pending === Store.EXAMPLE_RESUME ? 'the example resume' : 'your resume';
+        var text = ta.value;
+
+        function land(p, how) {
+          Store.applyResume(p);
+          Store.state.profile.readBy = how;
+          Store.save();
+          step = 2;
+          paint();
+          UI.toast(p.roles.length + ' roles and ' + p.wins.length + ' wins.');
+        }
+
+        if (!AI.ready()) return land(Store.parseResume(text, src), 'pattern');
+
+        go.disabled = true;
+        go.textContent = 'Reading\u2026';
+        AI.readResume(text).then(function (data) {
+          land(Store.fromModel(data, src), 'model');
+        }).catch(function (err) {
+          /* a resume still has to get in, so fall back rather than stop */
+          UI.toast('Claude could not read it (' + err.message + '). Fell back to pattern matching.');
+          land(Store.parseResume(text, src), 'pattern');
+        });
       });
     }
 
@@ -3852,7 +4305,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       return pips(2) +
         '<div class="card p6 mb4">' +
           '<div class="row between wrap mb3 g3"><h3>Here is what came out</h3>' +
-          '<span class="cap">' + esc(p.source || 'your resume') + '</span></div>' +
+          '<span class="chip' + (p.readBy === 'model' ? ' chip-pos' : '') + '">' +
+            (p.readBy === 'model' ? 'Read by Claude' : 'Read by pattern matching') + '</span></div>' +
+          '<p class="dim mb4" style="font-size:var(--fs-sm)">From ' + esc(p.source || 'your resume') +
+          (p.readBy === 'model' ? '.' : '. <a href="#/settings">Turn on a model</a> and it reads this properly.') + '</p>' +
           (missing.length
             ? '<p class="lookup-msg mb4">We could not find ' + esc(missing.join(', ')) +
               '. Go back and paste more of it, or fix it in Settings later.</p>'
@@ -4743,18 +5199,29 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         log.insertAdjacentHTML('beforeend', '<div class="bubble ' + cls + '">' + esc(text) + '</div>');
         log.scrollTop = log.scrollHeight;
       }
+      function land(reply, text) {
+        v.querySelector('#log').lastElementChild.textContent = reply;
+        body.value = text;
+        words(); grow(); persist();
+        body.classList.remove('flash'); void body.offsetWidth; body.classList.add('flash');
+      }
       function ask(text) {
         if (!text.trim() || !body) return;
         say('me', text);
-        var lc = text.toLowerCase();
-        var hit = EDITS.filter(function (e) { return e.k.some(function (k) { return lc.indexOf(k) > -1; }); })[0] || EDITS[0];
         say('ai', 'Working on it');
-        setTimeout(function () {
-          v.querySelector('#log').lastElementChild.textContent = hit.reply;
-          body.value = hit.run(body.value);
-          words(); grow(); persist();
-          body.classList.remove('flash'); void body.offsetWidth; body.classList.add('flash');
-        }, 440);
+
+        if (!AI.ready()) {
+          var lc = text.toLowerCase();
+          var hit = EDITS.filter(function (e) { return e.k.some(function (k) { return lc.indexOf(k) > -1; }); })[0] || EDITS[0];
+          setTimeout(function () { land(hit.reply, hit.run(body.value)); }, 440);
+          return;
+        }
+
+        AI.rewrite(text, body.value, c, contactOf(s)).then(function (out) {
+          land(out.reply || 'Done.', out.body);
+        }).catch(function (err) {
+          v.querySelector('#log').lastElementChild.textContent = 'That did not go through: ' + err.message;
+        });
       }
       v.querySelectorAll('.sug').forEach(function (el) { el.addEventListener('click', function () { ask(el.textContent); }); });
       var form = v.querySelector('#assist-form');

@@ -132,11 +132,29 @@
       });
 
       go.addEventListener('click', function () {
-        parsed = Store.parseResume(ta.value, pending === Store.EXAMPLE_RESUME ? 'the example resume' : 'your resume');
-        Store.applyResume(parsed);
-        step = 2;
-        paint();
-        UI.toast(parsed.roles.length + ' roles and ' + parsed.wins.length + ' wins.');
+        var src = pending === Store.EXAMPLE_RESUME ? 'the example resume' : 'your resume';
+        var text = ta.value;
+
+        function land(p, how) {
+          Store.applyResume(p);
+          Store.state.profile.readBy = how;
+          Store.save();
+          step = 2;
+          paint();
+          UI.toast(p.roles.length + ' roles and ' + p.wins.length + ' wins.');
+        }
+
+        if (!AI.ready()) return land(Store.parseResume(text, src), 'pattern');
+
+        go.disabled = true;
+        go.textContent = 'Reading\u2026';
+        AI.readResume(text).then(function (data) {
+          land(Store.fromModel(data, src), 'model');
+        }).catch(function (err) {
+          /* a resume still has to get in, so fall back rather than stop */
+          UI.toast('Claude could not read it (' + err.message + '). Fell back to pattern matching.');
+          land(Store.parseResume(text, src), 'pattern');
+        });
       });
     }
 
@@ -151,7 +169,10 @@
       return pips(2) +
         '<div class="card p6 mb4">' +
           '<div class="row between wrap mb3 g3"><h3>Here is what came out</h3>' +
-          '<span class="cap">' + esc(p.source || 'your resume') + '</span></div>' +
+          '<span class="chip' + (p.readBy === 'model' ? ' chip-pos' : '') + '">' +
+            (p.readBy === 'model' ? 'Read by Claude' : 'Read by pattern matching') + '</span></div>' +
+          '<p class="dim mb4" style="font-size:var(--fs-sm)">From ' + esc(p.source || 'your resume') +
+          (p.readBy === 'model' ? '.' : '. <a href="#/settings">Turn on a model</a> and it reads this properly.') + '</p>' +
           (missing.length
             ? '<p class="lookup-msg mb4">We could not find ' + esc(missing.join(', ')) +
               '. Go back and paste more of it, or fix it in Settings later.</p>'
