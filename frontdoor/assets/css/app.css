@@ -446,7 +446,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .opt .ot { font-size: var(--fs-base); font-weight: 500; line-height: 1.45; }
 .opt .ot em { font-style: normal; display: block; font-size: var(--fs-sm); color: var(--ink-3); font-weight: 400; margin-top: 1px; }
 .opt .om { font-family: var(--mono); font-size: var(--fs-sm); color: var(--ac); font-weight: 500; }
-.opt.locked { opacity: .42; pointer-events: none; }
 
 .dropzone {
   border: 1.5px dashed var(--line-3); border-radius: var(--r-3); padding: var(--s-7) var(--s-5);

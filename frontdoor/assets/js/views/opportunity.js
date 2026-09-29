@@ -26,6 +26,8 @@
     var postingUrl = '';
     var parsed = null;
     var ranked = [];
+    /* how many we put forward, not how many they are allowed */
+    var SUGGEST = 3;
     var chosen = [];
     var match = [];
     var matchedBy = 'keywords';
@@ -84,9 +86,10 @@
           '</div>' +
 
           '<div class="card p6 mb4">' +
-            '<div class="row between wrap g3 mb2"><h3>What you lead with</h3>' +
-            '<span class="cap" id="pick-count">' + chosen.length + ' of 3</span></div>' +
-            '<p class="dim mb5" style="font-size:var(--fs-sm)">These three go on the page and open the first message. Swap any of them.</p>' +
+            '<div class="row between wrap g3 mb2"><h3>Wins</h3>' +
+            '<span class="cap" id="pick-count"></span></div>' +
+            '<p class="dim mb2" style="font-size:var(--fs-sm)">The three that match this listing best are already picked. Add or drop any of them.</p>' +
+            '<p class="dim mb5" id="pick-note" style="font-size:var(--fs-xs)"></p>' +
             '<div class="grid" style="gap:var(--s-2)" id="wins"></div>' +
           '</div>' +
 
@@ -157,7 +160,7 @@
       go.addEventListener('click', function () {
         parsed = Store.parseListing(listing);
         ranked = Store.rankWins(listing);
-        chosen = ranked.slice(0, 3).map(function (r) { return r.win.id; });
+        chosen = ranked.slice(0, SUGGEST).map(function (r) { return r.win.id; });
         match = Store.matchLocally(parsed.requirements, listing);
         matchedBy = 'keywords';
         go.disabled = true;
@@ -204,7 +207,7 @@
           var lead = (out.leadWith || []).filter(function (id) {
             return Store.state.profile.wins.some(function (w) { return w.id === id; });
           });
-          if (lead.length) chosen = lead.slice(0, 3);
+          if (lead.length) chosen = lead.slice(0, SUGGEST);
         }).catch(function (err) {
           UI.toast('Claude could not match it (' + err.message + '). Fell back to keywords.');
         }).then(land);
@@ -217,7 +220,7 @@
 
       function paintMatch() {
         if (!match.length) {
-          matchEl.innerHTML = '<p class="hint">The listing had no requirement list we could pull apart, so there is nothing to line up against. The wins below are your strongest three.</p>';
+          matchEl.innerHTML = '<p class="hint">The listing had no requirement list we could pull apart, so there is nothing to line up against. The wins below are your strongest, in order.</p>';
           return;
         }
         matchEl.innerHTML = match.map(function (r) {
@@ -240,15 +243,25 @@
       function paintWins() {
         winsEl.innerHTML = ranked.map(function (r) {
           var on = chosen.indexOf(r.win.id) > -1;
-          var locked = !on && chosen.length >= 3;
-          return '<button class="opt' + (locked ? ' locked' : '') + '" data-win="' + r.win.id + '" aria-pressed="' + on + '">' +
+          return '<button class="opt" data-win="' + r.win.id + '" aria-pressed="' + on + '">' +
             '<span class="box"></span><span class="ot">' + esc(r.win.text) +
             '<em>' + (r.score
               ? 'Matches the listing on ' + esc(r.hits.slice(0, 3).join(', '))
               : esc(r.win.where)) + '</em></span>' +
             '<span class="om">' + esc(r.win.metric) + '</span></button>';
         }).join('');
-        v.querySelector('#pick-count').textContent = chosen.length + ' of 3';
+        v.querySelector('#pick-count').textContent = chosen.length + ' picked';
+        /* Nothing is locked: three is a suggestion, not a rule. But say what
+           happens either side of it rather than letting them find out on the
+           page. */
+        var note = v.querySelector('#pick-note');
+        note.textContent = !chosen.length
+          ? 'Pick at least one. It opens the first message.'
+          : chosen.length > 5
+            ? 'That is a lot to carry. Past five the page reads like a r\u00e9sum\u00e9 again, and Prep will ask you for a story behind every one.'
+            : chosen.length > SUGGEST
+              ? 'More than three is fine when they are genuinely different. Prep will want a story behind each.'
+              : '';
       }
       paintMatch();
       paintWins();
@@ -257,7 +270,7 @@
         var id = el.dataset.win;
         var at = chosen.indexOf(id);
         if (at > -1) chosen.splice(at, 1);
-        else if (chosen.length < 3) chosen.push(id);
+        else chosen.push(id);
         paintWins();
       });
 
@@ -364,7 +377,7 @@
 
         '<div class="col g4">' +
           '<div class="card p5">' +
-            '<p class="cap mb3">What you lead with</p>' +
+            '<p class="cap mb3">Wins</p>' +
             (wins.length
               ? '<div class="leadwins">' + wins.map(function (w) {
                   return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';

@@ -192,7 +192,7 @@
         '<div class="card p6 mb4">' +
           '<h3 class="mb3">' + p.wins.length + ' win' + (p.wins.length === 1 ? '' : 's') + ' with a number in them</h3>' +
           (p.wins.length
-            ? '<p class="dim mb4" style="font-size:var(--fs-sm)">Which three you lead with gets decided per company, against that listing.</p>' +
+            ? '<p class="dim mb4" style="font-size:var(--fs-sm)">Which ones you lead with gets decided per company, against that listing.</p>' +
               '<div class="leadwins">' + p.wins.map(function (w) {
                 return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
               }).join('') + '</div>'

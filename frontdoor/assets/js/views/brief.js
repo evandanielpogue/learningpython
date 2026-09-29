@@ -200,7 +200,7 @@
       '</div>' +
 
       '<div class="bf-grid">' +
-        panel('lead', 'Numbers', '', leadHTML(), 12) +
+        panel('lead', 'Wins', '', leadHTML(), 12) +
         panel('questions', 'Questions', '', '<div id="qbox">' + questionsHTML() + '</div>', 7, true) +
         panel('match', 'Match', '', matchHTML(), 5, true) +
         panel('people', 'People', '', peopleHTML(), 7, true) +

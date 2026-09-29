@@ -1933,17 +1933,53 @@ await group('Add a company from a listing', async (page) => {
     if (!txt.includes('Acme')) throw new Error('company not parsed: ' + txt.slice(0, 80));
     if (!/Account Executive/i.test(txt)) throw new Error('role not parsed');
   });
-  await step('three wins are picked for us, matched to the listing', async () => {
+  await step('three wins are suggested, matched to the listing', async () => {
     const on = await page.locator('.opt[aria-pressed="true"]').count();
     if (on !== 3) throw new Error(on + ' picked');
     const why = await page.locator('.opt[aria-pressed="true"] em').first().textContent();
     if (!/Matches the listing/.test(why)) throw new Error('no match reason: ' + why);
   });
+
+  await step('three is a suggestion, not a cap', async () => {
+    const all = await page.locator('.opt').count();
+    if (all <= 3) throw new Error('only ' + all + ' wins to choose from');
+    /* nothing may be unavailable once three are already on */
+    const dead = await page.evaluate(() =>
+      [...document.querySelectorAll('.opt')].filter(b =>
+        b.disabled || b.classList.contains('locked') ||
+        getComputedStyle(b).pointerEvents === 'none').length);
+    if (dead) throw new Error(dead + ' wins cannot be picked');
+    for (let i = 0; i < all; i++) {
+      const b = page.locator('.opt').nth(i);
+      if ((await b.getAttribute('aria-pressed')) === 'false') { await b.click(); await page.waitForTimeout(60); }
+    }
+    const on = await page.locator('.opt[aria-pressed="true"]').count();
+    if (on !== all) throw new Error('could only get to ' + on + ' of ' + all);
+    if (!/6 picked/.test(await page.locator('#pick-count').textContent()))
+      throw new Error('the count does not follow: ' + await page.locator('#pick-count').textContent());
+  });
+
+  await step('going past three says what it costs rather than blocking it', async () => {
+    const note = await page.locator('#pick-note').textContent();
+    if (!note.trim()) throw new Error('no word of warning at all');
+    if (!/story|r\u00e9sum\u00e9/i.test(note)) throw new Error('unhelpful note: ' + note);
+  });
+
+  await step('dropping back under three clears the note', async () => {
+    for (let i = 0; i < 3; i++) {
+      await page.locator('.opt[aria-pressed="true"]').last().click();
+      await page.waitForTimeout(60);
+    }
+    const note = (await page.locator('#pick-note').textContent()).trim();
+    if (note) throw new Error('still nagging at three: ' + note);
+  });
+
   await step('a win can be swapped', async () => {
+    /* the previous step left three on, which is where this one starts */
     await page.locator('.opt[aria-pressed="true"]').first().click();
     await page.waitForTimeout(160);
     if ((await page.locator('.opt[aria-pressed="true"]').count()) !== 2) throw new Error('did not deselect');
-    await page.locator('.opt[aria-pressed="false"]:not(.locked)').first().click();
+    await page.locator('.opt[aria-pressed="false"]').first().click();
     await page.waitForTimeout(160);
     if ((await page.locator('.opt[aria-pressed="true"]').count()) !== 3) throw new Error('did not reselect');
   });
@@ -1954,6 +1990,36 @@ await group('Add a company from a listing', async (page) => {
     if (n !== 2) throw new Error(n + ' campaigns');
     const agenda = await page.evaluate(() => Store.campaigns()[0].agenda.length);
     if (!agenda) throw new Error('no agenda built');
+  });
+
+  await step('every win picked is kept, not just the first three', async () => {
+    /* run the flow again, this time taking all of them */
+    await page.goto(BASE + '#/new', { waitUntil: 'networkidle' });
+    await page.waitForSelector('#listing', { timeout: 5000 });
+    await page.click('#use-sample');
+    await page.click('#read');
+    await page.waitForSelector('#wins', { timeout: 8000 });
+    const all = await page.locator('.opt').count();
+    for (let i = 0; i < all; i++) {
+      const b = page.locator('.opt').nth(i);
+      if ((await b.getAttribute('aria-pressed')) === 'false') { await b.click(); await page.waitForTimeout(60); }
+    }
+    await page.click('#create');
+    await page.waitForSelector('.agitem', { timeout: 8000 });
+    /* createCampaign unshifts, so the new one is first */
+    const cid = await page.evaluate(() => Store.campaigns()[0].id);
+    const kept = await page.evaluate((id) => Store.campaign(id).winIds.length, cid);
+    if (kept !== all) throw new Error(all + ' picked, ' + kept + ' kept');
+    await page.goto(BASE + '#/c/' + cid + '/brief', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.bf-win', { timeout: 5000 });
+    const shown = await page.locator('.bf-win').count();
+    if (shown !== all) throw new Error('the brief shows ' + shown + ' of ' + all);
+    await page.goto(BASE + '#/c/' + cid, { waitUntil: 'networkidle' });
+    await page.waitForSelector('.leadwins', { timeout: 5000 });
+    const rows = await page.locator('.leadwins div').count();
+    if (rows !== all) throw new Error('the summary shows ' + rows + ' of ' + all);
+    /* this pass added a company the rest of the group does not expect */
+    await page.evaluate((id) => Store.removeCampaign(id), cid);
   });
   await step('the new company suggests three people to find', async () => {
     const s = await page.evaluate(() => Store.campaigns()[0].suggested.map(x => x.persona));
