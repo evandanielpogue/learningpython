@@ -1746,6 +1746,113 @@ await group('Titles and the way it talks', async (page) => {
   });
 });
 
+/* ------------------------------------------------------- nothing narrates -- */
+await group('No narration', async (page) => {
+  await signIn(page);
+  const ROUTES = ['', 'settings', 'templates', 'c/c_acme', 'c/c_acme/people',
+                  'c/c_acme/prep', 'c/c_acme/research', 'c/c_acme/sequence',
+                  'c/c_acme/page', 'c/c_acme/brief'];
+
+  await step('a figure is a figure, with nothing underneath explaining it', async () => {
+    const bad = [];
+    for (const r of ROUTES) {
+      await page.goto(BASE + '#/' + r, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(260);
+      const found = await page.evaluate(() =>
+        [...document.querySelectorAll('.kpi, .bf-tile .kpi')]
+          .map(k => {
+            const after = k.nextElementSibling;
+            return after && /^(P|SPAN|SMALL)$/.test(after.tagName) && after.textContent.trim()
+              ? after.textContent.trim() : null;
+          })
+          .filter(Boolean));
+      found.forEach(t => bad.push('#/' + r + ': "' + t + '"'));
+    }
+    if (bad.length) throw new Error(bad.join(' | '));
+  });
+
+  await step('a denominator is in the number, not in a sentence', async () => {
+    await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.kpi', { timeout: 5000 });
+    await page.waitForTimeout(700);
+    const replies = await page.evaluate(() => {
+      const card = [...document.querySelectorAll('.card')]
+        .find(c => /Replies/.test(c.textContent));
+      return card ? card.querySelector('.kpi').textContent.trim() : null;
+    });
+    if (!replies) throw new Error('no replies figure');
+    if (!/^\d+\/\d+$/.test(replies)) throw new Error('replies reads "' + replies + '"');
+  });
+
+  await step('no section heading is a sentence', async () => {
+    const bad = [];
+    for (const r of ROUTES) {
+      await page.goto(BASE + '#/' + r, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(240);
+      const hs = await page.evaluate(() =>
+        [...document.querySelectorAll('#view h3')].map(h => h.textContent.trim()));
+      hs.forEach(h => {
+        /* one word is a label, whatever the word is; more than that must not
+           read like a sentence */
+        if (h.split(/\s+/).length === 1) return;
+        if (h.split(/\s+/).length > 3 || /\b(you|we|your|our|here|the way)\b/i.test(h)) {
+          bad.push('#/' + r + ': "' + h + '"');
+        }
+      });
+    }
+    if (bad.length) throw new Error(bad.join(' | '));
+  });
+
+  await step('a checklist item is the thing to do, not a description of it', async () => {
+    await page.goto(BASE + '#/c/c_acme', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.task', { timeout: 5000 });
+    const subs = await page.evaluate(() =>
+      [...document.querySelectorAll('.task .tt em')].map(e => e.textContent.trim()).filter(Boolean));
+    if (subs.length) throw new Error(subs.join(' | '));
+  });
+
+  await step('a small label is a label, not a sentence', async () => {
+    const bad = [];
+    for (const r of ROUTES) {
+      await page.goto(BASE + '#/' + r, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(240);
+      const caps = await page.evaluate(() =>
+        [...document.querySelectorAll('#view .cap')].map(c => c.textContent.trim()));
+      caps.forEach(t => {
+        if (/^[\d\s/a-z]+$/i.test(t) && t.split(/\s+/).length <= 4) return; /* counts */
+        if (t.split(/\s+/).length > 3 || /\b(we|you|your|our)\b/i.test(t)) bad.push('#/' + r + ': "' + t + '"');
+      });
+    }
+    if (bad.length) throw new Error(bad.join(' | '));
+  });
+
+  await step('no section opens with a paragraph telling you what it is', async () => {
+    const bad = [];
+    for (const r of ROUTES) {
+      await page.goto(BASE + '#/' + r, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(240);
+      const found = await page.evaluate(() =>
+        [...document.querySelectorAll('#view h3')]
+          .map(h => {
+            /* the paragraph immediately after a heading, inside the same card */
+            let n = h.parentElement && h.parentElement.tagName === 'DIV' &&
+                    h.parentElement.classList.contains('row')
+              ? h.parentElement.nextElementSibling : h.nextElementSibling;
+            if (!n || n.tagName !== 'P') return null;
+            if (n.classList.contains('hint')) return null;      /* input help */
+            if (n.closest('.empty')) return null;               /* empty state */
+            const t = n.textContent.trim();
+            /* a live warning or a piece of data is not narration */
+            if (!t || n.id) return null;
+            return /\b(we|you|your|our)\b/i.test(t) ? h.textContent.trim() + ' → ' + t : null;
+          })
+          .filter(Boolean));
+      found.forEach(t => bad.push('#/' + r + ': ' + t));
+    }
+    if (bad.length) throw new Error(bad.join(' | '));
+  });
+});
+
 /* ---------------------------------------------------------- cold start -- */
 await group('Cold start, all the way through', async (page) => {
   await step('a new account lands on the resume screen with nothing in it', async () => {
@@ -1800,7 +1907,7 @@ await group('Cold start, all the way through', async (page) => {
     if (c.steps.length) throw new Error('a sequence appeared from nowhere');
   });
   await step('the summary asks for contacts before a sequence', async () => {
-    const t = await page.locator('.card', { hasText: 'Up next' }).textContent();
+    const t = await page.locator('.card', { hasText: 'Next' }).first().textContent();
     if (!/Add contacts/.test(t)) throw new Error('no prompt: ' + t.slice(0, 80));
   });
   await step('the three suggestions can all be added', async () => {

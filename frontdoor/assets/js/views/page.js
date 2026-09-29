@@ -188,7 +188,6 @@
           '</div>' +
           '<div class="card p4">' +
             '<p class="cap mb2">Opens</p><h3 class="mono">' + c.views + '</h3>' +
-            '<p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p>' +
             (pf.photo ? '' : '<p class="hint mt3">No photo yet. A face on this page is worth more than another bullet. <a href="#/settings">Add one</a>.</p>') +
           '</div>' +
         '</div>' +

@@ -38,8 +38,7 @@
       if (stage === 1) {
         body =
           '<div class="card p6">' +
-            '<h3 class="mb2">Paste the job listing</h3>' +
-            '<p class="dim mb4" style="font-size:var(--fs-sm)">All of it. The boring requirements section is the part that tells us which of your wins to lead with.</p>' +
+            '<h3 class="mb2">Listing</h3>' +
 
             '<div class="lookup">' +
               '<span class="link-ic">\u26ad</span>' +
@@ -79,16 +78,14 @@
           '</div>' +
 
           '<div class="card p6 mb4">' +
-            '<div class="row between wrap g3 mb2"><h3>Where you line up</h3>' +
+            '<div class="row between wrap g3 mb2"><h3>Match</h3>' +
             '<span class="cap">' + (matchedBy === 'model' ? 'Matched by Claude' : 'Matched on keywords') + '</span></div>' +
-            '<p class="dim mb5" style="font-size:var(--fs-sm)">Line by line, what the listing asks for and what you have to answer it with. The gaps are the useful part.</p>' +
             '<div id="match"></div>' +
           '</div>' +
 
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb2"><h3>Wins</h3>' +
             '<span class="cap" id="pick-count"></span></div>' +
-            '<p class="dim mb2" style="font-size:var(--fs-sm)">The three that match this listing best are already picked. Add or drop any of them.</p>' +
             '<p class="dim mb5" id="pick-note" style="font-size:var(--fs-xs)"></p>' +
             '<div class="grid" style="gap:var(--s-2)" id="wins"></div>' +
           '</div>' +
@@ -295,6 +292,13 @@
   /* ======================================================================
      ONE OPPORTUNITY
      ====================================================================== */
+  /* A figure and what it is. Nothing underneath narrating it. */
+  function kpi(label, value, of) {
+    return '<div class="card hover p5"><p class="cap mb3">' + esc(label) + '</p>' +
+      '<p class="kpi mono"><span data-count="' + value + '">0</span>' +
+      (of === undefined ? '' : '<span class="kpi-of">/' + of + '</span>') + '</p></div>';
+  }
+
   function stepRow(c, s) {
     var p = c.contacts.filter(function (x) { return x.id === s.contact; })[0];
     var cls = 'touch' + (s.status === 'sent' || s.status === 'replied' ? ' sent' : '');
@@ -322,7 +326,7 @@
       return c.tasks.map(function (t) {
         return '<button class="task" data-task="' + t.id + '" aria-pressed="' + t.on + '">' +
           '<span class="tick"></span>' +
-          '<span class="tt">' + esc(t.text) + '<em>' + esc(t.sub) + '</em></span>' +
+          '<span class="tt">' + esc(t.text) + '</span>' +
           '<span class="cap">' + (t.on ? 'Done' : 'Open') + '</span></button>';
       }).join('');
     }
@@ -340,11 +344,11 @@
       '</div>' +
 
       '<div class="grid cols-4 mb4">' +
-        '<div class="card hover p5"><p class="cap mb3">People</p><p class="kpi mono" data-count="' + c.contacts.length + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (sugg.length ? sugg.length + ' more suggested' : 'all added') + '</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><p class="kpi mono" data-count="' + c.sent + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + c.steps.length + ' planned</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono" data-count="' + c.replies + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (c.replies ? 'keep going' : 'early days') + '</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono" data-count="' + c.views + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div>' +
-      '</div>' +
+        kpi('People', c.contacts.length) +
+        kpi('Touches sent', c.sent, c.steps.length) +
+        kpi('Replies', c.replies) +
+        kpi('Page opens', c.views) +
+        '</div>' +
 
       '<div class="split-wide">' +
         '<div class="col g4">' +
@@ -352,16 +356,15 @@
             '<div class="row g4" style="align-items:flex-start">' +
               Views.ringSVG(pr.done, pr.total) +
               '<div class="col g2 grow">' +
-                '<div class="row between wrap"><h3>Getting ' + esc(c.company) + ' off the ground</h3>' +
+                '<div class="row between wrap"><h3>Setup</h3>' +
                 '<span class="cap" id="ring-label">' + pr.done + ' of ' + pr.total + ' done</span></div>' +
-                '<p class="dim" style="font-size:var(--fs-sm)">Each one is a screen away. Nothing here takes longer than five minutes.</p>' +
               '</div>' +
             '</div>' +
             '<div class="mt3" id="tasks" style="display:grid;gap:1px">' + taskList() + '</div>' +
           '</div>' +
 
           '<div class="card p5">' +
-            '<div class="row between mb4"><h3>Up next</h3>' +
+            '<div class="row between mb4"><h3>Next</h3>' +
             '<a class="btn btn-ghost btn-sm" href="#/c/' + c.id + '/sequence">Open the sequence <span class="arr">→</span></a></div>' +
             (upNext.length
               ? '<div class="seq">' + upNext.map(function (s) { return stepRow(c, s); }).join('') + '</div>'
@@ -389,8 +392,7 @@
 
           (sugg.length
             ? '<div class="card p5">' +
-                '<p class="cap mb2">People we found</p>' +
-                '<p class="dim mb4" style="font-size:var(--fs-sm)">The hiring manager, the recruiter, and someone who could forward you along.</p>' +
+                '<p class="cap mb2">Suggested</p>' +
                 '<div class="col g2">' + sugg.slice(0, 3).map(function (s) {
                   return '<div class="sugg"><span class="avatar avatar-md" style="background:var(' + Store.colourFor(s.persona) + ')">' +
                     esc(Store.initials(s.name)) + '</span>' +
@@ -403,7 +405,7 @@
             : '') +
 
           (c.requirements.length
-            ? '<div class="card p5"><p class="cap mb3">What the listing asks for</p>' +
+            ? '<div class="card p5"><p class="cap mb3">Requirements</p>' +
               '<ul class="ticks">' + c.requirements.slice(0, 6).map(function (r) {
                 return '<li>' + esc(r) + '</li>';
               }).join('') + '</ul></div>'

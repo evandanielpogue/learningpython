@@ -133,12 +133,12 @@
         '</div>';
       }).join('') + '</div>' +
       ((q.toAsk && q.toAsk.length)
-        ? '<h3 class="bf-sub">Worth asking them</h3><ul class="bf-ask">' + q.toAsk.map(function (x) {
+        ? '<h3 class="bf-sub">Ask them</h3><ul class="bf-ask">' + q.toAsk.map(function (x) {
             return '<li><b>' + esc(x.question) + '</b><span>' + esc(x.why) + '</span></li>';
           }).join('') + '</ul>'
         : '') +
       ((q.watch && q.watch.length)
-        ? '<h3 class="bf-sub">Be careful about</h3><ul class="bf-watch">' + q.watch.map(function (x) {
+        ? '<h3 class="bf-sub">Watch</h3><ul class="bf-watch">' + q.watch.map(function (x) {
             return '<li>' + esc(x) + '</li>';
           }).join('') + '</ul>'
         : '') +
@@ -155,11 +155,10 @@
         '<div class="bf-body">' + body + '</div></section>';
     }
 
-    function tile(cap, value, note, tone) {
+    function tile(cap, value, tone) {
       return '<div class="bf-tile' + (tone ? ' ' + tone : '') + '">' +
         '<span class="cap">' + esc(cap) + '</span>' +
-        '<p class="kpi mono">' + esc(String(value)) + '</p>' +
-        (note ? '<span class="bf-tile-note">' + esc(note) + '</span>' : '') + '</div>';
+        '<p class="kpi mono">' + esc(String(value)) + '</p></div>';
     }
 
     var ready = b.wins.filter(function (w) { return w.story; }).length;
@@ -187,16 +186,13 @@
       '</div>' +
 
       '<div class="bf-tiles">' +
-        tile('Stories ready', ready + '/' + b.wins.length, 'behind your numbers',
+        tile('Stories', ready + '/' + b.wins.length,
              ready === b.wins.length && b.wins.length ? 'ok' : (ready ? '' : 'warn')) +
-        tile('Requirements answered', answered + '/' + b.match.length, 'from the listing',
+        tile('Requirements', answered + '/' + b.match.length,
              b.match.length && answered === b.match.length ? 'ok' : '') +
-        tile('Open gaps', b.gaps.length, b.gaps.length ? 'work these in Prep' : 'nothing unanswered',
-             b.gaps.length ? 'warn' : 'ok') +
-        tile('People reached', spoken + '/' + b.people.length,
-             replied ? replied + ' replied' : 'no replies yet', replied ? 'ok' : '') +
-        tile('Questions drilled', qCount, qCount ? 'with your answers' : 'not worked out yet',
-             qCount ? '' : 'warn') +
+        tile('Gaps', b.gaps.length, b.gaps.length ? 'warn' : 'ok') +
+        tile('Replies', replied + '/' + spoken, replied ? 'ok' : '') +
+        tile('Questions', qCount, qCount ? '' : 'warn') +
       '</div>' +
 
       '<div class="bf-grid">' +

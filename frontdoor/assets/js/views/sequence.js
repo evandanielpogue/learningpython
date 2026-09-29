@@ -206,7 +206,7 @@
       var s = step(), p = contactOf(s);
       if (!p) return '<p class="cap">Context</p><p class="dim" style="font-size:var(--fs-sm)">Pick a contact and anything they said recently shows up here.</p>';
       var acts = (p.activity || []).slice(0, 2);
-      return '<p class="cap">What ' + esc(p.name.split(' ')[0]) + ' said lately</p>' +
+      return '<p class="cap">Said lately</p>' +
         (acts.length
           ? acts.map(function (a) {
               return '<div class="mini-act"><p>' + esc(a.text) + '</p>' +
@@ -241,8 +241,7 @@
             UI.toast('Pulled in "' + t.name + '". Names already filled in.');
           });
         },
-        html: '<p class="dim mb4" style="font-size:var(--fs-sm)">Sorted by how well each one fits this step. Picking one fills in the names for you.</p>' +
-          '<div class="tplpick">' + list.map(function (t) {
+        html: '<div class="tplpick">' + list.map(function (t) {
             var fit = (p && t.persona === p.persona ? 1 : 0) + (t.channel === s.channel ? 1 : 0);
             return '<button class="tplopt" data-use="' + t.id + '">' +
               '<span class="row between g2 wrap"><b>' + esc(t.name) + '</b>' +

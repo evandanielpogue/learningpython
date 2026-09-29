@@ -70,14 +70,12 @@
     if (!imported) {
       html += '<div class="card" style="overflow:hidden"><div class="empty">' +
         '<span class="art">↑</span><h2>Start with your résumé</h2>' +
-        '<p>We read it once. Every company you add after that gets its wins picked from it, matched to the listing.</p>' +
         '<button class="btn btn-primary btn-lg" id="go-import">Add your résumé <span class="arr">→</span></button>' +
         '<p class="hint mt4">Want to look around first? <button class="linkish" id="go-demo">Load an example workspace</button></p>' +
         '</div></div>';
     } else if (!list.length) {
       html += '<div class="card" style="overflow:hidden"><div class="empty">' +
         '<span class="art">◎</span><h2>Add your first company</h2>' +
-        '<p>Paste the job listing. We pull the role apart, pick the three wins that answer it, and go looking for the people behind the req.</p>' +
         '<button class="btn btn-primary btn-lg" id="go-new">Paste a job listing <span class="arr">→</span></button>' +
         '<p class="hint mt4">Or <button class="linkish" id="go-demo">load an example workspace</button> to see a finished one.</p>' +
         '</div></div>';
@@ -85,17 +83,26 @@
       html += '<div class="opps">' + list.map(oppCard).join('') +
         '<button class="addrow addrow-lg" id="go-new">+ Add a company</button></div>';
 
+      function kpi(label, value, of) {
+        return '<div class="card hover p5"><p class="cap mb3">' + esc(label) + '</p>' +
+          '<p class="kpi mono"><span data-count="' + value + '">0</span>' +
+          (of === undefined ? '' : '<span class="kpi-of">/' + of + '</span>') + '</p></div>';
+      }
+
       var totals = list.reduce(function (a, c) {
         a.sent += c.sent; a.rep += c.replies; a.views += c.views;
         a.due += c.steps.filter(function (s) { return s.status === 'due'; }).length;
         return a;
       }, { sent: 0, rep: 0, views: 0, due: 0 });
 
+      /* A figure and what it is. Nothing underneath narrating it: a
+         denominator that matters goes into the figure, and anything that
+         only restated the label is gone. */
       html += '<div class="grid cols-4 mt5">' +
-        '<div class="card hover p5"><p class="cap mb3">Companies</p><p class="kpi mono" data-count="' + list.length + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">running at once</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Due today</p><p class="kpi mono" data-count="' + totals.due + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">across all of them</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono" data-count="' + totals.rep + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + totals.sent + ' sent</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono" data-count="' + totals.views + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">people reading</p></div>' +
+        kpi('Companies', list.length) +
+        kpi('Due today', totals.due) +
+        kpi('Replies', totals.rep, totals.sent) +
+        kpi('Page opens', totals.views) +
         '</div>';
     }
 
@@ -164,9 +171,8 @@
       '</div>' +
 
       '<div class="card p5 mb4" id="ai-card">' +
-        '<div class="row between wrap g3 mb3"><h3>Reading and writing</h3>' +
+        '<div class="row between wrap g3 mb3"><h3>Claude</h3>' +
         '<span class="chip' + (AI.ready() ? ' chip-pos' : '') + '" id="ai-state">' + esc(AI.describe()) + '</span></div>' +
-        '<p class="dim mb4" style="font-size:var(--fs-sm)">Claude reads your résumé, asks the questions that turn a bullet into a story, and rewrites drafts. Without it, résumés are read by pattern matching, which is worse.</p>' +
         '<div class="segmented mb4" id="ai-mode">' +
           ['off', 'key', 'proxy'].map(function (m) {
             var label = m === 'off' ? 'No model' : m === 'key' ? 'My API key' : 'My server';
@@ -177,15 +183,14 @@
       '</div>' +
 
       '<div class="card p5 mb4">' +
-        '<h3 class="mb3">How you write</h3>' +
-        '<p class="dim mb4" style="font-size:var(--fs-sm)">Read off your own bullets. Every draft starts from this.</p>' +
+        '<h3 class="mb3">Voice</h3>' +
         (pf.voice.traits.length
           ? '<div class="row wrap g2">' + pf.voice.traits.map(function (t) { return '<span class="chip chip-accent">' + esc(t) + '</span>'; }).join('') + '</div>'
           : '<p class="hint">Nothing read yet. Import a résumé and this fills in from how you write.</p>') +
       '</div>' +
 
       '<div class="card p5 mb4">' +
-        '<h3 class="mb3">Where your history came from</h3>' +
+        '<h3 class="mb3">Roles</h3>' +
         '<div class="row between wrap g3">' +
           '<span class="dim" style="font-size:var(--fs-sm)">' +
             (pf.imported ? esc(pf.source) + ' · ' + pf.roles.length + ' roles, ' + pf.wins.length + ' wins' : 'Nothing imported yet') + '</span>' +
@@ -194,7 +199,7 @@
       '</div>' +
 
       '<div class="card p5">' +
-        '<h3 class="mb3">Danger zone</h3>' +
+        '<h3 class="mb3">Data</h3>' +
         '<p class="dim mb4" style="font-size:var(--fs-sm)">Everything lives in this browser. Clearing it cannot be undone.</p>' +
         '<button class="btn btn-danger btn-sm" id="s-reset">Clear all data</button>' +
       '</div>';

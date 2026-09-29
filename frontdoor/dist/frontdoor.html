@@ -1692,7 +1692,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .bf-tile.ok   { border-left-color: var(--pos); }
 .bf-tile.warn { border-left-color: var(--warn); }
 .bf-tile .kpi { font-size: var(--fs-2xl); letter-spacing: -.03em; margin-top: 2px; }
-.bf-tile-note { font-size: var(--fs-xs); color: var(--ink-3); }
+/* a denominator belongs in the figure, not in a sentence under it */
+.kpi-of { color: var(--ink-3); font-weight: 500; }
 @media (max-width: 1080px) { .bf-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 680px)  { .bf-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
@@ -5929,14 +5930,12 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     if (!imported) {
       html += '<div class="card" style="overflow:hidden"><div class="empty">' +
         '<span class="art">↑</span><h2>Start with your résumé</h2>' +
-        '<p>We read it once. Every company you add after that gets its wins picked from it, matched to the listing.</p>' +
         '<button class="btn btn-primary btn-lg" id="go-import">Add your résumé <span class="arr">→</span></button>' +
         '<p class="hint mt4">Want to look around first? <button class="linkish" id="go-demo">Load an example workspace</button></p>' +
         '</div></div>';
     } else if (!list.length) {
       html += '<div class="card" style="overflow:hidden"><div class="empty">' +
         '<span class="art">◎</span><h2>Add your first company</h2>' +
-        '<p>Paste the job listing. We pull the role apart, pick the three wins that answer it, and go looking for the people behind the req.</p>' +
         '<button class="btn btn-primary btn-lg" id="go-new">Paste a job listing <span class="arr">→</span></button>' +
         '<p class="hint mt4">Or <button class="linkish" id="go-demo">load an example workspace</button> to see a finished one.</p>' +
         '</div></div>';
@@ -5944,17 +5943,26 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       html += '<div class="opps">' + list.map(oppCard).join('') +
         '<button class="addrow addrow-lg" id="go-new">+ Add a company</button></div>';
 
+      function kpi(label, value, of) {
+        return '<div class="card hover p5"><p class="cap mb3">' + esc(label) + '</p>' +
+          '<p class="kpi mono"><span data-count="' + value + '">0</span>' +
+          (of === undefined ? '' : '<span class="kpi-of">/' + of + '</span>') + '</p></div>';
+      }
+
       var totals = list.reduce(function (a, c) {
         a.sent += c.sent; a.rep += c.replies; a.views += c.views;
         a.due += c.steps.filter(function (s) { return s.status === 'due'; }).length;
         return a;
       }, { sent: 0, rep: 0, views: 0, due: 0 });
 
+      /* A figure and what it is. Nothing underneath narrating it: a
+         denominator that matters goes into the figure, and anything that
+         only restated the label is gone. */
       html += '<div class="grid cols-4 mt5">' +
-        '<div class="card hover p5"><p class="cap mb3">Companies</p><p class="kpi mono" data-count="' + list.length + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">running at once</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Due today</p><p class="kpi mono" data-count="' + totals.due + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">across all of them</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono" data-count="' + totals.rep + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + totals.sent + ' sent</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono" data-count="' + totals.views + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">people reading</p></div>' +
+        kpi('Companies', list.length) +
+        kpi('Due today', totals.due) +
+        kpi('Replies', totals.rep, totals.sent) +
+        kpi('Page opens', totals.views) +
         '</div>';
     }
 
@@ -6023,9 +6031,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       '</div>' +
 
       '<div class="card p5 mb4" id="ai-card">' +
-        '<div class="row between wrap g3 mb3"><h3>Reading and writing</h3>' +
+        '<div class="row between wrap g3 mb3"><h3>Claude</h3>' +
         '<span class="chip' + (AI.ready() ? ' chip-pos' : '') + '" id="ai-state">' + esc(AI.describe()) + '</span></div>' +
-        '<p class="dim mb4" style="font-size:var(--fs-sm)">Claude reads your résumé, asks the questions that turn a bullet into a story, and rewrites drafts. Without it, résumés are read by pattern matching, which is worse.</p>' +
         '<div class="segmented mb4" id="ai-mode">' +
           ['off', 'key', 'proxy'].map(function (m) {
             var label = m === 'off' ? 'No model' : m === 'key' ? 'My API key' : 'My server';
@@ -6036,15 +6043,14 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       '</div>' +
 
       '<div class="card p5 mb4">' +
-        '<h3 class="mb3">How you write</h3>' +
-        '<p class="dim mb4" style="font-size:var(--fs-sm)">Read off your own bullets. Every draft starts from this.</p>' +
+        '<h3 class="mb3">Voice</h3>' +
         (pf.voice.traits.length
           ? '<div class="row wrap g2">' + pf.voice.traits.map(function (t) { return '<span class="chip chip-accent">' + esc(t) + '</span>'; }).join('') + '</div>'
           : '<p class="hint">Nothing read yet. Import a résumé and this fills in from how you write.</p>') +
       '</div>' +
 
       '<div class="card p5 mb4">' +
-        '<h3 class="mb3">Where your history came from</h3>' +
+        '<h3 class="mb3">Roles</h3>' +
         '<div class="row between wrap g3">' +
           '<span class="dim" style="font-size:var(--fs-sm)">' +
             (pf.imported ? esc(pf.source) + ' · ' + pf.roles.length + ' roles, ' + pf.wins.length + ' wins' : 'Nothing imported yet') + '</span>' +
@@ -6053,7 +6059,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       '</div>' +
 
       '<div class="card p5">' +
-        '<h3 class="mb3">Danger zone</h3>' +
+        '<h3 class="mb3">Data</h3>' +
         '<p class="dim mb4" style="font-size:var(--fs-sm)">Everything lives in this browser. Clearing it cannot be undone.</p>' +
         '<button class="btn btn-danger btn-sm" id="s-reset">Clear all data</button>' +
       '</div>';
@@ -6239,8 +6245,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       if (stage === 1) {
         body =
           '<div class="card p6">' +
-            '<h3 class="mb2">Paste the job listing</h3>' +
-            '<p class="dim mb4" style="font-size:var(--fs-sm)">All of it. The boring requirements section is the part that tells us which of your wins to lead with.</p>' +
+            '<h3 class="mb2">Listing</h3>' +
 
             '<div class="lookup">' +
               '<span class="link-ic">\u26ad</span>' +
@@ -6280,16 +6285,14 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '</div>' +
 
           '<div class="card p6 mb4">' +
-            '<div class="row between wrap g3 mb2"><h3>Where you line up</h3>' +
+            '<div class="row between wrap g3 mb2"><h3>Match</h3>' +
             '<span class="cap">' + (matchedBy === 'model' ? 'Matched by Claude' : 'Matched on keywords') + '</span></div>' +
-            '<p class="dim mb5" style="font-size:var(--fs-sm)">Line by line, what the listing asks for and what you have to answer it with. The gaps are the useful part.</p>' +
             '<div id="match"></div>' +
           '</div>' +
 
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb2"><h3>Wins</h3>' +
             '<span class="cap" id="pick-count"></span></div>' +
-            '<p class="dim mb2" style="font-size:var(--fs-sm)">The three that match this listing best are already picked. Add or drop any of them.</p>' +
             '<p class="dim mb5" id="pick-note" style="font-size:var(--fs-xs)"></p>' +
             '<div class="grid" style="gap:var(--s-2)" id="wins"></div>' +
           '</div>' +
@@ -6496,6 +6499,13 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   /* ======================================================================
      ONE OPPORTUNITY
      ====================================================================== */
+  /* A figure and what it is. Nothing underneath narrating it. */
+  function kpi(label, value, of) {
+    return '<div class="card hover p5"><p class="cap mb3">' + esc(label) + '</p>' +
+      '<p class="kpi mono"><span data-count="' + value + '">0</span>' +
+      (of === undefined ? '' : '<span class="kpi-of">/' + of + '</span>') + '</p></div>';
+  }
+
   function stepRow(c, s) {
     var p = c.contacts.filter(function (x) { return x.id === s.contact; })[0];
     var cls = 'touch' + (s.status === 'sent' || s.status === 'replied' ? ' sent' : '');
@@ -6523,7 +6533,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       return c.tasks.map(function (t) {
         return '<button class="task" data-task="' + t.id + '" aria-pressed="' + t.on + '">' +
           '<span class="tick"></span>' +
-          '<span class="tt">' + esc(t.text) + '<em>' + esc(t.sub) + '</em></span>' +
+          '<span class="tt">' + esc(t.text) + '</span>' +
           '<span class="cap">' + (t.on ? 'Done' : 'Open') + '</span></button>';
       }).join('');
     }
@@ -6541,11 +6551,11 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       '</div>' +
 
       '<div class="grid cols-4 mb4">' +
-        '<div class="card hover p5"><p class="cap mb3">People</p><p class="kpi mono" data-count="' + c.contacts.length + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (sugg.length ? sugg.length + ' more suggested' : 'all added') + '</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><p class="kpi mono" data-count="' + c.sent + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + c.steps.length + ' planned</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono" data-count="' + c.replies + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (c.replies ? 'keep going' : 'early days') + '</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono" data-count="' + c.views + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div>' +
-      '</div>' +
+        kpi('People', c.contacts.length) +
+        kpi('Touches sent', c.sent, c.steps.length) +
+        kpi('Replies', c.replies) +
+        kpi('Page opens', c.views) +
+        '</div>' +
 
       '<div class="split-wide">' +
         '<div class="col g4">' +
@@ -6553,16 +6563,15 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             '<div class="row g4" style="align-items:flex-start">' +
               Views.ringSVG(pr.done, pr.total) +
               '<div class="col g2 grow">' +
-                '<div class="row between wrap"><h3>Getting ' + esc(c.company) + ' off the ground</h3>' +
+                '<div class="row between wrap"><h3>Setup</h3>' +
                 '<span class="cap" id="ring-label">' + pr.done + ' of ' + pr.total + ' done</span></div>' +
-                '<p class="dim" style="font-size:var(--fs-sm)">Each one is a screen away. Nothing here takes longer than five minutes.</p>' +
               '</div>' +
             '</div>' +
             '<div class="mt3" id="tasks" style="display:grid;gap:1px">' + taskList() + '</div>' +
           '</div>' +
 
           '<div class="card p5">' +
-            '<div class="row between mb4"><h3>Up next</h3>' +
+            '<div class="row between mb4"><h3>Next</h3>' +
             '<a class="btn btn-ghost btn-sm" href="#/c/' + c.id + '/sequence">Open the sequence <span class="arr">→</span></a></div>' +
             (upNext.length
               ? '<div class="seq">' + upNext.map(function (s) { return stepRow(c, s); }).join('') + '</div>'
@@ -6590,8 +6599,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
           (sugg.length
             ? '<div class="card p5">' +
-                '<p class="cap mb2">People we found</p>' +
-                '<p class="dim mb4" style="font-size:var(--fs-sm)">The hiring manager, the recruiter, and someone who could forward you along.</p>' +
+                '<p class="cap mb2">Suggested</p>' +
                 '<div class="col g2">' + sugg.slice(0, 3).map(function (s) {
                   return '<div class="sugg"><span class="avatar avatar-md" style="background:var(' + Store.colourFor(s.persona) + ')">' +
                     esc(Store.initials(s.name)) + '</span>' +
@@ -6604,7 +6612,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             : '') +
 
           (c.requirements.length
-            ? '<div class="card p5"><p class="cap mb3">What the listing asks for</p>' +
+            ? '<div class="card p5"><p class="cap mb3">Requirements</p>' +
               '<ul class="ticks">' + c.requirements.slice(0, 6).map(function (r) {
                 return '<li>' + esc(r) + '</li>';
               }).join('') + '</ul></div>'
@@ -6675,8 +6683,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     function stepOne() {
       return pips(1) +
         '<div class="card p6">' +
-          '<h3 class="mb2">Hand over your history</h3>' +
-          '<p class="dim mb5" style="font-size:var(--fs-sm)">We read it once. Every company you add after this pulls from it.</p>' +
+          '<h3 class="mb2">Your history</h3>' +
           '<label class="drop" id="drop" for="file-in">' +
             '<span class="drop-ic">↑</span>' +
             '<b>Drop your resume here</b>' +
@@ -6813,7 +6820,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
       return pips(2) +
         '<div class="card p6 mb4">' +
-          '<div class="row between wrap mb3 g3"><h3>Here is what came out</h3>' +
+          '<div class="row between wrap mb3 g3"><h3>What we read</h3>' +
           '<span class="chip' + (p.readBy === 'model' ? ' chip-pos' : '') + '">' +
             (p.readBy === 'model' ? 'Read by Claude' : 'Read by pattern matching') + '</span></div>' +
           '<p class="dim mb4" style="font-size:var(--fs-sm)">From ' + esc(p.source || 'your resume') +
@@ -6837,8 +6844,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         '<div class="card p6 mb4">' +
           '<h3 class="mb3">' + p.wins.length + ' win' + (p.wins.length === 1 ? '' : 's') + ' with a number in them</h3>' +
           (p.wins.length
-            ? '<p class="dim mb4" style="font-size:var(--fs-sm)">Which ones you lead with gets decided per company, against that listing.</p>' +
-              '<div class="leadwins">' + p.wins.map(function (w) {
+            ? '<div class="leadwins">' + p.wins.map(function (w) {
                 return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
               }).join('') + '</div>'
             : '<p class="hint">Nothing with a number in it. Bullets like "grew ARR 41%" are what we match against a listing.</p>') +
@@ -6979,7 +6985,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             : '') +
         '</div>' +
         (Store.stories(c).length
-          ? '<div class="card p5 mt4"><p class="cap mb3">In your words</p>' +
+          ? '<div class="card p5 mt4"><p class="cap mb3">Banked</p>' +
             Store.stories(c).map(function (a) {
               return '<p class="storyline">' + esc(a.text) + '</p>';
             }).join('') + '</div>'
@@ -7227,9 +7233,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       if (!sug.length) { box.innerHTML = ''; return; }
       box.innerHTML =
         '<div class="card p5 mb4 found">' +
-          '<div class="row between wrap g3 mb2"><h3>People we found on this req</h3>' +
+          '<div class="row between wrap g3 mb2"><h3>Suggested</h3>' +
           '<span class="cap">' + sug.length + ' to look at</span></div>' +
-          '<p class="dim mb4" style="font-size:var(--fs-sm)">We go after three on every listing: whoever owns the number, whoever posted the req, and anyone already in your history who can forward you along.</p>' +
           '<div class="foundgrid">' + sug.map(function (g) {
             return '<div class="foundcard" style="--pc:var(' + Store.colourFor(g.persona) + ')">' +
               '<div class="row g3" style="align-items:flex-start">' +
@@ -7279,8 +7284,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
     function addForm() {
       return '<form class="card p5 mt3" id="new-form" style="display:grid;gap:var(--s-4)">' +
-        '<div><h3>Add someone</h3>' +
-        '<p class="dim" style="font-size:var(--fs-sm)">Paste their profile and we fill in what we can. Everything stays editable.</p></div>' +
+        '<div><h3>Add</h3>' +
 
         '<div class="lookup">' +
           UI.liMark(18) +
@@ -7942,7 +7946,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       var s = step(), p = contactOf(s);
       if (!p) return '<p class="cap">Context</p><p class="dim" style="font-size:var(--fs-sm)">Pick a contact and anything they said recently shows up here.</p>';
       var acts = (p.activity || []).slice(0, 2);
-      return '<p class="cap">What ' + esc(p.name.split(' ')[0]) + ' said lately</p>' +
+      return '<p class="cap">Said lately</p>' +
         (acts.length
           ? acts.map(function (a) {
               return '<div class="mini-act"><p>' + esc(a.text) + '</p>' +
@@ -7977,8 +7981,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             UI.toast('Pulled in "' + t.name + '". Names already filled in.');
           });
         },
-        html: '<p class="dim mb4" style="font-size:var(--fs-sm)">Sorted by how well each one fits this step. Picking one fills in the names for you.</p>' +
-          '<div class="tplpick">' + list.map(function (t) {
+        html: '<div class="tplpick">' + list.map(function (t) {
             var fit = (p && t.persona === p.persona ? 1 : 0) + (t.channel === s.channel ? 1 : 0);
             return '<button class="tplopt" data-use="' + t.id + '">' +
               '<span class="row between g2 wrap"><b>' + esc(t.name) + '</b>' +
@@ -8551,7 +8554,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '</div>' +
           '<div class="card p4">' +
             '<p class="cap mb2">Opens</p><h3 class="mono">' + c.views + '</h3>' +
-            '<p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p>' +
             (pf.photo ? '' : '<p class="hint mt3">No photo yet. A face on this page is worth more than another bullet. <a href="#/settings">Add one</a>.</p>') +
           '</div>' +
         '</div>' +
@@ -8743,12 +8745,12 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         '</div>';
       }).join('') + '</div>' +
       ((q.toAsk && q.toAsk.length)
-        ? '<h3 class="bf-sub">Worth asking them</h3><ul class="bf-ask">' + q.toAsk.map(function (x) {
+        ? '<h3 class="bf-sub">Ask them</h3><ul class="bf-ask">' + q.toAsk.map(function (x) {
             return '<li><b>' + esc(x.question) + '</b><span>' + esc(x.why) + '</span></li>';
           }).join('') + '</ul>'
         : '') +
       ((q.watch && q.watch.length)
-        ? '<h3 class="bf-sub">Be careful about</h3><ul class="bf-watch">' + q.watch.map(function (x) {
+        ? '<h3 class="bf-sub">Watch</h3><ul class="bf-watch">' + q.watch.map(function (x) {
             return '<li>' + esc(x) + '</li>';
           }).join('') + '</ul>'
         : '') +
@@ -8765,11 +8767,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         '<div class="bf-body">' + body + '</div></section>';
     }
 
-    function tile(cap, value, note, tone) {
+    function tile(cap, value, tone) {
       return '<div class="bf-tile' + (tone ? ' ' + tone : '') + '">' +
         '<span class="cap">' + esc(cap) + '</span>' +
-        '<p class="kpi mono">' + esc(String(value)) + '</p>' +
-        (note ? '<span class="bf-tile-note">' + esc(note) + '</span>' : '') + '</div>';
+        '<p class="kpi mono">' + esc(String(value)) + '</p></div>';
     }
 
     var ready = b.wins.filter(function (w) { return w.story; }).length;
@@ -8797,16 +8798,13 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       '</div>' +
 
       '<div class="bf-tiles">' +
-        tile('Stories ready', ready + '/' + b.wins.length, 'behind your numbers',
+        tile('Stories', ready + '/' + b.wins.length,
              ready === b.wins.length && b.wins.length ? 'ok' : (ready ? '' : 'warn')) +
-        tile('Requirements answered', answered + '/' + b.match.length, 'from the listing',
+        tile('Requirements', answered + '/' + b.match.length,
              b.match.length && answered === b.match.length ? 'ok' : '') +
-        tile('Open gaps', b.gaps.length, b.gaps.length ? 'work these in Prep' : 'nothing unanswered',
-             b.gaps.length ? 'warn' : 'ok') +
-        tile('People reached', spoken + '/' + b.people.length,
-             replied ? replied + ' replied' : 'no replies yet', replied ? 'ok' : '') +
-        tile('Questions drilled', qCount, qCount ? 'with your answers' : 'not worked out yet',
-             qCount ? '' : 'warn') +
+        tile('Gaps', b.gaps.length, b.gaps.length ? 'warn' : 'ok') +
+        tile('Replies', replied + '/' + spoken, replied ? 'ok' : '') +
+        tile('Questions', qCount, qCount ? '' : 'warn') +
       '</div>' +
 
       '<div class="bf-grid">' +

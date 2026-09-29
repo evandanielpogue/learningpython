@@ -30,8 +30,7 @@
     function stepOne() {
       return pips(1) +
         '<div class="card p6">' +
-          '<h3 class="mb2">Hand over your history</h3>' +
-          '<p class="dim mb5" style="font-size:var(--fs-sm)">We read it once. Every company you add after this pulls from it.</p>' +
+          '<h3 class="mb2">Your history</h3>' +
           '<label class="drop" id="drop" for="file-in">' +
             '<span class="drop-ic">↑</span>' +
             '<b>Drop your resume here</b>' +
@@ -168,7 +167,7 @@
 
       return pips(2) +
         '<div class="card p6 mb4">' +
-          '<div class="row between wrap mb3 g3"><h3>Here is what came out</h3>' +
+          '<div class="row between wrap mb3 g3"><h3>What we read</h3>' +
           '<span class="chip' + (p.readBy === 'model' ? ' chip-pos' : '') + '">' +
             (p.readBy === 'model' ? 'Read by Claude' : 'Read by pattern matching') + '</span></div>' +
           '<p class="dim mb4" style="font-size:var(--fs-sm)">From ' + esc(p.source || 'your resume') +
@@ -192,8 +191,7 @@
         '<div class="card p6 mb4">' +
           '<h3 class="mb3">' + p.wins.length + ' win' + (p.wins.length === 1 ? '' : 's') + ' with a number in them</h3>' +
           (p.wins.length
-            ? '<p class="dim mb4" style="font-size:var(--fs-sm)">Which ones you lead with gets decided per company, against that listing.</p>' +
-              '<div class="leadwins">' + p.wins.map(function (w) {
+            ? '<div class="leadwins">' + p.wins.map(function (w) {
                 return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
               }).join('') + '</div>'
             : '<p class="hint">Nothing with a number in it. Bullets like "grew ARR 41%" are what we match against a listing.</p>') +

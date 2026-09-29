@@ -40,9 +40,8 @@
       if (!sug.length) { box.innerHTML = ''; return; }
       box.innerHTML =
         '<div class="card p5 mb4 found">' +
-          '<div class="row between wrap g3 mb2"><h3>People we found on this req</h3>' +
+          '<div class="row between wrap g3 mb2"><h3>Suggested</h3>' +
           '<span class="cap">' + sug.length + ' to look at</span></div>' +
-          '<p class="dim mb4" style="font-size:var(--fs-sm)">We go after three on every listing: whoever owns the number, whoever posted the req, and anyone already in your history who can forward you along.</p>' +
           '<div class="foundgrid">' + sug.map(function (g) {
             return '<div class="foundcard" style="--pc:var(' + Store.colourFor(g.persona) + ')">' +
               '<div class="row g3" style="align-items:flex-start">' +
@@ -92,8 +91,7 @@
 
     function addForm() {
       return '<form class="card p5 mt3" id="new-form" style="display:grid;gap:var(--s-4)">' +
-        '<div><h3>Add someone</h3>' +
-        '<p class="dim" style="font-size:var(--fs-sm)">Paste their profile and we fill in what we can. Everything stays editable.</p></div>' +
+        '<div><h3>Add</h3>' +
 
         '<div class="lookup">' +
           UI.liMark(18) +

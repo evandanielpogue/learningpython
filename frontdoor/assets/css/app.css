@@ -1519,7 +1519,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .bf-tile.ok   { border-left-color: var(--pos); }
 .bf-tile.warn { border-left-color: var(--warn); }
 .bf-tile .kpi { font-size: var(--fs-2xl); letter-spacing: -.03em; margin-top: 2px; }
-.bf-tile-note { font-size: var(--fs-xs); color: var(--ink-3); }
+/* a denominator belongs in the figure, not in a sentence under it */
+.kpi-of { color: var(--ink-3); font-weight: 500; }
 @media (max-width: 1080px) { .bf-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 680px)  { .bf-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
