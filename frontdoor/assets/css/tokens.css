@@ -26,9 +26,10 @@
 
   /* ---- ink ------------------------------------------------------------ */
   --ink:           #0F1214;
-  --ink-2:         #555963;
-  --ink-3:         #868B96;
-  --ink-4:         #B0B4BD;
+  --ink-2:         #4A4E58;   /* 8.3:1 on white, 6.9:1 on the heaviest well */
+  --ink-3:         #5A5F6A;   /* 6.4:1 / 5.3:1 */
+  --ink-4:         #61666F;   /* 5.8:1 / 4.8:1 — the quietest ink that is still text */
+  --ink-faint:     #B0B4BD;   /* NEVER text. Separators, dots, strike-through rules. */
   --ink-inv:       #FFFFFF;
 
   /* ---- lines ---------------------------------------------------------- */

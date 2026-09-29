@@ -52,6 +52,7 @@
     root.className = '';
     root.innerHTML =
       '<div class="shell">' +
+        '<button class="skip" id="skip" type="button">Skip to content</button>' +
         '<aside class="sidebar">' +
           '<a class="brand" href="#/" title="Frontdoor — back to the overview">' + Icon.mark(24) + '<b>Frontdoor</b></a>' +
           '<button class="side-search" id="side-search" title="Search and jump anywhere  (\u2318K)">' + Icon.svg('search', 15) + '<span>Search</span><kbd>⌘K</kbd></button>' +
@@ -67,10 +68,14 @@
         '</aside>' +
         '<div class="main">' +
           '<header class="topbar"><div class="crumbs" id="crumbs"></div><div class="row g2" id="top-actions"></div></header>' +
-          '<div id="view"></div>' +
+          '<main id="view" class="view-host" tabindex="-1"></main>' +
         '</div>' +
       '</div>';
 
+    document.getElementById('skip').addEventListener('click', function () {
+      var v = document.getElementById('view');
+      if (v) { v.focus(); v.scrollIntoView(); }
+    });
     document.getElementById('side-search').addEventListener('click', UI.openPalette);
     document.getElementById('user-btn').addEventListener('click', function () {
       UI.menu(this, [

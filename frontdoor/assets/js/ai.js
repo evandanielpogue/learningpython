@@ -110,7 +110,8 @@
     ready: function () {
       var c = cfg();
       if (c.mode === 'key') return !!(c.key && c.key.trim());
-      if (c.mode === 'proxy') return !!(c.proxy && c.proxy.trim());
+      /* a proxy carries the whole resume, so it goes over https or not at all */
+      if (c.mode === 'proxy') return /^https:\/\//i.test((c.proxy || '').trim());
       return false;
     },
     describe: function () {
@@ -202,6 +203,14 @@
     fetchPosting: function (url) {
       var c = cfg();
       if (!AI.ready()) return Promise.reject(new Error('not configured'));
+      if (/(^|\.)linkedin\.com/i.test(String(url))) {
+        return Promise.reject(new Error(
+          'We will not fetch LinkedIn. Their terms prohibit automated access and it is your ' +
+          'account that gets closed, not ours. Open the posting and paste the text.'));
+      }
+      if (!/^https:\/\//i.test(String(url).trim())) {
+        return Promise.reject(new Error('Only https links can be fetched.'));
+      }
 
       var sys = [
         'You are given a link to a job posting. Fetch it and return the posting as plain text.',
@@ -224,7 +233,11 @@
           type: 'web_fetch_20250910',
           name: 'web_fetch',
           max_uses: 2,
-          max_content_tokens: 20000
+          max_content_tokens: 20000,
+          /* Fetching LinkedIn through the model is still automated access to
+             LinkedIn, which their user agreement prohibits and which is what
+             ends in a terminated account. It also never works. */
+          blocked_domains: ['linkedin.com', 'www.linkedin.com']
         }]
       };
 

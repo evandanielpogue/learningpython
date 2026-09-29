@@ -53,6 +53,10 @@
               '</div>' +
               '<p class="fc-why">' + esc(g.why) + '</p>' +
               '<p class="fc-found">' + esc(g.found) + '</p>' +
+              (g.guessedEmail && g.email
+                ? '<p class="fc-guess">' + esc(g.email) + ' is a guess from the company\u2019s usual pattern. ' +
+                  'Check it before you send anything.</p>'
+                : '') +
               '<div class="row g2 mt3">' +
                 '<button class="btn btn-primary btn-sm" data-take="' + g.id + '">Add them</button>' +
                 '<button class="btn btn-ghost btn-sm" data-skip="' + g.id + '">Not this one</button>' +
@@ -70,8 +74,10 @@
           return '<div class="rankrow' + (p.id === selected ? ' on' : '') + '" data-pick="' + p.id + '" style="--pc:var(' + p.colour + ')">' +
             '<span class="rank">' + (i + 1) + '</span>' +
             '<span class="avatar avatar-md" style="background:var(' + p.colour + ')">' + esc(Store.initials(p.name)) + '</span>' +
-            '<span class="rr-main"><span class="rr-name">' + esc(p.name) + '</span>' +
-            '<span class="rr-sub">' + esc(p.title || 'No title yet') + '</span></span>' +
+            '<button type="button" class="rr-main" data-pick="' + p.id + '"' +
+              ' aria-pressed="' + (p.id === selected ? 'true' : 'false') + '">' +
+              '<span class="rr-name">' + esc(p.name) + '</span>' +
+              '<span class="rr-sub">' + esc(p.title || 'No title yet') + '</span></button>' +
             '<span class="rr-tag' + (p.placeholder ? ' rr-tag-warn' : '') + '">' +
               (p.placeholder ? 'Needs a name' : esc(p.persona)) + '</span>' +
             '<span class="rr-moves">' +
@@ -172,7 +178,9 @@
             (p.tenure ? '<div><dt>At ' + esc(c.company) + '</dt><dd>' + esc(p.tenure) + '</dd></div>' : '') +
             (p.prev ? '<div><dt>History</dt><dd>' + esc(p.prev) + '</dd></div>' : '') +
             '<div><dt>Mutuals</dt><dd>' + p.mutuals + '</dd></div>' +
-            (p.email ? '<div><dt>Email</dt><dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.email) + '</dd></div>' : '') +
+            (p.email ? '<div><dt>Email</dt><dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.email) +
+              (p.guessedEmail ? '<em class="dd-guess">guessed from the company pattern, unverified</em>' : '') +
+              '</dd></div>' : '') +
             (p.linkedin ? '<div><dt>' + UI.liMark(13) + ' LinkedIn</dt>' +
               '<dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.linkedin) + '</dd></div>' : '') +
           '</dl>' +
@@ -208,7 +216,7 @@
             flag.style.opacity = 1;
             setTimeout(function () { flag.style.opacity = 0; }, 1400);
           }
-          if (k === 'persona') setTimeout(paint, 0);
+          if (k === 'persona' || k === 'title') setTimeout(paint, 0);
         });
       }
       patch('persona', d.querySelector('#d-persona'));

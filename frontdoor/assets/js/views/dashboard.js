@@ -54,6 +54,8 @@
           '<span><b>' + c.views + '</b>opens</span>' +
         '</div>' +
         '<div class="opp-end">' +
+          '<button class="icon-btn opp-x" data-drop="' + c.id + '" aria-label="Remove ' + esc(c.company) + '" ' +
+            'title="Remove this company">' + Icon.svg('close', 14) + '</button>' +
           (due ? '<span class="chip chip-accent">' + due + ' due</span>'
                : '<span class="chip">Day ' + c.day + '</span>') +
           '<span class="arr">→</span>' +
@@ -93,10 +95,10 @@
       }, { sent: 0, rep: 0, views: 0, due: 0 });
 
       html += '<div class="grid cols-4 mt5">' +
-        '<div class="card hover p5"><p class="cap mb3">Companies</p><h2 class="mono">' + list.length + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">running at once</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Due today</p><h2 class="mono">' + totals.due + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">across all of them</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Replies</p><h2 class="mono">' + totals.rep + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">of ' + totals.sent + ' sent</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Page opens</p><h2 class="mono">' + totals.views + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">people reading</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Companies</p><p class="kpi mono">' + list.length + '</p><p class="dimmer" style="font-size:var(--fs-sm)">running at once</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Due today</p><p class="kpi mono">' + totals.due + '</p><p class="dimmer" style="font-size:var(--fs-sm)">across all of them</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono">' + totals.rep + '</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + totals.sent + ' sent</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono">' + totals.views + '</p><p class="dimmer" style="font-size:var(--fs-sm)">people reading</p></div>' +
         '</div>';
     }
 
@@ -107,6 +109,22 @@
       html: html
     });
 
+    UI.on(v, 'click', '[data-drop]', function (e, el) {
+      e.preventDefault();
+      e.stopPropagation();
+      var c = Store.campaign(el.dataset.drop);
+      if (!c) return;
+      UI.confirm({
+        title: 'Remove ' + c.company + '?',
+        body: 'The contacts, the sequence, the research and everything you worked out in prep go with it. This cannot be undone.',
+        confirm: 'Remove it', danger: true
+      }).then(function (ok) {
+        if (!ok) return;
+        Store.removeCampaign(c.id);
+        Views.home();
+        UI.toast(c.company + ' removed.');
+      });
+    });
     UI.on(v, 'click', '#go-import', function () { Router.go('/import'); });
     UI.on(v, 'click', '#go-demo', function () {
       var c = Store.createSeedCampaign();
@@ -189,6 +207,7 @@
     v.querySelector('#s-save').addEventListener('click', function () {
       var pfx = Store.state.profile;
       pfx.name = v.querySelector('#s-name').value.trim() || pfx.name;
+      pfx.email = v.querySelector('#s-email').value.trim() || pfx.email;
       pfx.phone = v.querySelector('#s-phone').value.trim();
       pfx.location = v.querySelector('#s-loc').value.trim();
       if (Store.state.user) {
@@ -206,12 +225,24 @@
     v.querySelector('#photo-in').addEventListener('change', function () {
       var file = this.files && this.files[0];
       if (!file) return;
-      if (file.size > 900000) { UI.toast('That one is too big. Try something under 900KB.'); return; }
       var fr = new FileReader();
       fr.onload = function () {
-        Store.setPhoto(fr.result);
-        UI.toast('Photo added. It shows up on your page.');
-        Views.settings();
+        /* everything lives in one 5MB localStorage blob, so a 900KB portrait
+           is a third of the budget. 320px is plenty for a 112px slot. */
+        var img = new Image();
+        img.onload = function () {
+          var n = 320, sc = Math.min(1, n / Math.max(img.width, img.height));
+          var cv = document.createElement('canvas');
+          cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          var small;
+          try { small = cv.toDataURL('image/jpeg', 0.82); } catch (e) { small = fr.result; }
+          Store.setPhoto(small.length < String(fr.result).length ? small : fr.result);
+          UI.toast('Photo added. It shows up on your page.');
+          Views.settings();
+        };
+        img.onerror = function () { UI.toast('That did not look like an image.'); };
+        img.src = fr.result;
       };
       fr.onerror = function () { UI.toast('Could not read that file.'); };
       fr.readAsDataURL(file);
@@ -245,10 +276,10 @@
       } else {
         box.innerHTML =
           '<div class="field mb3"><label for="ai-proxy">Your endpoint</label>' +
-            '<input class="input mono" id="ai-proxy" autocomplete="off" spellcheck="false" ' +
+            '<input class="input mono" id="ai-proxy" type="url" autocomplete="off" spellcheck="false" ' +
             'placeholder="https://your-server.example.com/claude" value="' + esc(a.proxy) + '"></div>' +
           models +
-          '<p class="hint mt3">Your server holds the key and forwards the body to /v1/messages. Nothing secret sits in the browser. This is the shape a real deployment takes.</p>' +
+          '<p class="hint mt3">Your server holds the key and forwards the body to /v1/messages. Nothing secret sits in the browser. This is the shape a real deployment takes. It must be https: your résumé goes over this connection.</p>' +
           '<div class="row g2 wrap mt3"><button class="btn btn-secondary btn-sm" id="ai-test">Test it</button>' +
           '<span class="hint" id="ai-msg"></span></div>';
       }
@@ -301,7 +332,10 @@
   /* a portrait if there is one, initials if there is not */
   window.Views.photoHTML = function (size) {
     var pf = Store.state.profile;
-    if (pf.photo) return '<img class="portrait" src="' + pf.photo + '" alt="' + esc(pf.name) + '" style="width:' + size + 'px;height:' + size + 'px">';
+    if (pf.photo && /^data:image\//.test(pf.photo)) {
+      return '<img class="portrait" src="' + esc(pf.photo) + '" alt="' + esc(pf.name) + '" ' +
+        'style="width:' + size + 'px;height:' + size + 'px">';
+    }
     return '<span class="portrait portrait-mono" style="width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size / 2.6) + 'px">' +
       esc(Store.initials(pf.name)) + '</span>';
   };

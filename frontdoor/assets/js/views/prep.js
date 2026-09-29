@@ -60,7 +60,7 @@
           '<span class="cap">' + pr.done + ' of ' + pr.total + '</span></div>' +
           '<div class="col g2">' + agenda.map(function (a) {
             return '<button class="agitem' + (a.id === openId ? ' on' : '') + (a.done ? ' done' : '') +
-              '" data-ag="' + a.id + '">' +
+              '" data-ag="' + a.id + '"' + (a.id === openId ? ' aria-current="true"' : '') + '>' +
               '<span class="ag-tick"></span>' +
               '<span class="ag-main"><span class="ag-kind">' + (a.kind === 'gap' ? 'Gap' : 'Story') + '</span>' +
               '<span class="ag-label">' + esc(a.label) + '</span></span></button>';
@@ -129,10 +129,15 @@
 
       busy = true;
       var b = say('ai', '…');
+      var mine = openId;                       /* the item this answer belongs to */
       AI.prepTurn(c, a, [{ role: 'user', content: 'Ask me your first question.' }])
-        .then(function (out) { b.textContent = out.reply; history.push({ role: 'assistant', content: out.reply }); })
-        .catch(function () { b.textContent = CANNED[a.kind][0]; })
-        .then(function () { busy = false; });
+        .then(function (out) {
+          if (openId !== mine || !b.isConnected) return;
+          b.textContent = out.reply;
+          history.push({ role: 'assistant', content: out.reply });
+        })
+        .catch(function () { if (openId === mine && b.isConnected) b.textContent = CANNED[a.kind][0]; })
+        .then(function () { if (openId === mine) busy = false; });
     }
 
     function wireTalk() {
@@ -161,7 +166,9 @@
 
         busy = true;
         var b = say('ai', '…');
+        var mine = openId;
         AI.prepTurn(c, a, history).then(function (out) {
+          if (openId !== mine || !b.isConnected) return;
           b.textContent = out.reply;
           history.push({ role: 'assistant', content: out.reply });
           if (out.complete && out.story) {
@@ -171,8 +178,8 @@
             say('ai', 'Saved. Pick the next one on the left.');
           }
         }).catch(function (err) {
-          b.textContent = 'That did not go through: ' + err.message;
-        }).then(function () { busy = false; });
+          if (openId === mine && b.isConnected) b.textContent = 'That did not go through: ' + err.message;
+        }).then(function () { if (openId === mine) busy = false; });
       });
 
       v.querySelector('#save-it').addEventListener('click', function () {

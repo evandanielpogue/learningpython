@@ -16,15 +16,37 @@
     return name ? Icon.svg(name, 12) : '';
   }
 
+  /* Without a model these are the only edits we can honestly make: they
+     rearrange what is already there. Nothing invents a number, and nothing
+     deletes text unless that is literally what was asked for. */
   var EDITS = [
-    { k: ['short', 'tight', 'cut', 'trim', 'brief'], reply: 'Cut the setup. Four lines.',
-      run: function (t) { return t.split('\n\n').filter(function (p) { return p.trim(); }).slice(0, 2).join('\n\n') + '\n\nWorth fifteen minutes?'; } },
-    { k: ['number', 'metric', 'specific', 'data', 'proof'], reply: 'Added the cycle change and the quota.',
-      run: function (t) { return t.replace(/finished at 112%/i, 'finished at 112% on a $1.2M number, with cycles going 30 to 70 days'); } },
-    { k: ['warm', 'friendly', 'human', 'casual', 'soft'], reply: 'Softened the ask at the end.',
-      run: function (t) { return t.replace(/Worth fifteen minutes.*$/m, 'Happy to trade fifteen minutes if it helps. No hard feelings if not.'); } },
-    { k: ['formal', 'stiff', 'professional'], reply: 'Made it more formal.',
-      run: function (t) { return t.replace(/^(\w+), /m, 'Hello $1,\n\n').replace(/Worth fifteen minutes.*$/m, 'Would you be open to a short conversation?'); } }
+    { k: ['short', 'shorter', 'tight', 'tighter', 'cut', 'trim', 'brief'],
+      reply: 'Cut it to the first two paragraphs and the ask.',
+      run: function (t) {
+        var paras = t.split('\n\n').filter(function (p) { return p.trim(); });
+        if (paras.length < 3) return null;
+        return paras.slice(0, 2).join('\n\n') + '\n\n' + paras[paras.length - 1];
+      } },
+    { k: ['warm', 'warmer', 'friendly', 'human', 'casual', 'soft', 'softer'],
+      reply: 'Softened the ask at the end.',
+      run: function (t) {
+        if (!/Worth fifteen minutes.*$/m.test(t)) return null;
+        return t.replace(/Worth fifteen minutes.*$/m, 'Happy to trade fifteen minutes if it helps. No hard feelings if not.');
+      } },
+    { k: ['formal', 'stiff', 'professional'],
+      reply: 'Made the opening and the ask more formal.',
+      run: function (t) {
+        var out = t.replace(/^(\w+),\s*$/m, 'Hello $1,');
+        out = out.replace(/Worth fifteen minutes.*$/m, 'Would you be open to a short conversation?');
+        return out === t ? null : out;
+      } },
+    { k: ['sign', 'signature', 'name'],
+      reply: 'Added your name at the end.',
+      run: function (t) {
+        var me = Store.state.profile.name;
+        if (!me || t.indexOf('\n' + me) > -1) return null;
+        return t.replace(/\s*$/, '') + '\n\n' + me;
+      } }
   ];
 
   window.Views.sequence = function (params) {
@@ -94,6 +116,7 @@
         var dot = s.status === 'replied' ? 'ok' : s.status === 'sent' ? 'done' : s.status === 'due' ? 'due' : '';
         var t = Store.template(s.template);
         out += '<button class="stepcard' + (s.id === c.activeStep ? ' on' : '') + '" data-step="' + s.id + '"' +
+          (s.id === c.activeStep ? ' aria-current="true"' : '') +
           ' style="--pc:var(' + col + ')">' +
           '<span class="sc-top"><span class="sc-n">' + (i + 1) + '</span>' +
             '<span class="sc-ch">' + chIcon(s.channel) + ' ' + esc(s.channel) + '</span>' +
@@ -337,7 +360,8 @@
       });
       var mark = v.querySelector('#mark');
       if (mark) mark.addEventListener('click', function () {
-        if (s.status !== 'sent' && s.status !== 'replied') c.sent += 1;
+        if (s.status === 'sent' || s.status === 'replied') { UI.toast('Already logged.'); return; }
+        c.sent += 1;
         Store.updateStep(c.id, s.id, { status: 'sent' });
         Store.completeTask(c.id, 't6');
         paintAll(); UI.toast('Logged.');
@@ -358,15 +382,17 @@
 
       /* assistant */
       var sug = v.querySelector('#sug');
-      if (sug) sug.innerHTML = ['Shorter', 'Add a number', 'Warmer', 'More formal']
+      if (sug) sug.innerHTML = ['Shorter', 'Warmer', 'More formal', 'Sign it']
         .map(function (x) { return '<button type="button" class="sug">' + x + '</button>'; }).join('');
       function say(cls, text) {
         var log = v.querySelector('#log');
         log.insertAdjacentHTML('beforeend', '<div class="bubble ' + cls + '">' + esc(text) + '</div>');
         log.scrollTop = log.scrollHeight;
+        return log.lastElementChild;
       }
-      function land(reply, text) {
-        v.querySelector('#log').lastElementChild.textContent = reply;
+      function land(node, reply, text) {
+        if (!node || !node.isConnected || !body.isConnected) return;
+        node.textContent = reply;
         body.value = text;
         words(); grow(); persist();
         body.classList.remove('flash'); void body.offsetWidth; body.classList.add('flash');
@@ -374,19 +400,31 @@
       function ask(text) {
         if (!text.trim() || !body) return;
         say('me', text);
-        say('ai', 'Working on it');
+        var bubble = say('ai', 'Working on it');
+        var here = UI.stillHere(bubble);
 
         if (!AI.ready()) {
           var lc = text.toLowerCase();
-          var hit = EDITS.filter(function (e) { return e.k.some(function (k) { return lc.indexOf(k) > -1; }); })[0] || EDITS[0];
-          setTimeout(function () { land(hit.reply, hit.run(body.value)); }, 440);
+          var hit = EDITS.filter(function (e) { return e.k.some(function (k) { return lc.indexOf(k) > -1; }); })[0];
+          setTimeout(function () {
+            if (!here()) return;
+            var out = hit && hit.run(body.value);
+            if (!out) {
+              /* never quietly rewrite something we were not asked to rewrite */
+              bubble.textContent = hit
+                ? 'That is already done, or there is nothing here to change.'
+                : 'I cannot do that without a model. Turn Claude on in Settings, or edit it yourself.';
+              return;
+            }
+            land(bubble, hit.reply, out);
+          }, 440);
           return;
         }
 
         AI.rewrite(text, body.value, c, contactOf(s)).then(function (out) {
-          land(out.reply || 'Done.', out.body);
+          land(bubble, out.reply || 'Done.', out.body);
         }).catch(function (err) {
-          v.querySelector('#log').lastElementChild.textContent = 'That did not go through: ' + err.message;
+          if (here()) bubble.textContent = 'That did not go through: ' + err.message;
         });
       }
       v.querySelectorAll('.sug').forEach(function (el) { el.addEventListener('click', function () { ask(el.textContent); }); });

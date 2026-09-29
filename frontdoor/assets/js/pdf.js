@@ -1,17 +1,30 @@
 /* ==========================================================================
    pdf.js — pull the text out of a PDF resume.
 
-   The parser is fetched on demand from a CDN the first time someone hands us
-   a PDF, so the app stays a small file that works offline for everything
-   else. If the fetch fails, the caller falls back to asking for pasted text.
+   The parser ships with the app rather than coming from a CDN. It used to be
+   fetched from cdnjs with no integrity check, which meant anything able to
+   answer for that host — a compromised CDN, a corporate TLS-intercepting
+   proxy, a captive portal — could run its own code on a page holding an API
+   key at the exact moment a resume was in memory.
+
+   It is still only loaded when a PDF actually turns up: in the bundled build
+   the code sits inert in two text/plain blocks until the first PDF, then runs
+   from a blob. Served from a directory, it loads the files beside it.
    ========================================================================== */
 (function (window, document) {
   'use strict';
 
-  var CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  var LOCAL = 'assets/vendor/';
   var loading = null;
+  var workerUrl = null;
 
-  function base() { return window.PDFJS_BASE || CDN; }
+  function blobUrl(id, type) {
+    var el = document.getElementById(id);
+    if (!el || !el.textContent) return null;
+    return URL.createObjectURL(new Blob([el.textContent], { type: type || 'text/javascript' }));
+  }
+
+  function base() { return window.PDFJS_BASE || LOCAL; }
 
   function load() {
     if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
@@ -21,16 +34,21 @@
       var done = false;
       var timer = setTimeout(function () {
         if (!done) { done = true; loading = null; reject(new Error('timeout')); }
-      }, 12000);
+      }, 15000);
+
+      /* bundled: both scripts are inert text in the document already */
+      var inline = blobUrl('pdf-lib');
+      if (inline) workerUrl = blobUrl('pdf-worker');
 
       var s = document.createElement('script');
-      s.src = base() + 'pdf.min.js';
+      s.src = inline || (base() + 'pdf.min.js');
       s.onload = function () {
         if (done) return;
         done = true;
         clearTimeout(timer);
+        if (inline) URL.revokeObjectURL(inline);
         if (!window.pdfjsLib) { loading = null; return reject(new Error('no pdfjsLib')); }
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = base() + 'pdf.worker.min.js';
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl || (base() + 'pdf.worker.min.js');
         resolve(window.pdfjsLib);
       };
       s.onerror = function () {
@@ -78,7 +96,6 @@
   }
 
   window.Doc = {
-    /* true once the library is in memory */
     ready: function () { return !!window.pdfjsLib; },
 
     readPdf: function (file) {
@@ -96,7 +113,6 @@
             });
           }, Promise.resolve([]));
         }).then(function (lines) {
-          /* a resume laid out in columns leaves runs of blanks behind */
           return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
         });
       });

@@ -61,10 +61,15 @@
         inner = '<div class="pg-reads">' + rest.map(function (a) {
           return '<div><b>' + esc(a.title) + '</b><p>' + esc(a.take) + '</p></div>';
         }).join('') + '</div>';
-      } else if (c.requirements.length) {
-        inner = '<ul class="pg-ticks">' + c.requirements.slice(0, 6).map(function (r) {
-          return '<li>' + esc(r) + '</li>';
-        }).join('') + '</ul>';
+      } else if ((c.match || []).length) {
+        /* only the ones the match actually backs up: a green tick against a
+           gap is a claim the app's own data contradicts */
+        var covered = c.match.filter(function (m) { return m.strength !== 'none'; }).slice(0, 6);
+        if (covered.length) {
+          inner = '<ul class="pg-ticks">' + covered.map(function (m) {
+            return '<li>' + esc(m.req ? m.req.text : m.text) + '</li>';
+          }).join('') + '</ul>';
+        }
       }
       if (!inner) return '';
       return '<section data-sec="why"><h2 class="pg-h">Why ' + esc(c.company) + '</h2>' + inner + '</section>';
@@ -77,14 +82,25 @@
           ? told.slice(0, 2).map(function (a) { return '<p class="pg-story">' + esc(a.text) + '</p>'; }).join('')
           : '<p class="pg-story">' + esc(c.story) + '</p>') + '</section>';
     }
+    /* Was a hardcoded sales 30-60-90 shipped on every user's page. A plan
+       you have not written is worse than no plan, so this renders only what
+       the campaign actually knows. */
     function sPlan() {
-      return '<section data-sec="plan"><h2 class="pg-h">First 90 days at ' + esc(c.company) + '</h2>' +
-        '<div class="pg-days">' +
-          '<div><span>30</span><p>Sit on twenty calls. Find out where deals actually stall against the new deal math.</p></div>' +
-          '<div><span>60</span><p>Rewrite discovery for a two call close and hand the team a working script, not a deck.</p></div>' +
-          '<div><span>90</span><p>Two closed won on the new motion, and a written teardown of what moved the number.</p></div>' +
-        '</div></section>';
+      var reqs = (c.requirements || []).slice(0, 3);
+      if (!c.plan90 && !reqs.length) return '';
+      if (c.plan90) {
+        return '<section data-sec="plan"><h2 class="pg-h">First 90 days at ' + esc(c.company) + '</h2>' +
+          '<div class="pg-days">' + c.plan90.map(function (d, i) {
+            return '<div><span>' + ([30, 60, 90][i] || '') + '</span><p>' + esc(d) + '</p></div>';
+          }).join('') + '</div></section>';
+      }
+      return '<section data-sec="plan"><h2 class="pg-h">What I would start on</h2>' +
+        '<div class="pg-days">' + reqs.map(function (r, i) {
+          return '<div><span>' + ([30, 60, 90][i] || '') + '</span><p>' + esc(r) + '</p></div>';
+        }).join('') + '</div>' +
+        '<p class="pg-note">Taken from the listing. Write your own in Settings before you send this.</p></section>';
     }
+
     function sExp() {
       var roles = pf.roles.filter(function (r) { return r.on; });
       if (!roles.length) return '';

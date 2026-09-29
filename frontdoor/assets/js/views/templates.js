@@ -37,6 +37,7 @@
       v.querySelector('#tpl-list').innerHTML = rows.length
         ? rows.map(function (t) {
             return '<button class="tplrow' + (t.id === selected ? ' on' : '') + '" data-tpl="' + t.id + '"' +
+              (t.id === selected ? ' aria-current="true"' : '') +
               ' style="--pc:var(' + Store.colourFor(t.persona) + ')">' +
               '<span class="tplrow-dot"></span>' +
               '<span class="tplrow-main"><span class="tplrow-name">' + esc(t.name) + '</span>' +

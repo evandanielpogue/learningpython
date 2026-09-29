@@ -94,15 +94,15 @@
     { id: 'tpl_rec', name: 'Check the req is actually moving', persona: 'Recruiter', stage: 'First touch', channel: 'Email', stock: true,
       body: "{first}, I applied for the {role} on Tuesday. Quick context: {win}.\n\nIs the team still interviewing for this one, or is it further along than the posting suggests?" },
     { id: 'tpl_hm', name: 'Open with what you noticed', persona: 'Hiring manager', stage: 'First touch', channel: 'Email', stock: true,
-      body: "{first}, {angle}\n\nI ran that exact change at Brightline last year. We lost 40% of the team, rebuilt the discovery script, and still finished at 112%.\n\nI applied for the {role}. The 30-60-90 is here:\nfrontdoor.app/p/{slug}\n\nWorth fifteen minutes, or should I stay in the queue?" },
+      body: "{first}, {angle}\n\n{win}. [One sentence on what that actually took \u2014 the part a resume bullet leaves out.]\n\nI applied for the {role}.\n\nWorth fifteen minutes, or should I stay in the queue?" },
     { id: 'tpl_hm2', name: 'Follow up with something new', persona: 'Hiring manager', stage: 'Follow up', channel: 'Email', stock: true,
-      body: "{first}, spent an hour in your trial and wrote up the three places a mid-market buyer stalls in discovery. Added it to the same page:\nfrontdoor.app/p/{slug}\n\nThe second one is the interesting one. Integrations come up before security, which is backwards at your ACV.\n\nStill happy to trade fifteen minutes if useful." },
+      body: "{first}, [something you went and found out about {company} since you last wrote \u2014 a number, a friction, a thing they said].\n\n[Why it matters to the thing this role owns.]\n\nStill happy to trade fifteen minutes if useful." },
     { id: 'tpl_exec', name: 'Go one level up', persona: 'Skip level', stage: 'Escalation', channel: 'Email', stock: true,
-      body: "{first}, your mid-market segment is the one that has to carry next year's number, and new rep ramp is usually where that plan breaks.\n\n{win}.\n\nApplied for the {role}. Plan is here: frontdoor.app/p/{slug}\n\nWorth passing down, or should I sit tight?" },
+      body: "{first}, {angle}\n\n{win}.\n\nApplied for the {role}.\n\nWorth passing down, or should I sit tight?" },
     { id: 'tpl_tie', name: 'Ask for the intro and write it for them', persona: 'Shared tie', stage: 'Referral ask', channel: 'LinkedIn', stock: true,
-      body: "{first}, we overlapped at Brightline in 2022.\n\nI am going after the {role} at {company} and saw you spent two years there. If you are still in touch with the team, would you be up for forwarding me along? Totally fine if that bridge is not one you want to cross.\n\nSomething you could paste:\n\"{me} ran our SMB to mid-market transition at Brightline and finished at 112% through it. He has applied for the {role}.\"" },
+      body: "{first}, [where the two of you overlapped, and when].\n\nI am going after the {role} at {company}. If you are still in touch with anyone there, would you be up for forwarding me along? Totally fine if that bridge is not one you want to cross.\n\nSomething you could paste:\n\"{me} {win}. He has applied for the {role}.\"" },
     { id: 'tpl_ref', name: 'Ask a peer to refer you', persona: 'Peer', stage: 'Referral ask', channel: 'Reply', stock: true,
-      body: "{first}, that detail about cycles was the most useful thing anyone has told me about this role. I rebuilt my 30-60-90 around it.\n\nIf it feels right after one conversation, would you be open to dropping me in the referral portal? No pressure at all." },
+      body: "{first}, [the specific thing they told you] was the most useful thing anyone has said to me about this role.\n\nIf it feels right after one conversation, would you be open to dropping me in the referral portal? No pressure at all." },
     { id: 'tpl_call', name: 'Phone script for the recruiter', persona: 'Recruiter', stage: 'Follow up', channel: 'Call', stock: true,
       body: "Hi {first}, it is {me}. I applied for the {role} a couple of weeks back. Is now a bad time?\n\n[pause, actually wait]\n\nQuick one. I wanted to check whether that req is still moving or whether it is on hold. I would rather know than keep guessing." },
     { id: 'tpl_break', name: 'Close the loop and leave the door open', persona: 'Other', stage: 'Breakup', channel: 'Email', stock: true,
@@ -285,8 +285,25 @@
     try { var raw = window.localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; }
     catch (e) { return null; }
   }
+  var writeFailed = false;
   function write() {
-    try { window.localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify(state));
+      writeFailed = false;
+      return true;
+    } catch (e) {
+      /* quota, a private window, or blocked site data. Losing work quietly is
+         the worst of the three outcomes, so say it once. */
+      if (!writeFailed) {
+        writeFailed = true;
+        if (window.UI && UI.toast) {
+          UI.toast(/quota/i.test(e.name || '')
+            ? 'This browser is full. Remove a photo or a company, or your work will not be saved.'
+            : 'This browser will not let us save. Your work only lasts as long as this tab.');
+        }
+      }
+      return false;
+    }
   }
   function emit() { subs.forEach(function (fn) { try { fn(state); } catch (e) {} }); }
 
@@ -306,6 +323,32 @@
           if (saved[k] !== undefined) state[k] = saved[k];
         });
       }
+      /* A campaign written by an older build is missing whatever was added
+         since, and every view that touches the field unguarded shows a blank
+         screen with no way back. Fill the shape in on the way through. */
+      var shape = {
+        facts: [], requirements: [], winIds: [], match: [], agenda: [], angles: [],
+        contacts: [], suggested: [], steps: [], research: [], sections: [], tasks: []
+      };
+      state.campaigns.forEach(function (c) {
+        Object.keys(shape).forEach(function (k) { if (!Array.isArray(c[k])) c[k] = clone(shape[k]); });
+        if (!c.sections.length) c.sections = clone(SECTIONS);
+        if (!c.tasks.length) c.tasks = taskSet();
+        if (typeof c.story !== 'string') c.story = '';
+        if (typeof c.sent !== 'number') c.sent = 0;
+        if (typeof c.replies !== 'number') c.replies = 0;
+        if (typeof c.views !== 'number') c.views = 0;
+        if (typeof c.day !== 'number') c.day = 0;
+      });
+      if (!state.profile || typeof state.profile !== 'object') state.profile = blankProfile();
+      ['roles', 'wins', 'stack'].forEach(function (k) {
+        if (!Array.isArray(state.profile[k])) state.profile[k] = [];
+      });
+      if (!state.profile.voice || !Array.isArray(state.profile.voice.traits)) {
+        state.profile.voice = { traits: [] };
+      }
+      /* the previous schema's blob is dead weight in a 5MB budget */
+      try { window.localStorage.removeItem('frontdoor.v4'); } catch (e) {}
       return state;
     },
     subscribe: function (fn) { subs.push(fn); return function () { subs = subs.filter(function (f) { return f !== fn; }); }; },
@@ -468,13 +511,16 @@
       var seg = /mid[- ]market/i.test(role || '') ? 'Mid-Market' : /enterprise/i.test(role || '') ? 'Enterprise' : 'Sales';
       return [
         { id: uid('g'), placeholder: true, name: 'Director, ' + seg, title: 'Likely hiring manager at ' + company, persona: 'Hiring manager',
-          found: 'Named on the team page', why: 'Owns the number this role carries. The one person who can skip the queue.',
+          found: 'Not found yet \u2014 this is the seat, not the person', guessedEmail: true,
+          why: 'Owns the number this role carries. The one person who can skip the queue.',
           email: 'first.last@' + dom, linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'Fifteen minutes' },
         { id: uid('g'), placeholder: true, name: 'Talent Partner', title: 'Recruiter on this req at ' + company, persona: 'Recruiter',
-          found: 'Posted the req', why: 'Knows whether the req is moving or already has a finalist.',
+          found: 'Not found yet \u2014 this is the seat, not the person', guessedEmail: true,
+          why: 'Knows whether the req is moving or already has a finalist.',
           email: 'talent@' + dom, linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'Whether the req is moving' },
         { id: uid('g'), placeholder: true, name: 'Someone you already know', title: 'Worked with you, now near ' + company, persona: 'Shared tie',
-          found: 'Overlap in your history', why: 'A warm forward beats a cold email every time. Ask them to paste two lines.',
+          found: 'Someone from your own history \u2014 you will know who', guessedEmail: false,
+          why: 'A warm forward beats a cold email every time. Ask them to paste two lines.',
           email: '', linkedin: '', mutuals: 0, tenure: '', prev: '', ask: 'An introduction' }
       ];
     },
@@ -748,6 +794,32 @@
 
     applyResume: function (parsed) {
       var photo = state.profile.photo;
+
+      /* Wins are referenced by id from three places on every campaign. A
+         re-import mints new ids, so without this every campaign silently
+         loses its numbers, its evidence and its agenda. Match on the text,
+         which is what actually identifies a win. */
+      var remap = {};
+      state.profile.wins.forEach(function (oldWin) {
+        var hit = parsed.wins.filter(function (w) { return w.text === oldWin.text; })[0];
+        if (hit) remap[oldWin.id] = hit.id;
+      });
+      var keep = function (id) { return remap[id]; };
+      state.campaigns.forEach(function (c) {
+        var before = (c.winIds || []).length;
+        c.winIds = (c.winIds || []).map(keep).filter(Boolean);
+        (c.match || []).forEach(function (r) {
+          r.winIds = (r.winIds || []).map(keep).filter(Boolean);
+          if (!r.winIds.length && r.strength !== 'none') r.strength = 'none';
+        });
+        /* an agenda pointing at a win that no longer exists is worse than none */
+        if (c.agenda && c.agenda.some(function (a) { return a.kind === 'story' && !keep(a.ref); })) {
+          c.agenda = c.agenda.filter(function (a) { return a.kind !== 'story' || keep(a.ref); });
+          c.agenda.forEach(function (a) { if (a.kind === 'story') a.ref = keep(a.ref); });
+        }
+        if (before && !c.winIds.length) c.winIds = parsed.wins.slice(0, 3).map(function (w) { return w.id; });
+      });
+
       state.profile = parsed;
       state.profile.photo = photo;
       if (state.user && parsed.name) {
@@ -991,7 +1063,7 @@
         tenure: data.tenure || '', prev: data.prev || '', mutuals: data.mutuals || 0,
         email: data.email || '', linkedin: data.linkedin || '',
         ask: data.ask || '', notes: '', activity: data.activity || [],
-        placeholder: !!data.placeholder
+        placeholder: !!data.placeholder, guessedEmail: !!data.guessedEmail
       };
       c.contacts.push(person);
       Store.save();
@@ -1047,6 +1119,8 @@
     updateStep: function (cid, sid, patch) {
       var c = Store.campaign(cid); if (!c) return;
       var s = c.steps.filter(function (x) { return x.id === sid; })[0]; if (!s) return;
+      /* a reply is a stronger fact than a send; never walk it back */
+      if (patch.status === 'sent' && s.status === 'replied') delete patch.status;
       Object.keys(patch).forEach(function (k) { s[k] = patch[k]; });
       Store.sortSteps(cid);
       Store.save();
@@ -1138,7 +1212,14 @@
       var win = wins[0] ? wins[0].text.charAt(0).toLowerCase() + wins[0].text.slice(1) : '';
       /* an angle that lands mid sentence should not start with a capital */
       var lower = angle ? angle.charAt(0).toLowerCase() + angle.slice(1) : '';
-      return String(body)
+      /* a placeholder that resolves to nothing takes its line with it, rather
+         than leaving "Marcus, " sitting on its own */
+      var out = String(body);
+      if (!angle) out = out.replace(/^.*\{angle\}.*$\n?/gm, function (line) {
+        return /\{first\}/.test(line) ? '{first},\n' : '';
+      });
+      if (!win) out = out.replace(/^\s*\{win\}\.?\s*$\n?/gm, '');
+      return out
         .replace(/, \{angle\}/g, ', ' + lower)
         .replace(/\{first\}/g, first)
         .replace(/\{name\}/g, contact ? contact.name : '')
@@ -1177,7 +1258,12 @@
     },
 
     reset: function () {
-      try { window.localStorage.removeItem(KEY); } catch (e) {}
+      try {
+        window.localStorage.removeItem(KEY);
+        Object.keys(window.localStorage).forEach(function (k) {
+          if (k.indexOf('frontdoor.') === 0) window.localStorage.removeItem(k);
+        });
+      } catch (e) {}
       state = defaults(); Store.state = state; emit();
     }
   };

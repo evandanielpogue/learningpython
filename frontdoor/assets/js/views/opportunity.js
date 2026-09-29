@@ -177,8 +177,14 @@
         }
         [0, 1, 2].forEach(function (i) { setTimeout(function () { tick(i); }, 320 * (i + 1)); });
 
+        var here = UI.stillHere(null);
         function land() {
-          setTimeout(function () { tick(3); setTimeout(function () { stage = 2; paint(); }, 420); }, 300);
+          if (!here()) return;      /* they navigated away while we were reading */
+          setTimeout(function () {
+            if (!here()) return;
+            tick(3);
+            setTimeout(function () { if (here()) { stage = 2; paint(); } }, 420);
+          }, 300);
         }
         if (!AI.ready()) return land();
 
@@ -190,7 +196,8 @@
                 winIds: (r.winIds || []).filter(function (id) {
                   return Store.state.profile.wins.some(function (w) { return w.id === id; });
                 }),
-                strength: r.strength || 'none', note: r.note || ''
+                strength: ['strong', 'partial', 'none'].indexOf(r.strength) > -1 ? r.strength : 'none',
+                note: r.note || ''
               };
             });
             matchedBy = 'model';
@@ -218,8 +225,8 @@
           var wins = (r.winIds || []).map(function (id) {
             return Store.state.profile.wins.filter(function (w) { return w.id === id; })[0];
           }).filter(Boolean);
-          return '<div class="matchrow ' + r.strength + '">' +
-            '<span class="mr-dot" title="' + r.strength + '"></span>' +
+          return '<div class="matchrow ' + esc(r.strength) + '">' +
+            '<span class="mr-dot" title="' + esc(r.strength) + '"></span>' +
             '<div class="mr-ask"><b>' + esc(r.text) + '</b>' +
               (r.priority === 'must' ? '<em class="mr-must">must have</em>' : '') + '</div>' +
             '<div class="mr-have">' +
@@ -313,16 +320,18 @@
         '<div class="row between wrap g3">' +
           '<div><h1>' + esc(c.company) + '</h1>' +
           '<p>' + esc(c.role) + (c.location ? ' · ' + esc(c.location) : '') +
-          (c.postingUrl ? ' · <a href="' + esc(c.postingUrl) + '" target="_blank" rel="noopener noreferrer">the posting \u2197</a>' : '') +
+          (/^https?:\/\//i.test(c.postingUrl || '')
+            ? ' · <a href="' + esc(c.postingUrl) + '" target="_blank" rel="noopener noreferrer">the posting \u2197</a>'
+            : '') +
           '</p></div>' +
         '</div>' +
       '</div>' +
 
       '<div class="grid cols-4 mb4">' +
-        '<div class="card hover p5"><p class="cap mb3">People</p><h2 class="mono">' + c.contacts.length + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">' + (sugg.length ? sugg.length + ' more suggested' : 'all added') + '</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><h2 class="mono">' + c.sent + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">of ' + c.steps.length + ' planned</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Replies</p><h2 class="mono">' + c.replies + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">' + (c.replies ? 'keep going' : 'early days') + '</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Page opens</p><h2 class="mono">' + c.views + '</h2><p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">People</p><p class="kpi mono">' + c.contacts.length + '</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (sugg.length ? sugg.length + ' more suggested' : 'all added') + '</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><p class="kpi mono">' + c.sent + '</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + c.steps.length + ' planned</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono">' + c.replies + '</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (c.replies ? 'keep going' : 'early days') + '</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono">' + c.views + '</p><p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div>' +
       '</div>' +
 
       '<div class="split-wide">' +

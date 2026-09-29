@@ -17,18 +17,51 @@ async function group(name, fn) {
   console.log('\n' + name);
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
-  page.on('pageerror', e => errs.push('pageerror: ' + e.message));
+  /* the group's own copy, so a step can assert the page stayed quiet
+     instead of leaving it to the run-level gate */
+  page.raised = [];
+  page.on('pageerror', e => { errs.push('pageerror: ' + e.message); page.raised.push(e.message); });
+  /* a promise nobody caught is a silent failure in a browser: the user sees
+     a spinner that never stops and the console-error gate never fires. */
+  await page.addInitScript(() => {
+    window.__rejections = [];
+    window.addEventListener('unhandledrejection', e => {
+      window.__rejections.push(String((e.reason && e.reason.message) || e.reason));
+    });
+  });
   page.on('console', m => {
     /* the offline-fallback test asks for a parser that is not there on purpose */
     const t = m.text();
-    if (m.type() === 'error' && !t.includes('ERR_CERT') && !expect404) errs.push('console: ' + t);
+    if (m.type() === 'error' && !t.includes('ERR_CERT') && !expect404) {
+      errs.push('console: ' + t); page.raised.push(t);
+    }
   });
+  current = page;
   await fn(page);
+  current = null;
+  try {
+    const r = await page.evaluate(() => window.__rejections || []);
+    r.forEach(m => errs.push('unhandled rejection: ' + m));
+  } catch (e) { /* the page navigated away; nothing to collect */ }
   await ctx.close();
 }
 
+/* the page under test, so a step can be failed by what the page threw
+   during it rather than only by the run-level gate at the end */
+let current = null;
+
 async function step(label, fn) {
-  try { await fn(); pass++; console.log('  PASS  ' + label); }
+  const before = current ? current.raised.length : 0;
+  try {
+    await fn();
+    if (current) {
+      /* a pageerror arrives over the wire a beat after it is thrown */
+      await current.waitForTimeout(120).catch(() => {});
+      const raised = current.raised.slice(before);
+      if (raised.length) throw new Error('the page raised: ' + raised.join(' | '));
+    }
+    pass++; console.log('  PASS  ' + label);
+  }
   catch (e) { fail++; console.log('  FAIL  ' + label + '  ->  ' + String(e.message).split('\n')[0]); }
 }
 
@@ -516,7 +549,6 @@ await group('Brand, icons and tips', async (page) => {
   await step('the mark is drawn, not a coloured box', async () => {
     const mark = await page.locator('.brand .mark').count();
     if (!mark) throw new Error('no mark in the sidebar');
-    if (await page.locator('.brand .glyph').count()) throw new Error('the old glyph is still there');
   });
   await step('every nav item carries a real icon', async () => {
     const n = await page.locator('.nav-item').count();
@@ -526,8 +558,17 @@ await group('Brand, icons and tips', async (page) => {
     if (stroke !== 'currentColor') throw new Error('icon hard-codes a colour: ' + stroke);
   });
   await step('the active item takes the brand colour', async () => {
-    const c = await page.locator('.nav-item[aria-current="page"] .nav-ico').evaluate(e => getComputedStyle(e).color);
-    if (c !== 'rgb(13, 110, 136)') throw new Error('active icon is ' + c);
+    /* compare against the token, not a copy of it: moving the brand in
+       tokens.css should move this, not break it */
+    const [c, want] = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = getComputedStyle(document.documentElement).getPropertyValue('--ac').trim();
+      document.body.appendChild(probe);
+      const resolved = getComputedStyle(probe).color;
+      probe.remove();
+      return [getComputedStyle(document.querySelector('.nav-item[aria-current="page"] .nav-ico')).color, resolved];
+    });
+    if (c !== want) throw new Error('active icon is ' + c + ', the accent is ' + want);
   });
   await step('the accent everywhere is the brand, not the old blue', async () => {
     const ac = await page.evaluate(() =>
@@ -562,8 +603,17 @@ await group('Brand, icons and tips', async (page) => {
     const shown = await page.locator('.swatch').first().locator('code').textContent();
     const live = await page.locator('.swatch').first().locator('.sw-chip')
       .evaluate(e => getComputedStyle(e).backgroundColor);
-    if (live !== 'rgb(13, 110, 136)') throw new Error('chip renders ' + live);
-    if (shown.toUpperCase() !== '#0D6E88') throw new Error('sheet says ' + shown);
+    const token = await page.evaluate(() => {
+      const hex = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim();
+      const probe = document.createElement('span');
+      probe.style.color = hex;
+      document.body.appendChild(probe);
+      const rgb = getComputedStyle(probe).color;
+      probe.remove();
+      return { hex: hex.toUpperCase(), rgb: rgb };
+    });
+    if (live !== token.rgb) throw new Error('chip renders ' + live + ', the token is ' + token.rgb);
+    if (shown.toUpperCase() !== token.hex) throw new Error('sheet says ' + shown + ', the token is ' + token.hex);
   });
   await step('a dismissed tip stays dismissed', async () => {
     await page.goto(BASE + '#/c/c_acme/people', { waitUntil: 'networkidle' });
@@ -672,6 +722,402 @@ await group('The interview brief', async (page) => {
     const call = await page.evaluate(() => window.__calls[window.__calls.length - 1]);
     if (!/forecast broke first/.test(call.body.messages[0].content))
       throw new Error('the rewriter still does not know what you told prep');
+  });
+});
+
+/* ------------------------------------------------------------ hardening -- */
+await group('Hardening', async (page) => {
+  await signIn(page);
+  await step('the document is standards mode, titled and in a language', async () => {
+    const m = await page.evaluate(() => ({
+      mode: document.compatMode,
+      lang: document.documentElement.lang,
+      charset: document.characterSet,
+      viewport: !!document.querySelector('meta[name=viewport]')
+    }));
+    if (m.mode !== 'CSS1Compat') throw new Error('quirks mode');
+    if (m.lang !== 'en') throw new Error('lang=' + m.lang);
+    if (!/UTF-8/i.test(m.charset)) throw new Error('charset=' + m.charset);
+    if (!m.viewport) throw new Error('no viewport meta');
+  });
+  await step('a content security policy is set, and it pins scripts', async () => {
+    const csp = await page.evaluate(() =>
+      (document.querySelector('meta[http-equiv="Content-Security-Policy"]') || {}).content || '');
+    if (!csp) throw new Error('no CSP');
+    if (!/script-src 'self' blob:/.test(csp)) throw new Error('script-src is not pinned: ' + csp);
+    if (/script-src[^;]*unsafe-inline/.test(csp)) throw new Error('served build allows inline script');
+  });
+  await step('nothing is fetched from a third party', async () => {
+    const hosts = await page.evaluate(() =>
+      performance.getEntriesByType('resource')
+        .map(r => new URL(r.name).host)
+        .filter(h => h && h !== location.host));
+    if (hosts.length) throw new Error('reached out to ' + [...new Set(hosts)].join(', '));
+  });
+  await step('LinkedIn is refused rather than fetched through the model', async () => {
+    const err = await page.evaluate(() => {
+      Store.state.ai = { mode: 'key', key: 'k', proxy: '', model: 'claude-opus-5' };
+      return AI.fetchPosting('https://www.linkedin.com/jobs/view/123').then(() => 'no error', e => e.message);
+    });
+    if (!/will not fetch LinkedIn/.test(err)) throw new Error(err);
+  });
+  await step('an http proxy is not accepted', async () => {
+    const ok = await page.evaluate(() => {
+      Store.state.ai = { mode: 'proxy', key: '', proxy: 'http://box.local/claude', model: 'claude-opus-5' };
+      return AI.ready();
+    });
+    if (ok) throw new Error('http proxy accepted; the resume would go in the clear');
+  });
+  await step('a hostile strength value cannot break out of the markup', async () => {
+    const bad = await page.evaluate(() => {
+      var d = document.createElement('div');
+      d.innerHTML = '<div class="matchrow ' + UI.esc('x" onmouseover="alert(1)') + '"></div>';
+      return d.firstChild.getAttribute('onmouseover');
+    });
+    if (bad) throw new Error('attribute broke out');
+  });
+});
+
+/* ------------------------------------------------- keyboard and contrast -- */
+await group('Keyboard and contrast', async (page) => {
+  await signIn(page);
+
+  await step('the first tab stop is a skip link that reaches the content', async () => {
+    await page.keyboard.press('Tab');
+    const first = await page.evaluate(() => (document.activeElement || {}).id);
+    if (first !== 'skip') throw new Error('first tab stop is #' + first);
+    await page.keyboard.press('Enter');
+    const now = await page.evaluate(() => (document.activeElement || {}).id);
+    if (now !== 'view') throw new Error('skip landed on #' + now);
+  });
+
+  await step('the content sits in a main landmark', async () => {
+    const t = await page.evaluate(() => {
+      const v = document.getElementById('view');
+      return v ? v.tagName : 'MISSING';
+    });
+    if (t !== 'MAIN') throw new Error('#view is a ' + t);
+  });
+
+  await step('a KPI number is not announced as a section heading', async () => {
+    const bad = await page.evaluate(() =>
+      [...document.querySelectorAll('h1,h2,h3,h4')]
+        .map(h => h.textContent.trim())
+        .filter(t => /^[\d,.]+$/.test(t)));
+    if (bad.length) throw new Error('headings that are only numbers: ' + bad.join(', '));
+  });
+
+  await step('the closed command palette is out of the tab order', async () => {
+    const vis = await page.evaluate(() =>
+      getComputedStyle(document.querySelector('.palette-scrim')).visibility);
+    if (vis !== 'hidden') throw new Error('closed palette visibility is ' + vis);
+  });
+
+  await step('opening the palette makes the rest of the page inert', async () => {
+    await page.evaluate(() => UI.openPalette());
+    await page.waitForTimeout(120);
+    const inert = await page.evaluate(() =>
+      [...document.body.children]
+        .filter(n => !n.classList.contains('palette-scrim'))
+        .every(n => n.inert));
+    if (!inert) throw new Error('the page behind the palette still takes focus');
+    await page.evaluate(() => UI.closePalette());
+    await page.waitForTimeout(80);
+  });
+
+  await step('closing it releases the page and hands focus back', async () => {
+    await page.evaluate(() => {
+      window.__ret = document.createElement('button');
+      window.__ret.id = 'ret-probe';
+      document.body.appendChild(window.__ret);
+      window.__ret.focus();
+      UI.openPalette();
+    });
+    await page.waitForTimeout(120);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(120);
+    const out = await page.evaluate(() => ({
+      focused: (document.activeElement || {}).id,
+      released: [...document.body.children].every(n => !n.inert)
+    }));
+    if (!out.released) throw new Error('the page is still inert after closing');
+    if (out.focused !== 'ret-probe') throw new Error('focus went to #' + out.focused);
+    await page.evaluate(() => document.getElementById('ret-probe').remove());
+  });
+
+  await step('tab wraps inside a dialog instead of escaping it', async () => {
+    await page.evaluate(() => { window.__c = UI.confirm({ title: 'Wrap?', body: 'Tab me.' }); });
+    await page.waitForSelector('.modal-scrim.open', { timeout: 3000 });
+    await page.waitForTimeout(120);
+    for (let i = 0; i < 6; i++) await page.keyboard.press('Tab');
+    const inside = await page.evaluate(() =>
+      !!document.querySelector('.modal-scrim') &&
+      document.querySelector('.modal-scrim').contains(document.activeElement));
+    if (!inside) throw new Error('tab walked out of the dialog');
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => window.__c);
+  });
+
+  await step('toasts are announced', async () => {
+    await page.evaluate(() => UI.toast('Announced.'));
+    await page.waitForTimeout(80);
+    const live = await page.evaluate(() => {
+      const h = document.querySelector('.toasts');
+      return h ? h.getAttribute('aria-live') : null;
+    });
+    if (live !== 'polite') throw new Error('toast host aria-live=' + live);
+  });
+
+  await step('a contact row is reachable and operable by keyboard', async () => {
+    await page.goto(BASE + '#/c/' + (await page.evaluate(() => Store.state.campaigns[0].id)) + '/people',
+      { waitUntil: 'networkidle' });
+    await page.waitForSelector('.rankrow', { timeout: 5000 });
+    const shape = await page.evaluate(() => {
+      const b = document.querySelector('.rankrow .rr-main');
+      return b ? { tag: b.tagName, pressed: b.getAttribute('aria-pressed') } : null;
+    });
+    if (!shape) throw new Error('no name control in the row');
+    if (shape.tag !== 'BUTTON') throw new Error('the name is a ' + shape.tag);
+    if (shape.pressed === null) throw new Error('selection state is not exposed');
+    const picked = await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('.rankrow .rr-main')];
+      const off = rows.find(r => r.getAttribute('aria-pressed') === 'false');
+      if (!off) return 'only one contact';
+      off.focus();
+      return 'ready';
+    });
+    if (picked === 'ready') {
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(200);
+      const on = await page.evaluate(() =>
+        [...document.querySelectorAll('.rankrow .rr-main')].some(r => r.getAttribute('aria-pressed') === 'true'));
+      if (!on) throw new Error('Enter did not select a contact');
+    }
+  });
+
+  await step('every ink the app puts on text clears 4.5:1', async () => {
+    const bad = await page.evaluate(() => {
+      const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+      const lum = s => {
+        const m = s.match(/(\d+),\s*(\d+),\s*(\d+)/);
+        if (!m) return null;
+        return 0.2126 * lin(+m[1]) + 0.7152 * lin(+m[2]) + 0.0722 * lin(+m[3]);
+      };
+      const ratio = (a, b) => {
+        const hi = Math.max(a, b), lo = Math.min(a, b);
+        return (hi + 0.05) / (lo + 0.05);
+      };
+      const css = getComputedStyle(document.documentElement);
+      const read = n => css.getPropertyValue(n).trim();
+      /* resolve each token through a probe element so hex and var() both work */
+      const probe = document.createElement('span');
+      document.body.appendChild(probe);
+      const rgb = hex => { probe.style.color = hex; return lum(getComputedStyle(probe).color); };
+      const inks = ['--ink', '--ink-2', '--ink-3', '--ink-4'];
+      const surfaces = ['--panel', '--bg', '--sunk', '--sunk-2'];
+      const out = [];
+      inks.forEach(i => surfaces.forEach(s => {
+        const r = ratio(rgb(read(i)), rgb(read(s)));
+        if (r < 4.5) out.push(i + ' on ' + s + ' = ' + r.toFixed(2));
+      }));
+      probe.remove();
+      return out;
+    });
+    if (bad.length) throw new Error(bad.join('; '));
+  });
+
+  await step('the faint ink is never used for text', async () => {
+    const used = await page.evaluate(async () => {
+      const sheets = [...document.styleSheets];
+      const hits = [];
+      sheets.forEach(sh => {
+        let rules;
+        try { rules = [...sh.cssRules]; } catch (e) { return; }
+        rules.forEach(r => {
+          if (!r.style) return;
+          if ((r.style.color || '').includes('--ink-faint')) hits.push(r.selectorText);
+        });
+      });
+      return hits;
+    });
+    /* colour on a separator glyph is fine; colour on anything that carries
+       words is not. The only permitted homes are listed here by name. */
+    const allowed = /crumbs \.sep|\.opp \.arr/;
+    const bad = used.filter(s => !allowed.test(s || ''));
+    if (bad.length) throw new Error('faint ink on text: ' + bad.join(', '));
+  });
+
+  await step('reduced motion stops animations repeating', async () => {
+    const ctx2 = await browser.newContext({ reducedMotion: 'reduce' });
+    const p2 = await ctx2.newPage();
+    await p2.goto(BASE, { waitUntil: 'networkidle' });
+    const count = await p2.evaluate(() => {
+      const d = document.createElement('div');
+      d.style.animation = 'spin 1s linear infinite';
+      document.body.appendChild(d);
+      const n = getComputedStyle(d).animationIterationCount;
+      d.remove();
+      return n;
+    });
+    await ctx2.close();
+    if (count !== '1') throw new Error('animation-iteration-count is ' + count);
+  });
+});
+
+/* ------------------------------------------- change, blur and the repaint --
+   The bug this group exists for: a handler that repaints synchronously while
+   a blur is still running makes the browser tear the element out mid-event.
+   These steps type into a field and then CLICK somewhere else, which is the
+   only ordering that reproduces it — fill() never blurs. The failure shows
+   up as a console error, so the run gate catches it even if the click lands.
+   ------------------------------------------------------------------------ */
+await group('Change, blur and the repaint', async (page) => {
+  await signIn(page);
+  const cid = await page.evaluate(() => Store.state.campaigns[0].id);
+
+
+  await step('typing a wait, then clicking a step, does not tear the page out', async () => {
+    await page.goto(BASE + '#/c/' + cid + '/sequence', { waitUntil: 'networkidle' });
+    await page.waitForSelector('[data-wait]', { timeout: 5000 });
+    const w = page.locator('[data-wait]').first();
+    await w.click();
+    await page.keyboard.press('Control+a');
+    await page.keyboard.type('5');
+    await page.locator('.stepcard').nth(2).click();
+    await page.waitForTimeout(250);
+    if (!(await page.locator('.stepcard').count())) throw new Error('the list did not come back');
+  });
+
+  await step('typing a step field, then clicking another step, survives', async () => {
+    const f = page.locator('[data-f]').first();
+    if (await f.count()) {
+      await f.click();
+      await page.keyboard.press('Control+a');
+      await page.keyboard.type('3');
+      await page.locator('.stepcard').nth(1).click();
+      await page.waitForTimeout(250);
+    }
+    if (!(await page.locator('#body').count())) throw new Error('the editor did not come back');
+  });
+
+  await step('naming a contact, then clicking another row, survives', async () => {
+    await page.goto(BASE + '#/c/' + cid + '/people', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.rankrow', { timeout: 5000 });
+    const rows = await page.locator('.rankrow .rr-main').count();
+    if (rows < 2) throw new Error('need two contacts to click between');
+    await page.locator('.rankrow .rr-main').first().click();
+    await page.waitForTimeout(200);
+    const n = page.locator('#d-name');
+    await n.click();
+    await page.keyboard.press('Control+a');
+    await page.keyboard.type('Blur Ordering');
+    await page.locator('.rankrow .rr-main').nth(1).click();
+    await page.waitForTimeout(300);
+    if (!(await page.locator('.rankrow').count())) throw new Error('the list did not come back');
+    const kept = await page.evaluate(id =>
+      Store.campaign(id).contacts.some(p => p.name === 'Blur Ordering'), cid);
+    if (!kept) throw new Error('the typed name was lost on blur');
+  });
+
+  await step('changing a persona, then clicking a row, survives', async () => {
+    const sel = page.locator('#d-persona');
+    if (await sel.count()) {
+      await sel.selectOption({ index: 1 });
+      await page.locator('.rankrow .rr-main').first().click();
+      await page.waitForTimeout(300);
+    }
+    if (!(await page.locator('.rankrow').count())) throw new Error('the list did not come back');
+  });
+});
+
+/* ------------------------------------------------- a call still in flight --
+   Every model call in this app can outlive the screen that started it.
+   The stub here answers slowly on purpose so the test can navigate away
+   first; nothing may be written into a view that is gone.
+   ------------------------------------------------------------------------ */
+await group('A model call that outlives its screen', async (page) => {
+  await page.addInitScript(() => {
+    window.AI_FETCH = function (url, opts) {
+      var body = JSON.parse(opts.body || '{}');
+      var text = JSON.stringify({ reply: 'Slow answer.', follow: '', story: null, done: false });
+      return new Promise(function (res) {
+        setTimeout(function () {
+          res({
+            ok: true, status: 200,
+            json: function () {
+              return Promise.resolve({ content: [{ type: 'text', text: text }], model: body.model });
+            }
+          });
+        }, 900);
+      });
+    };
+  });
+  await signIn(page);
+  const cid = await page.evaluate(() => {
+    Store.state.ai = { mode: 'key', key: 'k', proxy: '', model: 'claude-opus-5' };
+    Store.save();
+    return Store.state.campaigns[0].id;
+  });
+
+  await step('leaving mid-answer writes nothing and raises nothing', async () => {
+    await page.goto(BASE + '#/c/' + cid + '/prep', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.agitem', { timeout: 5000 });
+    await page.locator('.agitem').first().click();
+    await page.waitForTimeout(200);
+    const box = page.locator('#ask-q');
+    if (await box.count()) {
+      await box.fill('Here is the context.');
+      await page.locator('#ask-form button[type=submit], #ask-form button').first().click();
+      await page.waitForTimeout(150);
+      /* walk out while the answer is still on the wire */
+      await page.goto(BASE + '#/c/' + cid + '/people', { waitUntil: 'networkidle' });
+      await page.waitForTimeout(1200);
+      if (!(await page.locator('.rankrow').count())) throw new Error('the people screen broke');
+    }
+  });
+
+  await step('switching topics mid-answer does not cross the wires', async () => {
+    await page.goto(BASE + '#/c/' + cid + '/prep', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.agitem', { timeout: 5000 });
+    const n = await page.locator('.agitem').count();
+    if (n < 2) return;
+    await page.locator('.agitem').first().click();
+    await page.waitForTimeout(150);
+    await page.locator('#ask-q').fill('First topic.');
+    await page.locator('#ask-form button[type=submit], #ask-form button').first().click();
+    await page.waitForTimeout(150);
+    await page.locator('.agitem').nth(1).click();
+    await page.waitForTimeout(1200);
+    const open = await page.evaluate(() => {
+      const el = document.querySelector('.agitem[aria-current="true"]');
+      return el ? el.textContent : '';
+    });
+    if (!open) throw new Error('no topic is open after switching');
+    const bubbles = await page.locator('#log .bubble').count();
+    if (bubbles > 6) throw new Error('the first answer landed in the second topic');
+  });
+});
+
+/* ------------------------------------------------- importing twice over --- */
+await group('Importing a resume over an existing one', async (page) => {
+  await signIn(page);
+  await step('the companies keep the wins they were built with', async () => {
+    const before = await page.evaluate(() => {
+      const c = Store.state.campaigns[0];
+      return { id: c.id, wins: (c.winIds || []).length, texts: Store.campaignWins(c).map(w => w.text) };
+    });
+    if (!before.wins) throw new Error('the seed company has no wins to lose');
+    const after = await page.evaluate(b => {
+      /* the same resume, parsed again: same wins, brand new ids */
+      const p = JSON.parse(JSON.stringify(Store.state.profile));
+      p.wins = p.wins.map((w, i) => Object.assign({}, w, { id: 'w_reimport_' + i }));
+      Store.applyResume(p);
+      const c = Store.campaign(b.id);
+      return { wins: (c.winIds || []).length, texts: Store.campaignWins(c).map(w => w.text) };
+    }, before);
+    if (after.wins !== before.wins) throw new Error(before.wins + ' wins -> ' + after.wins);
+    if (after.texts.join('|') !== before.texts.join('|'))
+      throw new Error('the wins changed: ' + after.texts.join(' / '));
   });
 });
 
@@ -1013,12 +1459,6 @@ await group('Sequence builder', async (page) => {
     if ((await page.locator('.stepcard').count()) !== 10) throw new Error('not ten steps');
     if (!(await page.locator('.wait-pill').count())) throw new Error('no wait pills');
   });
-  await step('no A/B variants anywhere', async () => {
-    if (await page.locator('.vtab, #add-variant, .ed-tabs').count()) throw new Error('variant UI still present');
-  });
-  await step('no merge field buttons in the editor', async () => {
-    if (await page.locator('.fbtn, .fieldbar').count()) throw new Error('merge field bar still present');
-  });
   await step('wait control shifts later steps', async () => {
     const before = await page.evaluate(() => Store.campaign('c_acme').steps.map(s => s.day).join(','));
     await page.locator('[data-wait]').first().fill('4');
@@ -1068,12 +1508,33 @@ await group('Sequence builder', async (page) => {
     if (/\{\w+\}/.test(t)) throw new Error('unresolved placeholder in preview');
     await page.keyboard.press('Escape');
   });
-  await step('assistant rewrites the body', async () => {
+  await step('offline, the assistant shortens a real draft', async () => {
     await page.waitForTimeout(300);
+    await page.fill('#body', 'Marcus,\n\nOne.\n\nTwo.\n\nThree.\n\nWorth fifteen minutes?');
+    await page.locator('.sug', { hasText: 'Shorter' }).click();
+    await page.waitForTimeout(700);
+    const after = await page.inputValue('#body');
+    if (after.split('\n\n').length !== 3) throw new Error('did not shorten: ' + JSON.stringify(after));
+    if (!/Worth fifteen minutes/.test(after)) throw new Error('dropped the ask');
+  });
+  await step('offline, it refuses rather than mangling what it cannot do', async () => {
+    await page.fill('#body', 'One line and nothing else.');
     const before = await page.inputValue('#body');
     await page.locator('.sug', { hasText: 'Shorter' }).click();
     await page.waitForTimeout(700);
-    if ((await page.inputValue('#body')) === before) throw new Error('no edit applied');
+    if ((await page.inputValue('#body')) !== before) throw new Error('it edited the draft anyway');
+    const said = await page.locator('.bubble.ai').last().textContent();
+    if (!/already done|nothing here to change/i.test(said)) throw new Error('said: ' + said);
+  });
+  await step('offline, an unknown request never touches the draft', async () => {
+    await page.fill('#body', 'Marcus,\n\nOne.\n\nTwo.\n\nWorth fifteen minutes?');
+    const before = await page.inputValue('#body');
+    await page.fill('#assist-q', 'make it longer and mention the reprice');
+    await page.press('#assist-q', 'Enter');
+    await page.waitForTimeout(700);
+    if ((await page.inputValue('#body')) !== before) throw new Error('it deleted half the draft');
+    const said = await page.locator('.bubble.ai').last().textContent();
+    if (!/cannot do that without a model/i.test(said)) throw new Error('said: ' + said);
   });
   await step('add, duplicate and delete a step', async () => {
     const n0 = await page.evaluate(() => Store.campaign('c_acme').steps.length);

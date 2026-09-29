@@ -34,6 +34,16 @@
       'c0-1.24-.02-2.83-1.75-2.83-1.75 0-2.02 1.34-2.02 2.74v5.28H9.6v-11z"/></svg></span>';
   };
 
+  /* A model call takes seconds, and in that time the user can switch steps,
+     open another item or navigate away. Everything that lands late checks it
+     is still wanted before it touches the DOM. */
+  UI.stillHere = function (node) {
+    var hash = location.hash;
+    return function () {
+      return location.hash === hash && (!node || node.isConnected);
+    };
+  };
+
   /* ---- tips ------------------------------------------------------------
      A tactic worth knowing, shown where you would use it. Dismissed once and
      it stays dismissed, because a tip you have read is clutter. -------- */
@@ -96,6 +106,9 @@
     if (!toastHost) {
       toastHost = document.createElement('div');
       toastHost.className = 'toasts';
+      toastHost.setAttribute('role', 'status');
+      toastHost.setAttribute('aria-live', 'polite');
+      toastHost.setAttribute('aria-atomic', 'false');
       document.body.appendChild(toastHost);
     }
     var t = document.createElement('div');
@@ -106,6 +119,42 @@
       t.classList.add('leaving');
       setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 220);
     }, 3200);
+  };
+
+  /* ---- focus containment ----------------------------------------------
+     A dialog that does not hold focus is a dialog a keyboard user tabs
+     straight out of, into a page they cannot see. Every overlay goes
+     through here: the rest of the app is marked inert, Tab wraps inside
+     the dialog, and whatever had focus gets it back on close. */
+  var FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),' +
+    'select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+  UI.trap = function (scrim) {
+    var was = document.activeElement;
+    var siblings = [];
+    var kids = document.body.children, i;
+    for (i = 0; i < kids.length; i++) {
+      if (kids[i] !== scrim && !kids[i].inert) { kids[i].inert = true; siblings.push(kids[i]); }
+    }
+    function key(e) {
+      if (e.key !== 'Tab') return;
+      var f = [].filter.call(scrim.querySelectorAll(FOCUSABLE), function (n) {
+        return n.offsetWidth || n.offsetHeight || n.getClientRects().length;
+      });
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !scrim.contains(document.activeElement))) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    }
+    document.addEventListener('keydown', key, true);
+    return function release() {
+      document.removeEventListener('keydown', key, true);
+      siblings.forEach(function (n) { n.inert = false; });
+      if (was && was.isConnected && was.focus) { try { was.focus(); } catch (e) {} }
+    };
   };
 
   /* ---- modal ---------------------------------------------------------- */
@@ -124,12 +173,14 @@
           '</div>' +
         '</div>';
       document.body.appendChild(scrim);
+      var release = UI.trap(scrim);
       requestAnimationFrame(function () { scrim.classList.add('open'); });
 
       function done(v) {
         scrim.classList.remove('open');
         setTimeout(function () { if (scrim.parentNode) scrim.parentNode.removeChild(scrim); }, 200);
         document.removeEventListener('keydown', esc);
+        release();
         resolve(v);
       }
       function esc(e) { if (e.key === 'Escape') done(false); }
@@ -150,11 +201,13 @@
       '<div class="row between"><h3>' + UI.esc(opts.title) + '</h3>' +
       '<button class="icon-btn" data-close aria-label="Close">✕</button></div>' + opts.html + '</div>';
     document.body.appendChild(scrim);
+    var release = UI.trap(scrim);
     requestAnimationFrame(function () { scrim.classList.add('open'); });
     function close() {
       scrim.classList.remove('open');
       setTimeout(function () { if (scrim.parentNode) scrim.parentNode.removeChild(scrim); }, 200);
       document.removeEventListener('keydown', key);
+      release();
     }
     function key(e) { if (e.key === 'Escape') close(); }
     document.addEventListener('keydown', key);
@@ -162,6 +215,12 @@
     /* hand the caller the node so it can wire its own controls without
        hanging a listener off the document that outlives the sheet */
     if (opts.onMount) opts.onMount(scrim.firstChild, close);
+    setTimeout(function () {
+      if (!scrim.isConnected || scrim.contains(document.activeElement)) return;
+      var f = scrim.querySelector('input:not([type="hidden"]),textarea,select,button:not([data-close])') ||
+              scrim.querySelector('[data-close]');
+      if (f) try { f.focus(); } catch (e) {}
+    }, 60);
     return close;
   };
 
@@ -247,19 +306,25 @@
   }
 
   UI.openPalette = function () {
+    if (pal.scrim.classList.contains('open')) return;
     pal.items = UI.paletteSource();
     pal.input.value = '';
     filterPalette();
     pal.scrim.classList.add('open');
+    pal.release = UI.trap(pal.scrim);
     setTimeout(function () { pal.input.focus(); }, 50);
   };
-  UI.closePalette = function () { pal.scrim.classList.remove('open'); };
+  UI.closePalette = function () {
+    if (!pal.scrim.classList.contains('open')) return;
+    pal.scrim.classList.remove('open');
+    if (pal.release) { pal.release(); pal.release = null; }
+  };
 
   UI.mountPalette = function () {
     var s = document.createElement('div');
     s.className = 'scrim palette-scrim';
     s.innerHTML =
-      '<div class="palette" role="dialog" aria-label="Command palette">' +
+      '<div class="palette" role="dialog" aria-modal="true" aria-label="Command palette">' +
         '<div class="palette-input"><span style="color:var(--ink-3)">⌕</span>' +
           '<input id="pal-q" placeholder="Jump to, or run something" autocomplete="off" spellcheck="false"></div>' +
         '<div class="palette-list" id="pal-list"></div>' +

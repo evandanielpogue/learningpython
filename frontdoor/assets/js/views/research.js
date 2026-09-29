@@ -117,6 +117,11 @@
         }
       });
     }
+    UI.on(v, 'click', '[data-res-x]', function (e, el) {
+      Store.removeResearch(c.id, el.dataset.resX);
+      paint();
+      UI.toast('Removed.');
+    });
     UI.on(v, 'click', '#add-empty', addSheet);
     document.getElementById('add-find').addEventListener('click', addSheet);
     document.getElementById('refresh').addEventListener('click', function () {

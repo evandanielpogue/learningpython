@@ -1,14 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Frontdoor</title>
 <meta name="description" content="Go in the front. One company at a time: the people, the research, the messages and the page you send them to.">
-<meta name="theme-color" content="#15181C">
+<meta name="theme-color" content="#F7F7F8">
+<meta name="color-scheme" content="light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https:; form-action 'none'; base-uri 'none'">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%2315181C'/%3E%3Cpath d='M5.5 6.2A1.9 1.9 0 0 1 7.4 4.3h5.3a1.9 1.9 0 0 1 1.9 1.9V20H5.5Z' fill='%23fff'/%3E%3Crect x='16.1' y='4.3' width='2.4' height='15.7' rx='1.2' fill='%23D98A18'/%3E%3Ccircle cx='11.9' cy='12.6' r='1.1' fill='%2315181C'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-
+<link rel="stylesheet" href="assets/css/fonts.css">
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/app.css">
 
+</head>
+<body>
 <div id="root">
   <!-- Boot frame. Replaced by the router on first resolve. -->
   <div class="auth">
@@ -52,3 +58,5 @@
 <script src="assets/js/views/brief.js"></script>
 <script src="assets/js/views/brand.js"></script>
 <script src="assets/js/main.js"></script>
+</body>
+</html>

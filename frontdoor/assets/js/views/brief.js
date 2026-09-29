@@ -158,8 +158,10 @@
         (c.location ? '<div><span class="cap">Where</span><b>' + esc(c.location) + '</b></div>' : '') +
         '<div><span class="cap">Stories ready</span><b>' + ready + ' of ' + b.wins.length + '</b></div>' +
         '<div><span class="cap">Gaps</span><b>' + b.gaps.length + '</b></div>' +
-        (c.postingUrl ? '<div><span class="cap">Posting</span><a href="' +
-          (/^https?:/i.test(c.postingUrl) ? esc(c.postingUrl) : '#') + '" target="_blank" rel="noopener noreferrer">the listing ↗</a></div>' : '') +
+        (/^https?:\/\//i.test(c.postingUrl || '')
+          ? '<div><span class="cap">Posting</span><a href="' + esc(c.postingUrl) +
+            '" target="_blank" rel="noopener noreferrer">the listing \u2197</a></div>'
+          : '') +
       '</div>' +
 
       sec('lead', 'What you lead with', 'The three numbers and the story behind each one.', leadHTML()) +
