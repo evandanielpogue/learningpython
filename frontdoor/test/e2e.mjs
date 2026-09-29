@@ -1633,6 +1633,119 @@ await group('Colour, motion and the three moments', async (page) => {
   });
 });
 
+/* ------------------------------------------------------------- the voice -- */
+await group('Titles and the way it talks', async (page) => {
+  await signIn(page);
+
+  await step('every screen is titled in one word', async () => {
+    const routes = ['', 'settings', 'templates', 'brand', 'new',
+                    'c/c_acme', 'c/c_acme/people', 'c/c_acme/prep',
+                    'c/c_acme/research', 'c/c_acme/sequence', 'c/c_acme/page'];
+    const bad = [];
+    for (const r of routes) {
+      await page.goto(BASE + '#/' + r, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(220);
+      const h = await page.evaluate(() => {
+        const el = document.querySelector('.page-head h1, .bf-id h1');
+        return el ? el.textContent.trim() : null;
+      });
+      if (!h) continue;
+      /* the greeting and a company name are the two allowed exceptions */
+      if (/^(Good (morning|afternoon|evening)|Acme)/.test(h)) continue;
+      if (h.split(/\s+/).length > 1) bad.push('#/' + r + ': "' + h + '"');
+    }
+    if (bad.length) throw new Error(bad.join(' | '));
+  });
+
+  await step('no screen still explains itself in a paragraph under the title', async () => {
+    const bad = [];
+    for (const r of ['c/c_acme/people', 'c/c_acme/prep', 'c/c_acme/research',
+                     'c/c_acme/sequence', 'c/c_acme/page', 'templates', 'settings']) {
+      await page.goto(BASE + '#/' + r, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(220);
+      const p = await page.evaluate(() => {
+        const el = document.querySelector('.page-head > p');
+        return el ? el.textContent.trim() : null;
+      });
+      if (p) bad.push('#/' + r + ': "' + p.slice(0, 50) + '…"');
+    }
+    if (bad.length) throw new Error(bad.join(' | '));
+  });
+
+  /* Everything the coach says out loud, sampled across every variant. */
+  const spoken = async () => page.evaluate(() => {
+    const c = Store.campaign('c_acme');
+    const out = [];
+    Store.buildAgenda(c.id).forEach(a => {
+      const ctx = { win: Store.campaignWins(c).filter(w => w.id === a.ref)[0] };
+      /* the pools are picked by a seeded key, so vary the key to reach them all */
+      for (let i = 0; i < 12; i++) {
+        out.push(Coach.opening(Object.assign({}, a, { id: a.id + i }), ctx));
+      }
+    });
+    ['thin', 'we', 'obstacle', 'number', 'outcome', 'vague', 'learned'].forEach(w => {
+      for (let i = 0; i < 12; i++) out.push(Coach.probe(w, 'k' + i));
+    });
+    return out.filter(Boolean);
+  });
+
+  await step('it says things a person would actually say', async () => {
+    const lines = await spoken();
+    /* the app writes formally everywhere else; speech does not */
+    const stiff = /\b(do not|does not|did not|is not|are not|have not|would not|could not|cannot|it is|that is|there is|here is|you are)\b/i;
+    const bad = lines.filter(l => stiff.test(l));
+    if (bad.length) throw new Error('written, not spoken: ' + bad.slice(0, 3).join(' | '));
+  });
+
+  await step('nothing it says runs on', async () => {
+    const lines = await spoken();
+    const long = lines.filter(l => l.split(/\s+/).length > 18);
+    if (long.length) throw new Error('too long to say: ' + long[0]);
+  });
+
+  await step('it does not reach for a phrase nobody uses', async () => {
+    const lines = await spoken();
+    /* things that read fine written down and sound absurd out loud */
+    const affected = /\b(what broke|over a drink|nothing goes that cleanly|interrogat|invitation|kind of number|the version you would)\b/i;
+    const bad = lines.filter(l => affected.test(l));
+    if (bad.length) throw new Error(bad.join(' | '));
+  });
+
+  await step('an opener names the thing it is asking about', async () => {
+    const out = await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      return Store.buildAgenda(c.id).filter(a => a.kind === 'story').map(a => {
+        const w = Store.campaignWins(c).filter(x => x.id === a.ref)[0];
+        return { metric: w && w.metric, line: Coach.opening(a, { win: w }) };
+      });
+    });
+    /* "30\u219270" is said out loud as "30 to 70", so look for the figures
+       rather than for the metric string verbatim */
+    const bad = out.filter(o => {
+      if (!o.metric) return false;
+      const nums = o.metric.match(/[\d.]+/g) || [];
+      return !nums.every(n => o.line.indexOf(n) > -1);
+    });
+    if (bad.length) throw new Error(bad[0].line + ' never says ' + bad[0].metric);
+  });
+
+  await step('a read-back asks rather than announces', async () => {
+    const line = await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      const a = Store.buildAgenda(c.id)[0];
+      const hist = [{ role: 'assistant', content: 'x', stage: 'dig', want: 'thin' },
+                    { role: 'user', content: 'I rewrote the discovery script myself and sat on 30 calls ' +
+                      'over about six weeks, the reps pushed back hard for the first month because ' +
+                      'it was more work up front, but the cycle went from 70 days down to 41 by Q3 ' +
+                      'and the book closed at $1.2M in the end, which was the best year that ' +
+                      'territory had ever had by a distance.' }];
+      return Coach.turn(a, hist, { win: Store.campaignWins(c)[0] });
+    });
+    if (line.stage !== 'confirm') throw new Error('it did not read anything back, stage ' + line.stage);
+    if (!/\?$/.test(line.bubbles[0].trim())) throw new Error('it told them instead of asking: ' + line.bubbles[0]);
+  });
+});
+
 /* ---------------------------------------------------------- cold start -- */
 await group('Cold start, all the way through', async (page) => {
   await step('a new account lands on the resume screen with nothing in it', async () => {

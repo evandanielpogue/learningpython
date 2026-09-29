@@ -239,8 +239,7 @@
       var v = Shell.mount({
         nav: 'home',
         crumbs: [{ label: 'Overview', href: '/' }, { label: 'Your resume' }],
-        html: '<div class="page-head"><h1>Your history</h1>' +
-              '<p>Two minutes of setup that every message and every page is built from.</p></div>' +
+        html: '<div class="page-head"><h1>R\u00e9sum\u00e9</h1></div>' +
               (step === 1 ? stepOne() : stepTwo())
       });
       if (step === 1) wireOne(v); else wireTwo(v);

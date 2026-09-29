@@ -16,8 +16,7 @@
       nav: 'templates',
       crumbs: [{ label: 'Templates' }],
       actions: '<button class="btn btn-primary btn-sm" id="new-tpl">New template</button>',
-      html: '<div class="page-head"><h1>Your messages</h1>' +
-        '<p>Nine to start with, one for each kind of person at each point in the sequence. Pull any of them into a step and the names fill in.</p></div>' +
+      html: '<div class="page-head"><h1>Templates</h1></div>' +
         '<div class="filterbar" id="filters"></div>' +
         '<div class="split"><div id="tpl-list"></div><div id="tpl-edit"></div></div>'
     });

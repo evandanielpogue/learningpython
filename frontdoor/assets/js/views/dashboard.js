@@ -65,9 +65,6 @@
     var html =
       '<div class="page-head">' +
         '<h1>' + esc(greet) + ', ' + esc(name) + '</h1>' +
-        '<p>' + (list.length
-          ? 'Every company you are working, and what each one is waiting on.'
-          : 'Start with the company you actually want. Everything else is built from the listing.') + '</p>' +
       '</div>';
 
     if (!imported) {
@@ -142,7 +139,7 @@
     var u = Store.state.user;
 
     var html =
-      '<div class="page-head"><h1>Settings</h1><p>Your profile feeds every message and every page. Change it here and it changes everywhere.</p></div>' +
+      '<div class="page-head"><h1>Settings</h1></div>' +
 
       '<div class="card p5 mb4">' +
         '<h3 class="mb4">You</h3>' +

@@ -74,8 +74,7 @@
 
   window.Views.brand = function () {
     var html =
-      '<div class="page-head"><h1>The brand</h1>' +
-      '<p>A door, with the light left on. Everything here is a token: change it in one file and it changes everywhere.</p></div>' +
+      '<div class="page-head"><h1>Brand</h1></div>' +
 
       '<div class="card p6 mb4">' +
         '<div class="brandhero">' +

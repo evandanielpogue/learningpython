@@ -98,8 +98,7 @@
       var v = Shell.mount({
         nav: 'home',
         crumbs: [{ label: 'Overview', href: '/' }, { label: 'Add a company' }],
-        html: '<div class="page-head"><h1>Add a company</h1>' +
-              '<p>One listing in, a whole campaign out. Takes about two minutes.</p></div>' + body
+        html: '<div class="page-head"><h1>Company</h1></div>' + body
       });
 
       if (stage === 1) wireOne(v); else wireTwo(v);

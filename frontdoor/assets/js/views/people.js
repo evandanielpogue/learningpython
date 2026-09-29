@@ -27,8 +27,7 @@
       crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Contacts' }],
       actions: '<button class="btn btn-primary btn-sm" id="add-top">Add contact</button>',
       html:
-        '<div class="page-head"><h1>Who you are working</h1>' +
-        '<p>Ranked top to bottom. The order is the order you reach out in, so put the person with the least to lose from helping you at the top.</p></div>' +
+        '<div class="page-head"><h1>Contacts</h1></div>' +
         UI.tipHTML('find-contacts', { q: 'hiring ' + c.role + ' at ' + c.company }) +
         '<div id="found"></div>' +
         '<div class="split"><div id="list"></div><div id="detail"></div></div>'

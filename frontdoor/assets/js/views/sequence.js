@@ -71,8 +71,7 @@
       crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Sequence' }],
       actions: '<span class="chip" id="cap-chip"></span>' +
                '<button class="btn btn-secondary btn-sm" id="preview">Preview</button>',
-      html: '<div class="page-head"><h1>Sequence</h1>' +
-            '<p>Ten touches over two weeks. Change the order, the timing, who each one goes to, and what it says.</p></div>' +
+      html: '<div class="page-head"><h1>Sequence</h1></div>' +
             UI.tipHTML('sequence-touches') +
             '<div id="seq-mount"></div>'
     });

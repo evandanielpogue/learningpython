@@ -171,8 +171,7 @@
 
     /* ---------------- the editor around it ---------------- */
     var html =
-      '<div class="page-head"><h1>What they see</h1>' +
-      '<p>One page, written for one company. Pick a shape, then turn off anything that is not earning its place.</p></div>' +
+      '<div class="page-head"><h1>Page</h1></div>' +
       '<div class="preview">' +
         '<div class="col g4">' +
           '<div class="card p4">' +

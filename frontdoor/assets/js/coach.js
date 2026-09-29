@@ -176,92 +176,92 @@
      term; never "tell me about yourself". */
   var GAP_OPENERS = {
     tool: [
-      'They name {term} specifically. What did you actually run this in, and what did you do with what came out of it?',
-      'So — {term}. Have you touched it, or is this one of those where you learned the thing next to it?',
-      '{term} is on the list. Tell me what your stack actually was, and I will tell you how close that is.'
+      'They want {term}. Have you used it?',
+      '{term} is on the list. What did you use instead?',
+      'Have you worked with {term}, or something like it?'
     ],
     method: [
-      'The listing asks for {term}. What did you use to qualify instead, and name a deal you lost because a step got skipped.',
-      '{term}. Be honest — did your team actually run that, or was it a slide?',
-      'They want {term}. Forget the acronym for a second: how did you decide a deal was real?'
+      'They want {term}. Did your team actually run that?',
+      '{term}. How did you qualify a deal?',
+      'They ask for {term}. What did you use?'
     ],
     segment: [
-      'This is a {term} seat. What is the real difference between that and what you have been selling — the cycle, the committee, or the price?',
-      '{term}. How far is that from the deals you have been running, honestly?',
-      'They are buying {term} experience. What is the closest thing on your side, and where does it stop being the same?'
+      'This is a {term} seat. What have you been selling?',
+      '{term}. How close is that to your deals?',
+      'They want {term}. What\'s different about yours?'
     ],
     motion: [
-      'They want {term}. What share of your pipeline did you actually source that way, and what did the first touch look like?',
-      '{term}. Have you run that end to end, or picked it up somewhere in the middle?',
-      'On {term} — walk me through one that worked, from the first touch.'
+      'They want {term}. How much of your pipeline did you source yourself?',
+      '{term}. Have you run that, or did it come to you?',
+      'Tell me about your {term}. What did the first touch look like?'
     ],
     scale: [
-      'They are describing the number: {label}. What is the biggest you have personally carried, and did you hit it?',
-      'The number in this listing is the thing to get straight. What have you actually carried, and what did you land?',
-      'Numbers first: what was your quota, and what did you finish at? Both figures.'
+      'What\'s the biggest number you\'ve carried?',
+      'They\'re describing the quota. What have you carried, and did you hit it?',
+      'What was your number, and what did you finish at?'
     ],
     leadership: [
-      'They want someone who can {labelLower}. Who have you actually brought up, and what did they do after?',
-      'This one is about other people. Who is the last person you got good at something, and how?',
-      'Have you done this for anyone by name? That is what makes the answer land.'
+      'Who have you brought up? A name is fine.',
+      'Have you done this for anyone? Tell me about them.',
+      'Who\'s the last person you helped get good at this?'
     ],
     domain: [
-      'You have not sold into {term}. What is the closest buyer you have worked, and what did they care about that others did not?',
-      '{term} is new for you. Which buyer on your side has the most in common with them?',
-      'No {term} on the résumé. So let us build the bridge: who have you sold to that thinks the same way?'
+      'You haven\'t sold into {term}. Who\'s the closest?',
+      'No {term} on the résumé. Which buyer is most like them?',
+      '{term} is new. Who have you sold to that thinks the same way?'
     ],
     years: [
-      'The listing asks for {term}. Where is the gap between that and what you have, and what did you pack into the time you did have?',
-      '{term} is what they wrote. What do you actually have, and what happened in it?',
-      'They want {term}. Numbers aside, what did your time cover that someone with longer might not have?'
+      'They want {term}. What do you have?',
+      '{term} is what they wrote. What happened in yours?',
+      'You\'re short on the years. What did you pack into the time you had?'
     ],
     other: [
-      'Nothing on your résumé answers this: {labelLower}. What is the closest thing you have done?',
-      'This one is uncovered: {labelLower}. Where have you come nearest to it?',
-      '{label} — not on the résumé anywhere. What would you say if they asked cold?'
+      'Nothing on your résumé covers this. What\'s the closest you\'ve got?',
+      'This one is uncovered. Where have you come near it?',
+      'What would you say if they asked you this cold?'
     ]
   };
 
   var WIN_OPENERS = {
     money: [
-      '{metric}. What was the number before you took it, and how much of {metric} was new business rather than renewal?',
-      'Start with {metric}. Whose book was it before yours, and what shape was it in?',
-      '{metric} is the headline. What is the bit underneath it that you would only say out loud?'
+      '{metric}. What was it before you took it over?',
+      'Okay, {metric}. How much of that was new business?',
+      'Tell me about the {metric}. Where did it start?'
     ],
     over: [
-      '{metric} of quota. What was quota, and which quarter did it actually get won in?',
-      '{metric}. Was that even across the year, or did one deal carry it?',
-      'You finished at {metric}. What was the number you were chasing, and when did you know you had it?'
+      '{metric}. What was the number you were chasing?',
+      'You hit {metric}. Was that steady, or did one deal carry it?',
+      '{metric} of quota. When did you know you had it?'
     ],
     loss: [
-      '{metric} is the kind of number people ask about carefully. Who left, and what did you change the week after?',
-      '{metric}. That is a hard year. What was actually going on?',
-      'Take me back to {metric}. Where were you standing when it started?'
+      '{metric}. What happened that year?',
+      '{metric} is rough. Who left?',
+      'Tell me about the {metric}. What was going on?'
     ],
     shiftWorse: [
-      'It went from {from} to {to}. What broke first, and how did you find out?',
-      '{from} to {to} is a real slide. What was the first sign?',
-      'So {from} became {to}. Who noticed first — you, or someone above you?'
+      '{from} to {to}. What happened?',
+      'It went from {from} to {to}. When did you notice?',
+      '{from} up to {to}. What was driving that?'
     ],
     shiftBetter: [
-      'It went from {from} to {to}. What did you change first, and how long before it showed?',
-      '{from} down to {to}. What was the one change that actually moved it?',
-      'From {from} to {to} — was that one fix or twenty small ones?'
+      '{from} to {to}. What did you change?',
+      'You got it from {from} to {to}. What worked?',
+      'From {from} to {to}. How long did that take?'
     ],
     multiple: [
-      '{metric}. Off what base, and over how long?',
-      '{metric} sounds good until someone asks the starting number. What was it?',
-      'Give me the two figures behind {metric} and the window they sit in.'
+      '{metric} off what?',
+      '{metric}. What was the starting point?',
+      'Tell me about the {metric}. Over how long?'
     ],
     plain: [
-      'You put {metric} on the résumé. What was it before, and what did you personally do to move it?',
-      '{metric}. Where did that number come from?',
-      'Tell me about {metric} — the version with the mess still in it.'
+      '{metric}. What was it before?',
+      'Tell me about the {metric}. What did you do?',
+      'You put {metric} on the résumé. Where did that come from?'
     ],
     none: [
-      'Take me through what happened here. Start where it went wrong.',
-      'No number on this one, so tell it as a story. Where does it start?',
-      'Set the scene for me. What was the situation when you walked into it?'
+      'Tell me what happened here.',
+      'What\'s the story behind this one?',
+      'Walk me through it.'
     ]
   };
 
@@ -296,7 +296,7 @@
   };
 
   /* ------------------------------------------------------------ follow-up --
-     Chosen by what is missing from what they just said, so the second
+     Chosen by what\'s missing from what they just said, so the second
      question is never the same as the first. Returns null when the answer
      is already complete enough to bank. */
   var HEDGE = /\b(basically|kind of|sort of|pretty much|a lot of|various|several|stuff|things)\b/i;
@@ -319,7 +319,7 @@
     };
   };
 
-  /* what is still missing, named, so both the probe and the tests can see it */
+  /* what\'s still missing, named, so both the probe and the tests can see it */
   Coach.missing = function (answers, letGo) {
     var last = answers[answers.length - 1] || '';
     var a = Coach.readAnswer(answers.join(' '));
@@ -342,39 +342,39 @@
 
   var PROBES = {
     thin: [
-      'That is the headline. Give me the version you would tell someone over a drink — what was actually going on?',
-      'Bit short. Back up: what was happening around it?',
-      'Say more. What did the week look like?'
+      'Say a bit more.',
+      'What else was going on?',
+      'Keep going. What happened next?'
     ],
     we: [
-      'That is what the team did. What was yours specifically — the part that would not have happened without you?',
-      'You keep saying we. What did you do that nobody else was going to?',
-      'Split it out for me: which bit of that was actually you?'
+      'What part of that was you?',
+      'You keep saying we. What did you do?',
+      'Which bit was actually yours?'
     ],
     obstacle: [
-      'What got in the way? An interviewer is listening for the part that nearly did not work.',
-      'Where did it nearly fall over?',
-      'Nothing goes that cleanly. What was the hard part?'
+      'What made it hard?',
+      'Did anything go wrong?',
+      'Where did it nearly fall apart?'
     ],
     number: [
-      'Put a number on it. Before and after, or how long it took — whichever you actually remember.',
-      'Give me a figure. Any of them: the size, the drop, the weeks.',
-      'What does that look like in numbers? Even roughly.'
+      'Do you have a number for that?',
+      'Roughly how big was it?',
+      'How long did it take?'
     ],
     outcome: [
-      'And how did it end? Say the outcome the way you would want it repeated.',
-      'Finish it — where did it land?',
-      'What happened in the end?'
+      'How did it turn out?',
+      'Where did it land?',
+      'And then what?'
     ],
     vague: [
-      'Two things in there are still fuzzy. Name the account, the team, or the quarter — specifics are what make it sound true.',
-      'Get specific for me. Which account, which quarter?',
-      'Names and dates. That is what makes it sound true rather than rehearsed.'
+      'Which account was that?',
+      'Can you be more specific? A name, a quarter.',
+      'Give me a detail someone could check.'
     ],
     learned: [
-      'One more layer: what would you say if they asked "and what did you learn?"',
-      'Last thing — what would you do differently now?',
-      'If they follow up with "what did that teach you", what comes out?'
+      'Would you do anything differently?',
+      'What did you take from it?',
+      'Anything you\'d change?'
     ]
   };
 
@@ -394,30 +394,30 @@
      A turn of actual conversation. Three things make this read like a person
      rather than a form: it says back the detail it heard before asking the
      next thing, it varies its wording, and it answers what was actually
-     typed — "I don't know" and "what do you mean" get a different reply from
+     typed — "I don\'t know" and "what do you mean" get a different reply from
      a real answer. It stops when nothing is missing, reads the story back in
-     the person's own words, and banks it once they say that is right. */
+     the person\'s own words, and banks it once they say that\'s right. */
 
   var DUNNO   = /^(i (do not|don'?t) (know|remember)|not sure|no idea|dunno|cannot remember|can'?t remember|nope|no)\b/i;
   var HUH     = /^(what do you mean|what\?|huh|sorry\?|i do not follow|i don'?t follow|meaning\?|like what)/i;
-  var YES     = /^(yes|yeah|yep|yup|that is right|that'?s right|correct|exactly|spot on|right|perfect|good|sounds right|ok|okay)\b/i;
-  var NO      = /^(no|not quite|not really|nope|change|wrong|that is not|that'?s not)\b/i;
+  var YES     = /^(yes|yeah|yep|yup|that\'s right|that'?s right|correct|exactly|spot on|right|perfect|good|sounds right|ok|okay)\b/i;
+  var NO      = /^(no|not quite|not really|nope|change|wrong|that\'s not|that'?s not)\b/i;
 
   var DUNNO_REPLIES = {
-    thin:     ['Fine. Smaller question: what is the first thing you remember about it?',
-               'No problem. What sticks in your head from that time?'],
-    we:       ['Try it this way: if your manager wrote your part of it down, what would the line say?',
-               'What would someone who was there say you did?'],
-    obstacle: ['Then it may have been smoother than most. Was there anyone who did not want it to happen?',
-               'Fair. Did anything take longer than it should have?'],
-    number:   ['Rough is fine. Order of magnitude — tens, hundreds, thousands?',
-               'A guess beats nothing. Roughly what size are we talking?'],
-    outcome:  ['Even "it is still running" is an ending. Where did it get to?',
-               'What was true at the end that was not true at the start?'],
-    vague:    ['Then leave the names out. What was the shape of it?',
-               'Fine — no names. What happened, in order?'],
-    learned:  ['Then say the honest version: "nothing I would change" is an answer too.',
-               'Leave it. Not every story has a lesson bolted on.']
+    thin:     ['No worries. What do you remember?',
+               'That\'s fine. What sticks out?'],
+    we:       ['What would your manager have said you did?',
+               'If someone had been watching, what would they have seen you do?'],
+    obstacle: ['Maybe it was smooth. Did anyone push back?',
+               'Fair enough. Did anything take longer than it should have?'],
+    number:   ['A rough one is fine. Tens? Hundreds?',
+               'Ballpark it.'],
+    outcome:  ['Even "it\'s still going" works. Where\'s it at?',
+               'What was different at the end?'],
+    vague:    ['Leave the names out then. What happened?',
+               'That\'s fine. Just tell me the order it went in.'],
+    learned:  ['Fair. Not everything has a lesson.',
+               'That\'s fine, leave it.']
   };
 
   Coach.mirror = function (text, key) {
@@ -425,11 +425,11 @@
     if (!t) return null;
     /* the most quotable thing in what they said: a figure with its unit,
        then a proper noun, then nothing — we never mirror a whole sentence
-       back, because that is what a chatbot does, not a person */
+       back, because that\'s what a chatbot does, not a person */
     var UNIT = '(?:\\s?(?:%|k\\b|m\\b|bn?\\b|x\\b|days?|weeks?|months?|quarters?|years?|reps?|' +
                'accounts?|deals?|calls?|logos?|people|hours?))';
     /* money first, then a figure that carries its unit, then a bare number:
-       "$1.2M" is worth saying back, "30" on its own usually is not */
+       "$1.2M" is worth saying back, "30" on its own usually isn\'t */
     var got = null;
     var money = t.match(/[$£€]\s?\d[\d.,]*\s?[kmb]?n?\b/i);
     var united = t.match(new RegExp('\\d[\\d.,]*' + UNIT, 'i'));
@@ -442,10 +442,10 @@
     else if (name && !/^I\b/.test(name[1]) && !WEAK.test(name[1])) got = name[1];
     if (!got) return null;
     return fill(pick([
-      '{got} — okay.',
+      '{got}, okay.',
       'Right, {got}.',
       '{got}. Got it.',
-      'Noted: {got}.'
+      'Okay, {got}.'
     ], (key || '') + got), { got: got });
   };
 
@@ -483,9 +483,9 @@
   };
 
   var CONFIRM = [
-    'Here is what I have, in your words: "{story}" Is that the version you would say out loud?',
-    'So it comes out as: "{story}" Does that sound like you?',
-    'Read this back: "{story}" Right, or do you want to change it?'
+    'Here\'s what I have: "{story}" Sound right?',
+    'So: "{story}" Is that how you\'d say it?',
+    '"{story}" That work?'
   ];
 
   /* history entries are { role, content, stage } — stage is what this
@@ -509,22 +509,22 @@
     if (prev.stage === 'confirm') {
       if (YES.test(last.trim())) {
         return {
-          bubbles: [pick(['Good. That is banked — pick the next one on the left.',
-                          'Saved. Next one whenever you are ready.',
-                          'That is yours now. Take the next one.'], key)],
+          bubbles: [pick(['Good. That\'s one down.',
+                          'Saved. Pick the next one.',
+                          'Got it. Next?'], key)],
           stage: 'done', complete: true, story: prev.story || Coach.summary(answers.slice(0, -1))
         };
       }
       if (NO.test(last.trim()) || last.trim().length < 40) {
         return {
-          bubbles: [pick(['Then say it the way you would want it said, and I will keep that instead.',
-                          'Fair. Put it in your own words and that is what goes in.'], key)],
+          bubbles: [pick(['Okay, say it how you\'d want it said.',
+                          'Fair. Put it your way and I\'ll keep that.'], key)],
           stage: 'dig', complete: false, story: null
         };
       }
       /* they rewrote it themselves, which is the best possible outcome */
       return {
-        bubbles: [pick(['Better. Keeping that one.', 'That is stronger. Banked.'], key)],
+        bubbles: [pick(['Better. Keeping that.', 'That\'s stronger. Saved.'], key)],
         stage: 'done', complete: true, story: last
       };
     }
@@ -540,7 +540,7 @@
     /* and a conversation that never ends is worse than one that ends early */
     if (asked.length >= 5) what = null;
 
-    /* "I don't know" is an answer, and pretending otherwise is what makes
+    /* "I don\'t know" is an answer, and pretending otherwise is what makes
        these things infuriating */
     if (DUNNO.test(last.trim())) {
       var soft = DUNNO_REPLIES[what || 'learned'] || DUNNO_REPLIES.thin;
@@ -549,12 +549,12 @@
         stage: 'dig', want: what, complete: false, story: null
       };
     }
-    /* they did not understand the question, so ask it another way rather
+    /* they didn\'t understand the question, so ask it another way rather
        than repeating the same sentence louder */
     if (HUH.test(last.trim())) {
       var again = Coach.probe(what || 'thin', key + '|again', used);
       return {
-        bubbles: [again || 'Put it however you would say it to a colleague. Anything is a start.'],
+        bubbles: [again || 'Just say it how you\'d say it to a colleague.'],
         stage: 'dig', want: what, complete: false, story: null
       };
     }
@@ -572,15 +572,14 @@
       /* every way of asking that has been spent, so stop asking it */
     }
 
-    /* nothing missing: read it back and let them own it. If there is nothing
+    /* nothing missing: read it back and let them own it. If there\'s nothing
        worth reading back, say that instead of quoting filler at them. */
     var story = Coach.summary(answers);
     if (!Coach.worthKeeping(story)) {
       return {
         bubbles: [pick([
-          'There is not enough here yet to put in front of anyone. Leave it and come back ' +
-            'when it is fresher — a thin story is worse than no story.',
-          'I would not use this one. Skip it for now and take a topic you can actually see.'
+          'There\'s not much here yet. Come back to this one when it\'s fresher.',
+          'I wouldn\'t use this one yet. Try another and come back to it.'
         ], key)],
         stage: 'stall', want: null, complete: false, story: null
       };
