@@ -200,12 +200,11 @@
       '</div>' +
 
       '<div class="bf-grid">' +
-        panel('lead', 'What you lead with', 'The numbers, and the story behind each one.', leadHTML(), 12) +
-        panel('questions', 'What they will ask', 'From this listing and your gaps.',
-              '<div id="qbox">' + questionsHTML() + '</div>', 7, true) +
-        panel('match', 'Where you line up', 'And what you say about where you do not.', matchHTML(), 5, true) +
-        panel('people', 'Who you have talked to', 'What passed between you.', peopleHTML(), 7, true) +
-        panel('research', 'What ' + c.company + ' said', 'Specific things you can quote back.', researchHTML(), 5, true) +
+        panel('lead', 'Numbers', '', leadHTML(), 12) +
+        panel('questions', 'Questions', '', '<div id="qbox">' + questionsHTML() + '</div>', 7, true) +
+        panel('match', 'Match', '', matchHTML(), 5, true) +
+        panel('people', 'People', '', peopleHTML(), 7, true) +
+        panel('research', 'Research', '', researchHTML(), 5, true) +
       '</div>';
 
     var v = Shell.mount({

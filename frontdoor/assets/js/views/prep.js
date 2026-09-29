@@ -36,6 +36,7 @@
     var history = [];
     var turns = 0;
     var busy = false;
+    var stage = 'open';
 
     var v = Shell.mount({
       nav: 'prep',
@@ -60,7 +61,7 @@
       var pr = Store.agendaProgress(c);
       v.querySelector('#agenda').innerHTML =
         '<div class="card p5">' +
-          '<div class="row between wrap g2 mb4"><h3>To get through</h3>' +
+          '<div class="row between wrap g2 mb4"><h3>Agenda</h3>' +
           '<span class="cap">' + pr.done + ' of ' + pr.total + '</span></div>' +
           '<div class="col g2">' + agenda.map(function (a) {
             return '<button class="agitem' + (a.id === openId ? ' on' : '') + (a.done ? ' done' : '') +
@@ -93,8 +94,8 @@
       v.querySelector('#talk').innerHTML =
         '<div class="card assist-card prep-talk">' +
           '<div class="assist-head">' +
-            '<b>' + (a.kind === 'gap' ? 'They asked for: ' : 'Your win: ') + esc(a.label) + '</b>' +
-            '<span class="hint">' + esc(a.ask) + '</span>' +
+            '<span class="ag-kind">' + (a.kind === 'gap' ? 'Gap' : 'Story') + '</span>' +
+            '<b>' + esc(a.label) + '</b>' +
           '</div>' +
           '<div class="assist-log" id="log"></div>' +
           '<form class="assist-in" id="ask-form">' +
@@ -110,15 +111,46 @@
 
     function say(cls, text) {
       var log = v.querySelector('#log');
+      if (!log) return null;
       log.insertAdjacentHTML('beforeend', '<div class="bubble ' + cls + '">' + esc(text) + '</div>');
       log.scrollTop = log.scrollHeight;
       return log.lastElementChild;
+    }
+
+    /* A reply lands as one or two short bubbles with a pause between them,
+       the way someone types rather than the way a form submits. The pause is
+       proportional to the line, capped so nobody waits on a long one. */
+    function typing() {
+      var log = v.querySelector('#log');
+      if (!log) return null;
+      log.insertAdjacentHTML('beforeend',
+        '<div class="bubble ai typing" aria-hidden="true"><i></i><i></i><i></i></div>');
+      log.scrollTop = log.scrollHeight;
+      return log.lastElementChild;
+    }
+    function beat(text) { return Math.min(340 + String(text || '').length * 9, 1100); }
+
+    function sayAll(bubbles, mine, then) {
+      var i = 0;
+      (function next() {
+        if (openId !== mine || !v.querySelector('#log')) return;
+        if (i >= bubbles.length) { if (then) then(); return; }
+        var text = bubbles[i++];
+        var dots = typing();
+        setTimeout(function () {
+          if (openId !== mine || !dots || !dots.isConnected) return;
+          dots.remove();
+          say('ai', text);
+          next();
+        }, beat(text));
+      })();
     }
 
     function open(id) {
       openId = id;
       history = [];
       turns = 0;
+      stage = 'open';
       paintAgenda();
       paintTalk();
 
@@ -129,7 +161,16 @@
         say('ai', 'Say more and it gets replaced, or pick another on the left.');
         return;
       }
-      if (!AI.ready()) return say('ai', Coach.opening(a, ctxFor(c, a)));
+      if (!AI.ready()) {
+        var first = Coach.turn(a, [], ctxFor(c, a));
+        stage = first.stage;
+        sayAll(first.bubbles, openId, function () {
+          first.bubbles.forEach(function (t) {
+            history.push({ role: 'assistant', content: t, stage: first.stage, want: first.want });
+          });
+        });
+        return;
+      }
 
       busy = true;
       var b = say('ai', '…');
@@ -157,15 +198,26 @@
 
         var a = item();
         if (!AI.ready()) {
-          /* no model: bank what they typed, then ask for whatever is still
-             missing from it rather than reading down a list */
-          var answers = said(history);
-          Store.answerAgenda(c.id, a.id, answers.join(' '));
-          paintAgenda();
-          setTimeout(function () {
-            var next = Coach.followUp(a, answers, ctxFor(c, a));
-            say('ai', next || 'That holds up. It is banked — pick the next one on the left.');
-          }, 380);
+          /* no model: coach.js carries the conversation. It answers what was
+             actually typed, mirrors a detail back before it asks the next
+             thing, and stops when nothing is missing. */
+          var mine = openId;
+          busy = true;
+          var out = Coach.turn(a, history, ctxFor(c, a));
+          sayAll(out.bubbles, mine, function () {
+            if (openId !== mine) return;
+            out.bubbles.forEach(function (t) {
+              history.push({ role: 'assistant', content: t, stage: out.stage,
+                             want: out.want, story: out.story });
+            });
+            stage = out.stage;
+            if (out.complete && out.story) {
+              Store.answerAgenda(c.id, a.id, out.story);
+              Store.completeTask(c.id, 't7');
+              paintAgenda();
+            }
+            busy = false;
+          });
           return;
         }
 

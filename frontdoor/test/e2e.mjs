@@ -79,6 +79,22 @@ const signIn = async (page, demo = true) => {
   }
 };
 
+
+/* The prep conversation types its replies in, so a test has to wait for a
+   bubble that is a bubble rather than reading the typing indicator. */
+const aiTurns = (page) => page.$$eval('#log .bubble.ai:not(.typing)', e => e.map(x => x.textContent.trim()));
+const waitAi = async (page, n) => {
+  await page.waitForFunction(
+    (want) => document.querySelectorAll('#log .bubble.ai:not(.typing)').length >= want,
+    n, { timeout: 9000 });
+  return (await aiTurns(page)).slice(-1)[0];
+};
+const answer = async (page, text, n) => {
+  await page.fill('#ask-q', text);
+  await page.locator('#ask-form button[type=submit]').click();
+  return waitAi(page, n);
+};
+
 /* ---------------------------------------------------------------- auth -- */
 await group('Auth', async (page) => {
   await step('login renders with the aside', async () => {
@@ -1225,8 +1241,7 @@ await group('The questions are worked out, not listed', async (page) => {
     await page.goto(BASE + '#/c/c_acme/prep', { waitUntil: 'networkidle' });
     await page.waitForSelector('.agitem', { timeout: 5000 });
     await page.locator('.agitem').first().click();
-    await page.waitForTimeout(300);
-    const first = await page.locator('#log .bubble').first().textContent();
+    const first = await waitAi(page, 1);
     const metric = await page.evaluate(() => Store.campaignWins(Store.campaign('c_acme'))[0].metric);
     if (first.indexOf(metric) === -1) throw new Error('"' + first + '" never mentions ' + metric);
   });
@@ -1235,33 +1250,77 @@ await group('The questions are worked out, not listed', async (page) => {
     const seen = [];
     for (let i = 0; i < 3; i++) {
       await page.locator('.agitem').nth(i).click();
-      await page.waitForTimeout(260);
-      seen.push((await page.locator('#log .bubble').first().textContent()).trim());
+      seen.push(await waitAi(page, 1));
     }
     if (new Set(seen).size !== seen.length) throw new Error('repeated opening: ' + seen.join(' / '));
   });
 
   await step('the follow-up answers what the answer was missing', async () => {
     await page.locator('.agitem').first().click();
-    await page.waitForTimeout(260);
+    await waitAi(page, 1);
     /* first person, an obstacle named, but no number anywhere: the thing
        still missing is the number, so that is what it should ask for */
-    await page.fill('#ask-q', 'I rebuilt the whole motion over a couple of quarters and it was a slog, ' +
+    const reply = (await answer(page,
+      'I rebuilt the whole motion over a couple of quarters and it was a slog, ' +
       'the reps pushed back hard at first but eventually I got everyone onto the new way of working ' +
-      'and it ended up sticking');
-    await page.locator('#ask-form button[type=submit]').click();
-    await page.waitForTimeout(700);
-    const reply = (await page.locator('#log .bubble.ai').last().textContent()).toLowerCase();
-    if (!/number|before and after|how long/.test(reply)) throw new Error('did not ask for a number: ' + reply);
+      'and it ended up sticking', 2)).toLowerCase();
+    if (!/number|figure|roughly|how long/.test(reply)) throw new Error('did not ask for a number: ' + reply);
   });
 
-  await step('a second answer gets a different question again', async () => {
-    const before = (await page.locator('#log .bubble.ai').last().textContent()).trim();
-    await page.fill('#ask-q', 'I took cycle time from 70 days back to 41 across 14 accounts in Q3.');
-    await page.locator('#ask-form button[type=submit]').click();
-    await page.waitForTimeout(700);
-    const after = (await page.locator('#log .bubble.ai').last().textContent()).trim();
-    if (after === before) throw new Error('it asked the same thing twice');
+  await step('it reads the story back in your own words and banks it on yes', async () => {
+    const back = await answer(page,
+      'I personally rewrote the discovery script and sat on 30 calls, cycle went from 70 days ' +
+      'to 41 by Q3 and the book closed at $1.2M.', 3);
+    if (!/70 days/.test(back)) throw new Error('the read-back is not in their words: ' + back);
+    await answer(page, 'yes', 4);
+    const banked = await page.evaluate(() => Store.campaign('c_acme').agenda[0].text);
+    if (!/70 days/.test(banked || '')) throw new Error('nothing banked: ' + banked);
+  });
+
+  await step('it never asks the same thing twice', async () => {
+    const said = await aiTurns(page);
+    const dupes = said.filter((x, i) => said.indexOf(x) !== i);
+    if (dupes.length) throw new Error('repeated: ' + dupes[0]);
+  });
+
+  await step('"I do not know" gets a smaller question, not the same one', async () => {
+    await page.locator('.agitem').nth(1).click();
+    const first = await waitAi(page, 1);
+    const reply = await answer(page, 'i dont know', 2);
+    if (reply === first) throw new Error('it just repeated itself');
+    if (/^(sorry|i did not|invalid)/i.test(reply)) throw new Error('it treated it as an error: ' + reply);
+  });
+
+  await step('it gives up rather than interrogating', async () => {
+    const out = await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      const a = Store.buildAgenda(c.id)[0];
+      const ctx = { win: Store.campaignWins(c)[0] };
+      let hist = [], said = [];
+      for (let i = 0; i < 8; i++) {
+        const t = Coach.turn(a, hist, ctx);
+        t.bubbles.forEach(x => { said.push(x); hist.push({ role: 'assistant', content: x, stage: t.stage, want: t.want, story: t.story }); });
+        hist.push({ role: 'user', content: 'it was fine i guess and things went okay overall' });
+      }
+      return { said, last: said[said.length - 1] };
+    });
+    const dupes = out.said.filter((x, i) => out.said.indexOf(x) !== i);
+    if (dupes.length) throw new Error('repeated under stonewalling: ' + dupes[0]);
+    if (out.said.length > 9) throw new Error('it asked ' + out.said.length + ' times');
+  });
+
+  await step('it will not read filler back as if it were a story', async () => {
+    const out = await page.evaluate(() => {
+      const filler = 'it was fine i guess and things went okay overall';
+      return {
+        summary: Coach.summary([filler, filler, filler]),
+        keep: Coach.worthKeeping(Coach.summary([filler, filler, filler])),
+        real: Coach.worthKeeping('I cut the cycle from 70 days to 41 across 14 accounts in Q3.')
+      };
+    });
+    if ((out.summary.match(/it was fine/g) || []).length > 1) throw new Error('it repeats them back to themselves');
+    if (out.keep) throw new Error('filler counted as a story');
+    if (!out.real) throw new Error('a real story was thrown away');
   });
 });
 
