@@ -20,15 +20,13 @@
     if (!c) return Router.go('/', true);
     Store.touch(c.id);
 
+    /* the questions panel is never empty: work them out from the listing and
+       the gaps on first open, and let Claude redo them properly if it is on */
+    if (!c.questions) Store.setQuestions(c.id, Store.questionsLocally(c));
+
     var b = Store.brief(c);
     var pf = Store.state.profile;
     var busy = false;
-
-    function sec(id, title, sub, body) {
-      return '<section class="bf-sec" id="bf-' + id + '">' +
-        '<div class="bf-head"><h2>' + esc(title) + '</h2>' +
-        (sub ? '<p>' + esc(sub) + '</p>' : '') + '</div>' + body + '</section>';
-    }
 
     /* ---------------- what you lead with ---------------- */
     function leadHTML() {
@@ -115,14 +113,18 @@
     /* ---------------- the questions ---------------- */
     function questionsHTML() {
       var q = c.questions;
-      if (!q) {
+      if (!q || !(q.likely || []).length) {
         return '<div class="bf-empty">' +
-          '<p>' + (AI.ready()
-            ? 'Claude can work out what this company is likely to ask you, from the listing, your gaps and what these people have said.'
-            : 'Without a model these come from the listing and your gaps. Turn Claude on in Settings for the good version.') + '</p>' +
-          '<button class="btn btn-primary btn-sm" id="gen-q">Work out the questions</button></div>';
+          '<p>Nothing to work from yet — paste the listing on the company screen ' +
+          'and pick the wins you are leading with.</p>' +
+          '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '">Go back to ' + esc(c.company) + '</a></div>';
       }
-      return '<div class="bf-qs">' + (q.likely || []).map(function (x) {
+      return '<p class="bf-src-note">' + (q.source === 'claude'
+        ? 'Worked out by Claude from the listing, your gaps and what these people said.'
+        : 'Built from the listing and your gaps. ' +
+          (AI.ready() ? 'Claude can do this properly.' : 'Turn Claude on in Settings for the sharper version.')) +
+        '</p>' +
+        '<div class="bf-qs">' + (q.likely || []).map(function (x) {
         return '<div class="bf-q">' +
           '<b>' + esc(x.question) + '</b>' +
           '<p class="bf-why">' + esc(x.why) + '</p>' +
@@ -140,35 +142,71 @@
             return '<li>' + esc(x) + '</li>';
           }).join('') + '</ul>'
         : '') +
-      '<button class="btn btn-ghost btn-sm mt3" id="gen-q">Work them out again</button>';
+      '<button class="btn btn-secondary btn-sm mt3" id="gen-q">' +
+        (AI.ready() ? 'Work them out with Claude' : 'Work them out again') + '</button>';
+    }
+
+    /* ---------------- the dashboard ---------------- */
+    function panel(id, title, sub, body, span, tall) {
+      return '<section class="bf-panel' + (span ? ' sp-' + span : '') + (tall ? ' bf-tall' : '') +
+        '" id="bf-' + id + '">' +
+        '<div class="bf-head"><h2>' + esc(title) + '</h2>' +
+        (sub ? '<p>' + esc(sub) + '</p>' : '') + '</div>' +
+        '<div class="bf-body">' + body + '</div></section>';
+    }
+
+    function tile(cap, value, note, tone) {
+      return '<div class="bf-tile' + (tone ? ' ' + tone : '') + '">' +
+        '<span class="cap">' + esc(cap) + '</span>' +
+        '<p class="kpi mono">' + esc(String(value)) + '</p>' +
+        (note ? '<span class="bf-tile-note">' + esc(note) + '</span>' : '') + '</div>';
     }
 
     var ready = b.wins.filter(function (w) { return w.story; }).length;
+    var spoken = b.people.filter(function (p) { return p.touches.length; }).length;
+    var replied = b.people.filter(function (p) {
+      return p.touches.some(function (x) { return x.replied; });
+    }).length;
+    var answered = b.match.filter(function (m) { return m.strength !== 'none' || m.answer; }).length;
+    var qCount = ((c.questions || {}).likely || []).length;
+
     var html =
-      '<div class="page-head">' +
-        '<div class="row between wrap g3">' +
-          '<div><h1>' + esc(c.company) + ' brief</h1>' +
-          '<p>Everything this campaign knows, on one page. Read it the night before.</p></div>' +
+      '<div class="bf-bar">' +
+        '<div class="bf-id">' +
+          '<h1>' + esc(c.company) + '</h1>' +
+          '<p>' + esc(c.role) + (c.location ? ' &middot; ' + esc(c.location) : '') + '</p>' +
+        '</div>' +
+        '<div class="bf-bar-acts">' +
+          (/^https?:\/\//i.test(c.postingUrl || '')
+            ? '<a class="btn btn-ghost btn-sm" href="' + esc(c.postingUrl) +
+              '" target="_blank" rel="noopener noreferrer">The listing \u2197</a>'
+            : '') +
+          '<a class="btn btn-ghost btn-sm" href="#/c/' + c.id + '/prep">Prep</a>' +
           '<button class="btn btn-secondary btn-sm" id="print">Print it</button>' +
         '</div>' +
       '</div>' +
 
-      '<div class="bf-top">' +
-        '<div><span class="cap">Role</span><b>' + esc(c.role) + '</b></div>' +
-        (c.location ? '<div><span class="cap">Where</span><b>' + esc(c.location) + '</b></div>' : '') +
-        '<div><span class="cap">Stories ready</span><b>' + ready + ' of ' + b.wins.length + '</b></div>' +
-        '<div><span class="cap">Gaps</span><b>' + b.gaps.length + '</b></div>' +
-        (/^https?:\/\//i.test(c.postingUrl || '')
-          ? '<div><span class="cap">Posting</span><a href="' + esc(c.postingUrl) +
-            '" target="_blank" rel="noopener noreferrer">the listing \u2197</a></div>'
-          : '') +
+      '<div class="bf-tiles">' +
+        tile('Stories ready', ready + '/' + b.wins.length, 'behind your numbers',
+             ready === b.wins.length && b.wins.length ? 'ok' : (ready ? '' : 'warn')) +
+        tile('Requirements answered', answered + '/' + b.match.length, 'from the listing',
+             b.match.length && answered === b.match.length ? 'ok' : '') +
+        tile('Open gaps', b.gaps.length, b.gaps.length ? 'work these in Prep' : 'nothing unanswered',
+             b.gaps.length ? 'warn' : 'ok') +
+        tile('People reached', spoken + '/' + b.people.length,
+             replied ? replied + ' replied' : 'no replies yet', replied ? 'ok' : '') +
+        tile('Questions drilled', qCount, qCount ? 'with your answers' : 'not worked out yet',
+             qCount ? '' : 'warn') +
       '</div>' +
 
-      sec('lead', 'What you lead with', 'The three numbers and the story behind each one.', leadHTML()) +
-      sec('questions', 'What they will ask', 'Worked out from this listing and your gaps, not from a list.', '<div id="qbox">' + questionsHTML() + '</div>') +
-      sec('match', 'Where you line up', 'And what you have decided to say about the places you do not.', matchHTML()) +
-      sec('people', 'Who you have talked to', 'What passed between you, and what they have said in public.', peopleHTML()) +
-      sec('research', 'What ' + c.company + ' said', 'Specific things, said recently, that you can quote back.', researchHTML());
+      '<div class="bf-grid">' +
+        panel('lead', 'What you lead with', 'The numbers, and the story behind each one.', leadHTML(), 12) +
+        panel('questions', 'What they will ask', 'From this listing and your gaps.',
+              '<div id="qbox">' + questionsHTML() + '</div>', 7, true) +
+        panel('match', 'Where you line up', 'And what you say about where you do not.', matchHTML(), 5, true) +
+        panel('people', 'Who you have talked to', 'What passed between you.', peopleHTML(), 7, true) +
+        panel('research', 'What ' + c.company + ' said', 'Specific things you can quote back.', researchHTML(), 5, true) +
+      '</div>';
 
     var v = Shell.mount({
       nav: 'brief',
@@ -191,6 +229,7 @@
         return;
       }
       AI.interviewPrep(c).then(function (q) {
+        q.source = 'claude';
         Store.setQuestions(c.id, q);
         paintQ();
         UI.toast((q.likely || []).length + ' questions, with what you already have to answer them.');

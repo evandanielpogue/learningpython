@@ -237,7 +237,7 @@
           /* Fetching LinkedIn through the model is still automated access to
              LinkedIn, which their user agreement prohibits and which is what
              ends in a terminated account. It also never works. */
-          blocked_domains: ['linkedin.com', 'www.linkedin.com']
+          blocked_domains: Sources.noFetch
         }]
       };
 

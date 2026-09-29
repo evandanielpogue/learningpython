@@ -12,15 +12,19 @@
   var esc = UI.esc;
   window.Views = window.Views || {};
 
-  /* what to ask when there is no model to ask it */
-  var CANNED = {
-    story: ['What actually happened? Start where it went wrong.',
-            'What did you do about it, in the order you did it?',
-            'How did it end? A number if you have one.'],
-    gap: ['Nothing on your résumé answers this. What is the closest thing you have done?',
-          'What did that look like day to day?',
-          'If you had to say this out loud in an interview, how would you put it?']
-  };
+  /* With no model configured, coach.js works the questions out of the same
+     material a model would get: this listing line, this number, and what the
+     person has said so far. It is not a script — the second question depends
+     on what is missing from the first answer. */
+  function ctxFor(c, a) {
+    return { win: a.kind === 'story'
+      ? Store.campaignWins(c).filter(function (w) { return w.id === a.ref; })[0]
+      : null };
+  }
+  function said(history) {
+    return history.filter(function (m) { return m.role === 'user'; })
+                  .map(function (m) { return m.content; });
+  }
 
   window.Views.prep = function (params) {
     var c = Store.campaign(params.id);
@@ -125,7 +129,7 @@
         say('ai', 'Say more and it gets replaced, or pick another on the left.');
         return;
       }
-      if (!AI.ready()) return say('ai', CANNED[a.kind][0]);
+      if (!AI.ready()) return say('ai', Coach.opening(a, ctxFor(c, a)));
 
       busy = true;
       var b = say('ai', '…');
@@ -136,7 +140,7 @@
           b.textContent = out.reply;
           history.push({ role: 'assistant', content: out.reply });
         })
-        .catch(function () { if (openId === mine && b.isConnected) b.textContent = CANNED[a.kind][0]; })
+        .catch(function () { if (openId === mine && b.isConnected) b.textContent = Coach.opening(a, ctxFor(c, a)); })
         .then(function () { if (openId === mine) busy = false; });
     }
 
@@ -153,13 +157,14 @@
 
         var a = item();
         if (!AI.ready()) {
-          /* no model: bank what they typed and walk the canned questions */
-          Store.answerAgenda(c.id, a.id, history.filter(function (m) { return m.role === 'user'; })
-            .map(function (m) { return m.content; }).join(' '));
+          /* no model: bank what they typed, then ask for whatever is still
+             missing from it rather than reading down a list */
+          var answers = said(history);
+          Store.answerAgenda(c.id, a.id, answers.join(' '));
           paintAgenda();
           setTimeout(function () {
-            if (turns < CANNED[a.kind].length) say('ai', CANNED[a.kind][turns]);
-            else say('ai', 'Good. That is banked. Pick the next one on the left.');
+            var next = Coach.followUp(a, answers, ctxFor(c, a));
+            say('ai', next || 'That holds up. It is banked — pick the next one on the left.');
           }, 380);
           return;
         }

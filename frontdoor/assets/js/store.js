@@ -1029,24 +1029,8 @@
     /* What they will probably ask, worked out from the listing rather than
        from a list of generic interview questions. */
     questionsLocally: function (c) {
-      var out = [];
-      (c.match || []).forEach(function (r) {
-        if (r.strength === 'none') {
-          out.push({ question: 'Tell me about your experience with ' + r.text.toLowerCase().replace(/^(experience|a track record of|comfortable)\s+(with|in|of)?\s*/i, '') + '.',
-            why: 'They asked for this and nothing on your resume shows it. Expect it.',
-            kind: 'gap', ref: r.id });
-        } else if (r.priority === 'must' && r.strength === 'strong') {
-          out.push({ question: 'Walk me through a time you ' + r.text.charAt(0).toLowerCase() + r.text.slice(1) + '.',
-            why: 'A must-have you can answer. Have the specific story ready.',
-            kind: 'strength', ref: r.id });
-        }
-      });
-      Store.campaignWins(c).forEach(function (w) {
-        out.push({ question: 'You mention ' + w.metric + '. How did you get there?',
-          why: 'Any number on your resume is an invitation to ask about it.',
-          kind: 'win', ref: w.id });
-      });
-      return { likely: out.slice(0, 8), toAsk: [], watch: [] };
+      /* coach.js does the reading; this just hands it what it needs */
+      return Coach.questions(c, { wins: Store.campaignWins(c) });
     },
 
     /* ---- contacts -------------------------------------------------------- */

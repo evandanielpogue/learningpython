@@ -643,7 +643,7 @@ await group('The interview brief', async (page) => {
   });
   await step('it pulls the whole campaign together', async () => {
     await page.goto(BASE + '#/c/c_acme/brief', { waitUntil: 'networkidle' });
-    await page.waitForSelector('.bf-sec', { timeout: 6000 });
+    await page.waitForSelector('.bf-panel', { timeout: 6000 });
     for (const id of ['bf-lead', 'bf-questions', 'bf-match', 'bf-people', 'bf-research']) {
       if (!(await page.locator('#' + id).count())) throw new Error('missing section ' + id);
     }
@@ -1118,6 +1118,228 @@ await group('Importing a resume over an existing one', async (page) => {
     if (after.wins !== before.wins) throw new Error(before.wins + ' wins -> ' + after.wins);
     if (after.texts.join('|') !== before.texts.join('|'))
       throw new Error('the wins changed: ' + after.texts.join(' / '));
+  });
+});
+
+/* ------------------------------------------------ the brief as a board --- */
+await group('The brief reads as a dashboard', async (page) => {
+  await signIn(page);
+  await page.goto(BASE + '#/c/c_acme/brief', { waitUntil: 'networkidle' });
+  await page.waitForSelector('.bf-panel', { timeout: 6000 });
+
+  await step('the figures are on one band across the top', async () => {
+    const n = await page.locator('.bf-tiles .bf-tile').count();
+    if (n !== 5) throw new Error(n + ' tiles');
+    const rows = await page.evaluate(() =>
+      new Set([...document.querySelectorAll('.bf-tile')]
+        .map(t => Math.round(t.getBoundingClientRect().top))).size);
+    if (rows !== 1) throw new Error('the tiles wrapped onto ' + rows + ' rows at this width');
+  });
+
+  await step('panels sit beside each other rather than stacking', async () => {
+    const side = await page.evaluate(() => {
+      const q = document.getElementById('bf-questions').getBoundingClientRect();
+      const m = document.getElementById('bf-match').getBoundingClientRect();
+      return Math.abs(q.top - m.top) < 4 && m.left > q.right - 4;
+    });
+    if (!side) throw new Error('questions and match are not on the same row');
+  });
+
+  await step('a paired row is one height, so the board keeps its shape', async () => {
+    const d = await page.evaluate(() => {
+      const q = document.getElementById('bf-questions').getBoundingClientRect();
+      const m = document.getElementById('bf-match').getBoundingClientRect();
+      return Math.abs(q.height - m.height);
+    });
+    if (d > 2) throw new Error('paired panels differ by ' + d + 'px');
+  });
+
+  await step('a full panel scrolls inside itself instead of down the page', async () => {
+    const inside = await page.evaluate(() => {
+      const b = document.querySelector('#bf-people .bf-body');
+      return b && b.scrollHeight > b.clientHeight + 8;
+    });
+    if (!inside) throw new Error('the people panel is not the one that overflows');
+  });
+
+  await step('the whole brief is far shorter than it used to be', async () => {
+    const h = await page.evaluate(() => document.body.scrollHeight);
+    /* the single-column version ran past 2600px on this same data */
+    if (h > 2000) throw new Error('the board is ' + h + 'px tall');
+  });
+
+  await step('print unwinds the board back into one column', async () => {
+    await page.emulateMedia({ media: 'print' });
+    const stacked = await page.evaluate(() => {
+      const q = document.getElementById('bf-questions').getBoundingClientRect();
+      const m = document.getElementById('bf-match').getBoundingClientRect();
+      const body = document.querySelector('#bf-people .bf-body');
+      return m.top > q.top + 10 && getComputedStyle(body).overflow === 'visible';
+    });
+    await page.emulateMedia({ media: 'screen' });
+    if (!stacked) throw new Error('printing still lays it out as a grid');
+  });
+});
+
+/* -------------------------------------------- questions worth asking ----- */
+await group('The questions are worked out, not listed', async (page) => {
+  await signIn(page);
+
+  await step('the panel fills itself rather than showing a button', async () => {
+    await page.goto(BASE + '#/c/c_acme/brief', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.bf-panel', { timeout: 6000 });
+    const n = await page.locator('.bf-q').count();
+    if (!n) throw new Error('no questions on first open');
+    if (!(await page.locator('.bf-src-note').count())) throw new Error('it does not say where they came from');
+  });
+
+  await step('a listing line that is an instruction is not read as a noun', async () => {
+    const bad = await page.evaluate(() =>
+      [...document.querySelectorAll('.bf-q b')].map(b => b.textContent)
+        .filter(t => /experience with (work|run|build|manage|own|drive|ramp|help|sell)\b/i.test(t)));
+    if (bad.length) throw new Error('mangled grammar: ' + bad[0]);
+  });
+
+  await step('a years requirement is not turned into a story prompt', async () => {
+    const bad = await page.evaluate(() =>
+      [...document.querySelectorAll('.bf-q b')].map(b => b.textContent)
+        .filter(t => /time you \d/.test(t)));
+    if (bad.length) throw new Error(bad[0]);
+  });
+
+  await step('nothing is quoted that nobody said', async () => {
+    const unbalanced = await page.evaluate(() =>
+      [...document.querySelectorAll('.bf-q b')].map(b => b.textContent)
+        .filter(t => (t.match(/"/g) || []).length % 2));
+    if (unbalanced.length) throw new Error('a quote is left open: ' + unbalanced[0]);
+  });
+
+  await step('punctuation does not stack where a quote is spliced in', async () => {
+    const bad = await page.evaluate(() =>
+      [...document.querySelectorAll('.bf-q b')].map(b => b.textContent)
+        .filter(t => /\.\s*\.|…\./.test(t) || /"\./.test(t)));
+    if (bad.length) throw new Error(bad[0]);
+  });
+
+  await step('the opening in Prep names the actual number', async () => {
+    await page.goto(BASE + '#/c/c_acme/prep', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.agitem', { timeout: 5000 });
+    await page.locator('.agitem').first().click();
+    await page.waitForTimeout(300);
+    const first = await page.locator('#log .bubble').first().textContent();
+    const metric = await page.evaluate(() => Store.campaignWins(Store.campaign('c_acme'))[0].metric);
+    if (first.indexOf(metric) === -1) throw new Error('"' + first + '" never mentions ' + metric);
+  });
+
+  await step('two different wins do not get the same opening', async () => {
+    const seen = [];
+    for (let i = 0; i < 3; i++) {
+      await page.locator('.agitem').nth(i).click();
+      await page.waitForTimeout(260);
+      seen.push((await page.locator('#log .bubble').first().textContent()).trim());
+    }
+    if (new Set(seen).size !== seen.length) throw new Error('repeated opening: ' + seen.join(' / '));
+  });
+
+  await step('the follow-up answers what the answer was missing', async () => {
+    await page.locator('.agitem').first().click();
+    await page.waitForTimeout(260);
+    /* first person, an obstacle named, but no number anywhere: the thing
+       still missing is the number, so that is what it should ask for */
+    await page.fill('#ask-q', 'I rebuilt the whole motion over a couple of quarters and it was a slog, ' +
+      'the reps pushed back hard at first but eventually I got everyone onto the new way of working ' +
+      'and it ended up sticking');
+    await page.locator('#ask-form button[type=submit]').click();
+    await page.waitForTimeout(700);
+    const reply = (await page.locator('#log .bubble.ai').last().textContent()).toLowerCase();
+    if (!/number|before and after|how long/.test(reply)) throw new Error('did not ask for a number: ' + reply);
+  });
+
+  await step('a second answer gets a different question again', async () => {
+    const before = (await page.locator('#log .bubble.ai').last().textContent()).trim();
+    await page.fill('#ask-q', 'I took cycle time from 70 days back to 41 across 14 accounts in Q3.');
+    await page.locator('#ask-form button[type=submit]').click();
+    await page.waitForTimeout(700);
+    const after = (await page.locator('#log .bubble.ai').last().textContent()).trim();
+    if (after === before) throw new Error('it asked the same thing twice');
+  });
+});
+
+/* ------------------------------------------------------ where to look ---- */
+await group('Prep sources', async (page) => {
+  await signIn(page);
+  await page.goto(BASE + '#/c/c_acme/research', { waitUntil: 'networkidle' });
+  await page.locator('[data-sub="sources"]').click();
+  await page.waitForSelector('.src-row', { timeout: 5000 });
+
+  await step('every source lands on a search with the company in it', async () => {
+    const hrefs = await page.evaluate(() =>
+      [...document.querySelectorAll('.src-row a')].map(a => a.href));
+    if (hrefs.length < 8) throw new Error(hrefs.length + ' sources');
+    const missing = hrefs.filter(h => !/acme/i.test(decodeURIComponent(h)));
+    if (missing.length) throw new Error('not filled in: ' + missing.join(', '));
+  });
+
+  await step('the ones behind a login are labelled as such', async () => {
+    const gd = await page.evaluate(() => {
+      const row = [...document.querySelectorAll('.src-row')]
+        .find(r => /Glassdoor interviews/.test(r.textContent));
+      return row ? row.querySelector('.src-tag').textContent : null;
+    });
+    if (!/login/.test(gd || '')) throw new Error('Glassdoor is not marked as login-only: ' + gd);
+  });
+
+  await step('a model is never pointed at a site that forbids it', async () => {
+    const out = await page.evaluate(() => ({
+      gd: Sources.fetchable('https://www.glassdoor.com/Reviews/x.htm'),
+      li: Sources.fetchable('https://www.linkedin.com/jobs/view/1'),
+      g2: Sources.fetchable('https://www.g2.com/products/acme/reviews')
+    }));
+    if (out.gd || out.li) throw new Error('a blocked site reads as fetchable');
+    if (!out.g2) throw new Error('an open site reads as blocked');
+  });
+
+  await step('pasted questions are split up and the prose is dropped', async () => {
+    await page.locator('[data-paste="gd-int"]').click();
+    await page.waitForSelector('#p-text', { timeout: 4000 });
+    await page.fill('#p-text',
+      '1. Tell me about a deal you lost and why.\n' +
+      '2. Walk me through your discovery process.\n' +
+      'The office has a great vibe and free lunch\n' +
+      '- How do you handle a champion going dark?');
+    await page.waitForTimeout(250);
+    const rows = await page.locator('.src-prev-row').allTextContents();
+    if (rows.length !== 3) throw new Error(rows.length + ' items: ' + rows.join(' | '));
+    if (rows.some(r => /free lunch/.test(r))) throw new Error('kept a line that is not a question');
+    if (rows.some(r => /^\s*\d[.)]/.test(r.replace('Interview question', '')))) throw new Error('numbering was kept');
+  });
+
+  await step('keeping them puts them at the top of the brief', async () => {
+    await page.locator('#paste-form button[type="submit"]').click();
+    await page.waitForTimeout(400);
+    await page.goto(BASE + '#/c/c_acme/brief', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.bf-q', { timeout: 5000 });
+    await page.evaluate(() => Store.setQuestions('c_acme', Store.questionsLocally(Store.campaign('c_acme'))));
+    const top = await page.evaluate(() => Store.campaign('c_acme').questions.likely[0]);
+    if (!/deal you lost|discovery process|champion going dark/.test(top.question))
+      throw new Error('a reported question is not first: ' + top.question);
+    if (!/reported by a candidate/i.test(top.why)) throw new Error('it does not say where it came from');
+  });
+
+  await step('a complaint in a review becomes something to ask them', async () => {
+    const asks = await page.evaluate(() => {
+      Store.addResearch('c_acme', { kind: 'Customer gripe', title: 'Reporting is slow and hard to configure', source: 'G2' });
+      Store.addResearch('c_acme', { kind: 'Customer gripe', title: 'Support takes days to answer', source: 'G2' });
+      return Store.questionsLocally(Store.campaign('c_acme')).toAsk.map(x => x.question);
+    });
+    if (!asks.some(a => /reporting is slow/i.test(a))) throw new Error('the gripe never surfaced: ' + asks.join(' | '));
+  });
+
+  await step('a review that is not a complaint is not filed as one', async () => {
+    const kinds = await page.evaluate(() =>
+      Sources.parseReviews('Best tool we have bought all year\nReporting is slow and clunky', 'G2')
+        .map(r => r.kind));
+    if (kinds[0] !== 'Customer voice' || kinds[1] !== 'Customer gripe') throw new Error(kinds.join(', '));
   });
 });
 

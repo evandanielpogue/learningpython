@@ -28,7 +28,9 @@
     });
 
     function subtabs() {
-      var names = [['company', c.company], ['people', 'People (' + c.contacts.length + ')']];
+      var names = [['company', c.company + ' (' + c.research.length + ')'],
+                   ['people', 'People (' + c.contacts.length + ')'],
+                   ['sources', 'Where to look']];
       v.querySelector('#subtabs').innerHTML = names.map(function (n) {
         return '<button class="subtab" data-sub="' + n[0] + '" aria-selected="' + (tab === n[0]) + '">' + esc(n[1]) + '</button>';
       }).join('');
@@ -58,6 +60,8 @@
             '<h2>Nothing on ' + esc(c.company) + ' yet</h2>' +
             '<p>Paste anything you come across: a post, a podcast line, a pricing change. One specific sentence is what separates a reply from a delete.</p>' +
             '<button class="btn btn-primary btn-lg" id="add-empty">Add what you found <span class="arr">\u2192</span></button></div></div>';
+      } else if (tab === 'sources') {
+        feed.innerHTML = sourcesHTML();
       } else {
         var any = c.contacts.some(function (p) { return p.activity && p.activity.length; });
         feed.innerHTML = any
@@ -69,6 +73,92 @@
       }
     }
 
+    /* ---------------- where to look ----------------
+       Every row lands on a search that is already filled in. The ones behind
+       a login say so: we send you and take a paste back rather than pretending
+       to read a page we are not allowed to read. */
+    function sourcesHTML() {
+      return '<div class="src-note card p5">' +
+          '<b>Two kinds of source, and they work differently.</b>' +
+          '<p>The open ones we can read for you when Claude is on. Glassdoor, Blind and ' +
+          'Indeed need a login and their terms do not allow automated collection, so those ' +
+          'open in a tab with the search built and you paste back what is worth keeping. ' +
+          'Whatever you paste gets split into items and feeds the brief.</p>' +
+        '</div>' +
+        Sources.groups().map(function (g) {
+          return '<div class="card p5 mt4"><p class="cap mb3">' + esc(g.name) + '</p>' +
+            '<div class="src-list">' + g.items.map(function (s) {
+              return '<div class="src-row">' +
+                '<div class="src-main">' +
+                  '<b>' + esc(s.name) + '</b>' +
+                  '<span class="src-tag ' + (s.access === 'login' ? 'src-login' : 'src-open') + '">' +
+                    (s.access === 'login' ? 'login, paste back' : 'open') + '</span>' +
+                  '<p>' + esc(s.good) + '</p>' +
+                '</div>' +
+                '<div class="src-acts">' +
+                  '<a class="btn btn-ghost btn-sm" href="' + esc(s.url(c.company, c.role)) +
+                    '" target="_blank" rel="noopener noreferrer">Open \u2197</a>' +
+                  '<button class="btn btn-secondary btn-sm" data-paste="' + esc(s.id) + '">Paste what you found</button>' +
+                '</div></div>';
+            }).join('') + '</div></div>';
+        }).join('');
+    }
+
+    var PASTE_COPY = {
+      questions: { title: 'Interview questions you found',
+        hint: 'One per line. Numbering and bullets are fine — they get stripped. ' +
+              'Lines that are not questions are left out.' },
+      customers: { title: 'What customers said',
+        hint: 'One review or one line per row. Anything that reads like a complaint is ' +
+              'tagged as a gripe, because that is the half you can sell against.' },
+      notes:     { title: 'What you found',
+        hint: 'One thought per line. Long paragraphs are kept whole.' }
+    };
+
+    function pasteSheet(sid) {
+      var src = Sources.get(sid);
+      if (!src) return;
+      var mode = src.paste || 'notes';
+      var copy = PASTE_COPY[mode] || PASTE_COPY.notes;
+      UI.sheet({
+        title: copy.title + ' \u2014 ' + src.name,
+        html: '<form id="paste-form" class="col g3">' +
+          '<p class="dim" style="font-size:var(--fs-sm);line-height:1.6">' + esc(copy.hint) + '</p>' +
+          '<div class="field"><label for="p-text">Paste it here</label>' +
+            '<textarea class="input" id="p-text" rows="10"></textarea></div>' +
+          '<div id="p-prev" class="src-prev"></div>' +
+          '<div class="row g2 wrap"><button class="btn btn-primary btn-sm" type="submit">Keep these</button>' +
+          '<span class="dim" id="p-count" style="font-size:var(--fs-sm)"></span></div></form>',
+        onMount: function (node, close) {
+          var box = node.querySelector('#p-text');
+          var prev = node.querySelector('#p-prev');
+          var count = node.querySelector('#p-count');
+          function preview() {
+            var items = Sources.parse(mode, box.value, src.name);
+            count.textContent = items.length ? items.length + ' item' + (items.length === 1 ? '' : 's') : '';
+            prev.innerHTML = items.slice(0, 6).map(function (i) {
+              return '<div class="src-prev-row"><span class="fi-kind">' + esc(i.kind) + '</span>' +
+                '<span>' + esc(i.title) + '</span></div>';
+            }).join('') + (items.length > 6 ? '<p class="dim" style="font-size:var(--fs-xs)">and ' +
+              (items.length - 6) + ' more</p>' : '');
+          }
+          box.addEventListener('input', preview);
+          node.querySelector('#paste-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var items = Sources.parse(mode, box.value, src.name);
+            if (!items.length) { UI.toast('Nothing in there to keep.'); return; }
+            items.forEach(function (i) { Store.addResearch(c.id, i); });
+            close();
+            tab = 'company';
+            paint();
+            UI.toast('Kept ' + items.length + '. They show up in the brief.');
+          });
+          setTimeout(function () { box.focus(); }, 60);
+        }
+      });
+    }
+
+    UI.on(v, 'click', '[data-paste]', function (e, el) { pasteSheet(el.dataset.paste); });
     UI.on(v, 'click', '[data-sub]', function (e, el) { tab = el.dataset.sub; paint(); });
     UI.on(v, 'click', '[data-use]', function (e, el) {
       c.pendingInsert = el.dataset.use;

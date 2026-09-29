@@ -1636,20 +1636,63 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 /* ==========================================================================
    The interview brief. Long-form, read once, printed.
    ========================================================================== */
-.bf-top {
-  display: flex; flex-wrap: wrap; gap: var(--s-6); padding: var(--s-4) var(--s-5);
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-3);
-  margin-bottom: var(--s-6);
+/* ---- the brief, as a dashboard ------------------------------------------
+   Everything used to run down the page in one column, so reading it meant
+   scrolling past what you had already read. Now it is a board: a bar, a row
+   of figures, and panels that scroll inside themselves. Print unwinds all
+   of it back into one column. */
+.bf-bar {
+  display: flex; flex-wrap: wrap; gap: var(--s-4); align-items: flex-end;
+  justify-content: space-between; margin-bottom: var(--s-5);
 }
-.bf-top div { display: grid; gap: 2px; }
-.bf-top b { font-size: var(--fs-base); font-weight: 600; }
-.bf-sec { margin-bottom: var(--s-8); }
-.bf-head { margin-bottom: var(--s-4); padding-bottom: var(--s-3); border-bottom: 1px solid var(--line); }
+.bf-id h1 { font-size: var(--fs-2xl); letter-spacing: -.033em; }
+.bf-id p { font-size: var(--fs-base); color: var(--ink-2); margin-top: 2px; }
+.bf-bar-acts { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+
+.bf-tiles {
+  display: grid; gap: var(--s-3); margin-bottom: var(--s-4);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.bf-tile {
+  padding: var(--s-4); background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r-3); display: grid; gap: 2px; align-content: start;
+  border-left: 3px solid var(--line-2);
+}
+.bf-tile.ok   { border-left-color: var(--pos); }
+.bf-tile.warn { border-left-color: var(--warn); }
+.bf-tile .kpi { font-size: var(--fs-2xl); letter-spacing: -.03em; margin-top: 2px; }
+.bf-tile-note { font-size: var(--fs-xs); color: var(--ink-3); }
+@media (max-width: 1080px) { .bf-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 680px)  { .bf-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.bf-grid {
+  display: grid; gap: var(--s-4);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: start;
+}
+.bf-panel {
+  grid-column: span 12; min-width: 0; background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r-3);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.bf-panel.sp-7 { grid-column: span 7; }
+.bf-panel.sp-5 { grid-column: span 5; }
+@media (max-width: 1080px) { .bf-panel.sp-7, .bf-panel.sp-5 { grid-column: span 12; } }
+/* paired panels share a height and scroll inside themselves, so the board
+   keeps its shape whatever each one happens to hold */
+.bf-panel.bf-tall { height: 460px; }
+.bf-panel.bf-tall .bf-body { flex: 1; overflow: auto; }
+.bf-body { padding: var(--s-4); min-width: 0; }
+.bf-head {
+  padding: var(--s-4) var(--s-4) var(--s-3);
+  border-bottom: 1px solid var(--line); background: var(--panel);
+}
 .bf-head h2 { font-size: var(--fs-lg); font-weight: 640; letter-spacing: -.022em; }
 .bf-head p { font-size: var(--fs-sm); color: var(--ink-2); margin-top: 2px; }
 .bf-sub { font-size: var(--fs-base); font-weight: 620; margin: var(--s-5) 0 var(--s-3); }
 
-.bf-wins { display: grid; gap: var(--s-3); }
+.bf-wins { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.bf-win { display: flex; flex-direction: column; }
 .bf-win { padding: var(--s-4); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-2); }
 .bf-win-top { display: flex; gap: var(--s-3); align-items: baseline; flex-wrap: wrap; }
 .bf-win-top b { font-size: var(--fs-lg); color: var(--brand); font-weight: 640; }
@@ -1671,7 +1714,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .bf-answer { font-size: var(--fs-sm); line-height: 1.6; color: var(--ink-2); margin-top: 6px; }
 .bf-answer em { font-style: normal; color: var(--ink-3); }
 
-.bf-people { display: grid; gap: var(--s-3); }
+.bf-people { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
 .bf-person { padding: var(--s-4); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-2); }
 .bf-role { font-style: normal; display: block; font-size: var(--fs-sm); color: var(--ink-3); }
 .bf-touches { margin: var(--s-3) 0 0; padding-left: var(--s-5); display: grid; gap: 3px;
@@ -1686,7 +1729,38 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
 .bf-empty { padding: var(--s-5); background: var(--sunk); border-radius: var(--r-2); display: grid; gap: var(--s-3); justify-items: start; }
 .bf-empty p { font-size: var(--fs-sm); color: var(--ink-2); max-width: 62ch; line-height: 1.6; }
-.bf-qs { display: grid; gap: var(--s-3); }
+/* ---- where to look ------------------------------------------------------ */
+.src-note b { font-size: var(--fs-base); }
+.src-note p { font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.65; margin-top: var(--s-2); max-width: 78ch; }
+.src-list { display: grid; gap: 1px; }
+.src-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-4);
+  align-items: center; padding: var(--s-3) 0; border-top: 1px solid var(--line);
+}
+.src-row:first-child { border-top: none; }
+.src-main { min-width: 0; }
+.src-main b { font-size: var(--fs-base); font-weight: 600; margin-right: var(--s-2); }
+.src-main p { font-size: var(--fs-sm); color: var(--ink-2); margin-top: 2px; }
+.src-tag {
+  font-family: var(--mono); font-size: 9.5px; text-transform: uppercase;
+  letter-spacing: .07em; padding: 2px 6px; border-radius: var(--r-1); white-space: nowrap;
+}
+.src-open  { color: var(--pos);  background: var(--pos-wash); }
+.src-login { color: var(--warn); background: var(--warn-wash); }
+.src-acts { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+@media (max-width: 720px) {
+  .src-row { grid-template-columns: minmax(0, 1fr); }
+  .src-acts { justify-content: flex-start; }
+}
+.src-prev { display: grid; gap: var(--s-2); }
+.src-prev-row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-3);
+  align-items: baseline; font-size: var(--fs-sm); color: var(--ink-2);
+  padding: var(--s-2) var(--s-3); background: var(--sunk); border-radius: var(--r-1);
+}
+
+.bf-src-note { font-size: var(--fs-xs); color: var(--ink-3); margin-bottom: var(--s-3); }
+.bf-qs { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .bf-q { padding: var(--s-4); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-2); }
 .bf-q > b { font-size: var(--fs-md); font-weight: 600; line-height: 1.4; display: block; }
 .bf-why { font-size: var(--fs-sm); color: var(--ink-3); margin-top: 3px; }
@@ -1703,7 +1777,13 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   .sidebar, .topbar, .toasts, #print, #gen-q, .bf-empty { display: none !important; }
   .shell { grid-template-columns: 1fr !important; }
   .view { max-width: none; padding: 0; }
-  .bf-sec { break-inside: avoid; page-break-inside: avoid; }
+  .bf-panel { break-inside: avoid; page-break-inside: avoid; grid-column: span 12 !important; }
+  .bf-panel.bf-tall { height: auto; }
+  .bf-panel.bf-tall .bf-body { overflow: visible; }
+  .bf-grid { display: block; }
+  .bf-panel { margin-bottom: var(--s-6); }
+  .bf-tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .bf-bar-acts { display: none !important; }
   .bf-win, .bf-person, .bf-q, .bf-research li { break-inside: avoid; box-shadow: none; }
   a[href^="#"]::after { content: ""; }
 }
@@ -1879,6 +1959,562 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       return 'data:image/svg+xml,' + encodeURIComponent(svg);
     }
   };
+})(window);
+
+;
+/* assets/js/sources.js */
+/* ==========================================================================
+   sources.js — where the prep material actually comes from.
+
+   Three honest categories, because they behave differently:
+
+     open    the page is public and a model can read it, so we can offer to
+             fetch it when Claude is on.
+     login   the page is behind a login and its terms do not allow automated
+             collection. Glassdoor and Blind are the obvious ones. We send
+             you there with the search already built and take a paste back.
+             We do not scrape them, and we do not pretend to.
+     manual  no stable URL worth guessing; you go and look.
+
+   Each entry knows how to build its own search URL from a company name, so
+   one click lands on the right page instead of a homepage.
+   ========================================================================== */
+(function (window) {
+  'use strict';
+
+  var Sources = {};
+  var q = encodeURIComponent;
+
+  var CATALOGUE = [
+    /* ---- what they ask in interviews ---- */
+    { id: 'gd-int', group: 'Interviews', name: 'Glassdoor interviews', access: 'login',
+      good: 'Questions candidates say they were actually asked, by role.',
+      url: function (co, role) {
+        return 'https://www.glassdoor.com/Search/results.htm?keyword=' + q(co + ' ' + (role || '') + ' interview');
+      },
+      paste: 'questions' },
+    { id: 'blind', group: 'Interviews', access: 'login',
+      name: 'Blind', good: 'What employees say anonymously. Blunt, and often current.',
+      url: function (co) { return 'https://www.teamblind.com/search/' + q(co); },
+      paste: 'notes' },
+    { id: 'reddit', group: 'Interviews', access: 'open',
+      name: 'Reddit', good: 'r/sales and the industry subs on this company and its process.',
+      url: function (co) { return 'https://www.reddit.com/search/?q=' + q(co + ' interview'); },
+      paste: 'questions' },
+
+    /* ---- what it is like inside ---- */
+    { id: 'gd-rev', group: 'Inside', access: 'login',
+      name: 'Glassdoor reviews', good: 'Ratings and the written reviews, including the recent trend.',
+      url: function (co) { return 'https://www.glassdoor.com/Search/results.htm?keyword=' + q(co); },
+      paste: 'notes' },
+    { id: 'indeed', group: 'Inside', access: 'login',
+      name: 'Indeed reviews', good: 'A different population than Glassdoor. Worth the second read.',
+      url: function (co) { return 'https://www.indeed.com/cmp/' + q(String(co).replace(/\s+/g, '-')) + '/reviews'; },
+      paste: 'notes' },
+    { id: 'levels', group: 'Inside', access: 'open',
+      name: 'Levels.fyi', good: 'What the band actually pays, so you are not guessing in the call.',
+      url: function (co) { return 'https://www.levels.fyi/companies/' + q(String(co).toLowerCase().replace(/\s+/g, '-')) + '/salaries'; },
+      paste: 'notes' },
+
+    /* ---- what their customers say — the best material for a sales seat ---- */
+    { id: 'g2', group: 'Customers', access: 'open',
+      name: 'G2', good: 'Customer reviews. The complaints are your discovery questions.',
+      url: function (co) { return 'https://www.g2.com/search?query=' + q(co); },
+      paste: 'customers' },
+    { id: 'capterra', group: 'Customers', access: 'open',
+      name: 'Capterra', good: 'Skews smaller buyers. Good if the role is SMB or mid-market.',
+      url: function (co) { return 'https://www.capterra.com/search/?query=' + q(co); },
+      paste: 'customers' },
+    { id: 'trustradius', group: 'Customers', access: 'open',
+      name: 'TrustRadius', good: 'Longer reviews, usually from people who actually run the tool.',
+      url: function (co) { return 'https://www.trustradius.com/search?q=' + q(co); },
+      paste: 'customers' },
+
+    /* ---- what the company says about itself ---- */
+    { id: 'news', group: 'The company', access: 'open',
+      name: 'Their newsroom', good: 'Launches, funding, leadership changes — in their own words.',
+      url: function (co) { return 'https://news.google.com/search?q=' + q(co); },
+      paste: 'notes' },
+    { id: 'careers', group: 'The company', access: 'open',
+      name: 'The rest of the reqs', good: 'What else they are hiring tells you where the money is going.',
+      url: function (co, role) { return 'https://www.google.com/search?q=' + q(co + ' careers ' + (role || '')); },
+      paste: 'notes' }
+  ];
+
+  Sources.all = function () { return CATALOGUE.slice(); };
+  Sources.groups = function () {
+    var seen = [], out = [];
+    CATALOGUE.forEach(function (s) {
+      if (seen.indexOf(s.group) > -1) return;
+      seen.push(s.group);
+      out.push({ name: s.group, items: CATALOGUE.filter(function (x) { return x.group === s.group; }) });
+    });
+    return out;
+  };
+  Sources.get = function (id) {
+    return CATALOGUE.filter(function (s) { return s.id === id; })[0] || null;
+  };
+  Sources.linkFor = function (id, company, role) {
+    var s = Sources.get(id);
+    return s ? s.url(company || '', role || '') : '';
+  };
+
+  /* Sites a model must not be pointed at: their terms do not allow it and the
+     page needs a login anyway, so a fetch returns a wall, not an answer. */
+  Sources.noFetch = ['glassdoor.com', 'www.glassdoor.com', 'teamblind.com', 'www.teamblind.com',
+                     'indeed.com', 'www.indeed.com', 'linkedin.com', 'www.linkedin.com'];
+
+  Sources.fetchable = function (url) {
+    var u = String(url || '').toLowerCase();
+    return !Sources.noFetch.some(function (h) { return u.indexOf('//' + h + '/') > -1 || u.indexOf('.' + h + '/') > -1; });
+  };
+
+  /* ----------------------------------------------------------------- parse --
+     People paste a screenful, not a tidy object. Split it into items the way
+     a person would read it: one per line or bullet, blank lines ignored, the
+     numbering and bullet glyphs stripped, anything too short thrown away. */
+  function lines(text) {
+    return String(text || '')
+      .split(/\r?\n+/)
+      .map(function (l) {
+        return l.replace(/^\s*(?:[-*•●–]|\d+[.)])\s*/, '').trim();
+      })
+      .filter(function (l) { return l.length > 8; });
+  }
+  Sources.lines = lines;
+
+  /* a pasted block of interview questions */
+  Sources.parseQuestions = function (text, where) {
+    return lines(text).filter(function (l) {
+      /* a question, or something phrased as one of the standard prompts */
+      return /\?\s*$/.test(l) || /^(tell|walk|describe|give|how|what|why|when|which|explain|talk)\b/i.test(l);
+    }).map(function (l) {
+      return {
+        kind: 'Interview question',
+        title: l.replace(/\s+/g, ' '),
+        source: where || 'pasted',
+        use: ''
+      };
+    });
+  };
+
+  /* a pasted block of customer reviews, which for a sales seat is the best
+     material in the whole exercise: a complaint is a discovery question */
+  var GRIPE = /\b(slow|clunky|expensive|confusing|buggy|support|missing|wish|lacks|hard to|difficult|no way to|limited|disappoint)\b/i;
+  Sources.parseReviews = function (text, where) {
+    return lines(text).map(function (l) {
+      return {
+        kind: GRIPE.test(l) ? 'Customer gripe' : 'Customer voice',
+        title: l.replace(/\s+/g, ' ').slice(0, 160),
+        source: where || 'pasted',
+        use: ''
+      };
+    });
+  };
+
+  /* anything else: keep it as notes, one per paragraph */
+  Sources.parseNotes = function (text, where) {
+    return lines(text).map(function (l) {
+      return { kind: 'Note', title: l.replace(/\s+/g, ' ').slice(0, 160), source: where || 'pasted', use: '' };
+    });
+  };
+
+  Sources.parse = function (mode, text, where) {
+    if (mode === 'questions') return Sources.parseQuestions(text, where);
+    if (mode === 'customers') return Sources.parseReviews(text, where);
+    return Sources.parseNotes(text, where);
+  };
+
+  window.Sources = Sources;
+})(window);
+
+;
+/* assets/js/coach.js */
+/* ==========================================================================
+   coach.js — the questions, worked out rather than listed.
+
+   Two callers. Prep asks it what to say next in a conversation: an opening
+   that names the actual number or the actual tool, then a follow-up chosen
+   by what is missing from what the person just said. The brief asks it what
+   this company is likely to ask, built out of the listing, the résumé, the
+   gaps between them, the research and what the people involved said in
+   public.
+
+   Nothing here invents a fact. Every question is assembled out of text the
+   user already gave us, and where there is nothing to build on the function
+   says so instead of producing filler. When a model is configured, ai.js
+   takes over and this becomes the fallback — same shape, same contract.
+   ========================================================================== */
+(function (window) {
+  'use strict';
+
+  var Coach = {};
+
+  /* ---------------------------------------------------------------- read --
+     What kind of number is this, and what does that make it worth asking? */
+  var MONEY  = /\$\s?([\d.,]+)\s*([kmb])?/i;
+  var PCT    = /(\d+(?:\.\d+)?)\s?%/;
+  var SHIFT  = /(\d+)\s*(?:->|→|to)\s*(\d+)/;
+  var MULT   = /(\d+(?:\.\d+)?)\s?x\b/i;
+  var COUNT  = /\b(\d{1,4})\b/;
+
+  Coach.readWin = function (win) {
+    var m = String((win && win.metric) || '');
+    var t = String((win && win.text) || '');
+    var hay = m + ' ' + t;
+    var out = { kind: 'none', metric: m, text: t };
+
+    if (SHIFT.test(m)) {
+      var s = m.match(SHIFT);
+      out.kind = 'shift'; out.from = s[1]; out.to = s[2];
+      out.worse = Number(s[2]) > Number(s[1]);
+    } else if (MONEY.test(m)) {
+      out.kind = 'money';
+    } else if (PCT.test(m)) {
+      var p = Number(m.match(PCT)[1]);
+      out.kind = /attrition|churn|turnover|left|lost/i.test(hay) ? 'loss'
+               : p > 100 ? 'over' : 'pct';
+      out.pct = p;
+    } else if (MULT.test(m)) {
+      out.kind = 'multiple';
+    } else if (COUNT.test(m)) {
+      out.kind = 'count';
+    }
+    return out;
+  };
+
+  /* what a listing line is really asking for */
+  var CATS = [
+    ['tool',      /salesforce|hubspot|outreach|salesloft|gong|chorus|clari|looker|tableau|zoominfo|apollo|jira|netsuite|workday|marketo|pardot|sfdc|crm\b/i],
+    ['method',    /meddpicc|meddic|challenger|spin|sandler|bant|command of the message|force management|value selling|qualification|forecast/i],
+    ['segment',   /mid[- ]?market|enterprise|smb\b|commercial|strategic account|named account|fortune \d/i],
+    ['motion',    /outbound|full[- ]?cycle|land and expand|product[- ]?led|plg\b|channel|partner|renewal|expansion|upsell|cross[- ]?sell|inbound/i],
+    ['scale',     /quota|\$[\d.,]+\s?[kmb]?|arr\b|acv\b|pipeline|book of business|territory/i],
+    ['leadership',/mentor|coach|lead a team|manage|player[- ]?coach|ramp|onboard|enable/i],
+    ['domain',    /healthcare|fintech|security|devops|revops|hr tech|legal|manufactur|logistics|saas|api|data platform/i],
+    ['years',     /\b\d\+?\s*years?\b/i]
+  ];
+
+  Coach.readReq = function (req) {
+    var text = String((req && req.text) || req || '');
+    for (var i = 0; i < CATS.length; i++) {
+      if (CATS[i][1].test(text)) {
+        var hit = text.match(CATS[i][1]);
+        return { cat: CATS[i][0], term: (hit && hit[0]) || '', text: text };
+      }
+    }
+    return { cat: 'other', term: '', text: text };
+  };
+
+  /* --------------------------------------------------------------- shape --
+     Turn a requirement line into something a person would actually say out
+     loud. "Experience with a track record of X" is a listing; "Tell me about
+     X" is a question. */
+  function bare(text) {
+    return String(text)
+      .replace(/^(proven |demonstrated |strong |deep |solid )/i, '')
+      .replace(/^(experience|expertise|background|a track record|track record|familiarity|comfort(?:able)?|ability)\s*(with|in|of|to)?\s*/i, '')
+      .replace(/^(you|we)('| a)?re\s+/i, '')
+      .replace(/[.;]\s*$/, '')
+      .trim();
+  }
+  Coach.bare = bare;
+
+  /* cut at a word boundary, and never leave a dangling opening quote */
+  function clip(text, n) {
+    var t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (t.length <= n) return t;
+    var cut = t.slice(0, n);
+    var sp = cut.lastIndexOf(' ');
+    if (sp > n * 0.5) cut = cut.slice(0, sp);
+    var quotes = (cut.match(/"/g) || []).length;
+    if (quotes % 2) cut = cut.slice(0, cut.lastIndexOf('"')).replace(/\s+$/, '');
+    return cut.replace(/[,;:\s]+$/, '') + '\u2026';
+  }
+  Coach.clip = clip;
+
+  /* join a fragment to a following sentence without stacking punctuation:
+     a clipped ellipsis is dropped, and a quote that already closes on a full
+     stop is left exactly as its author wrote it. */
+  function join(stem, next) {
+    var t = String(stem || '').replace(/[\s.\u2026]+$/, '');
+    if (/["'\u201d][.!?]?$/.test(String(stem).trim())) t = String(stem).trim().replace(/\u2026$/, '');
+    return t + (/[.!?]["'\u201d]?$/.test(t) ? ' ' : '. ') + next;
+  }
+  Coach.join = join;
+
+  function lower(t) { return t ? t.charAt(0).toLowerCase() + t.slice(1) : t; }
+
+  /* Listing lines come in three grammatical shapes and each one needs a
+     different question around it, or you get "tell me about your experience
+     with work RevOps buyers through an evaluation". */
+  var VERBS = /^(work|run|build|manage|own|drive|close|source|prospect|partner|lead|ramp|help|sell|forecast|negotiate|develop|execute|collaborate|maintain|deliver|create|support|identify|grow|expand|carry|hit|exceed|navigate|qualify|handle|present|demo|coach|mentor|report|track|use)\b/i;
+  var YEARS = /^(\d+)\+?\s*years?\b/i;
+
+  Coach.shape = function (text) {
+    var t = bare(text);
+    if (YEARS.test(t)) return 'years';
+    if (VERBS.test(t)) return 'action';
+    return 'thing';
+  };
+
+  /* the line, turned into something a person would say out loud */
+  Coach.asQuestion = function (text) {
+    var t = bare(text);
+    switch (Coach.shape(t)) {
+      case 'years':
+        var n = t.match(YEARS)[1];
+        return 'You have ' + n + '-odd years in this. Where were they, and which of them ' +
+               'look most like this job?';
+      case 'action':
+        return 'Walk me through how you ' + lower(t) + '.';
+      default:
+        return 'Tell me about ' + lower(t) + '.';
+    }
+  };
+
+  /* ------------------------------------------------------------- opening --
+     The first question on an agenda item. Specific to the number or the
+     term; never "tell me about yourself". */
+  Coach.opening = function (item, ctx) {
+    ctx = ctx || {};
+    if (!item) return null;
+
+    if (item.kind === 'gap') {
+      var r = Coach.readReq(item.label);
+      var term = r.term || bare(item.label);
+      switch (r.cat) {
+        case 'tool':
+          return 'They name ' + term + ' specifically. What did you actually run this in, ' +
+                 'and what did you do with what came out of it?';
+        case 'method':
+          return 'The listing asks for ' + term + '. What did you use to qualify instead, ' +
+                 'and name a deal you lost because a step got skipped.';
+        case 'segment':
+          return 'This is a ' + term + ' seat. What is the real difference between that and ' +
+                 'what you have been selling — the cycle, the committee, or the price?';
+        case 'motion':
+          return 'They want ' + term + '. What share of your pipeline did you actually ' +
+                 'source that way, and what did the first touch look like?';
+        case 'scale':
+          return 'They are describing the number: ' + bare(item.label).toLowerCase() + '. ' +
+                 'What is the biggest you have personally carried, and did you hit it?';
+        case 'leadership':
+          return 'They want someone who can ' + lower(bare(item.label)) + '. ' +
+                 'Who have you actually brought up, and what did they do after?';
+        case 'domain':
+          return 'You have not sold into ' + term + '. What is the closest buyer you have ' +
+                 'worked, and what did they care about that others did not?';
+        case 'years':
+          return 'The listing asks for ' + term + '. Where is the gap between that and what ' +
+                 'you have, and what did you pack into the time you did have?';
+        default:
+          return 'Nothing on your résumé answers this: ' + bare(item.label).toLowerCase() + '. ' +
+                 'What is the closest thing you have done?';
+      }
+    }
+
+    /* a story behind a number */
+    var w = ctx.win || { metric: '', text: item.label };
+    var n = Coach.readWin(w);
+    switch (n.kind) {
+      case 'money':
+        return n.metric + '. What was the number before you took it, and how much of ' +
+               n.metric + ' was new business rather than renewal?';
+      case 'over':
+        return n.metric + ' of quota. What was quota, and which quarter did it actually ' +
+               'get won in?';
+      case 'loss':
+        return n.metric + ' is the kind of number people ask about carefully. ' +
+               'Who left, and what did you change the week after?';
+      case 'shift':
+        return 'It went from ' + n.from + ' to ' + n.to + '. ' +
+               (n.worse ? 'What broke first, and how did you find out?'
+                        : 'What did you change first, and how long before it showed?');
+      case 'multiple':
+        return n.metric + '. Off what base, and over how long?';
+      case 'pct':
+      case 'count':
+        return 'You put ' + n.metric + ' on the résumé. What was it before, and what did ' +
+               'you personally do to move it?';
+      default:
+        return 'Take me through what happened here. Start where it went wrong.';
+    }
+  };
+
+  /* ------------------------------------------------------------ follow-up --
+     Chosen by what is missing from what they just said, so the second
+     question is never the same as the first. Returns null when the answer
+     is already complete enough to bank. */
+  var HEDGE = /\b(basically|kind of|sort of|pretty much|a lot of|various|several|stuff|things)\b/i;
+
+  Coach.readAnswer = function (text) {
+    var t = String(text || '').trim();
+    var words = t ? t.split(/\s+/).length : 0;
+    return {
+      words: words,
+      hasNumber: /\d/.test(t),
+      hasI: /\bI\b/.test(t),
+      weOnly: /\bwe\b/i.test(t) && !/\bI\b/.test(t),
+      hasOutcome: /\b(ended|closed|landed|result|finished|went from|grew|cut|saved|won|lost|renew)/i.test(t),
+      hasObstacle: /\b(but|however|problem|pushed back|blocked|resisted|failed|broke|stalled|churn)/i.test(t),
+      vague: HEDGE.test(t) && words < 60
+    };
+  };
+
+  Coach.followUp = function (item, answers, ctx) {
+    ctx = ctx || {};
+    var last = answers[answers.length - 1] || '';
+    var all = answers.join(' ');
+    var a = Coach.readAnswer(all);
+    var l = Coach.readAnswer(last);
+
+    if (l.words < 8) {
+      return 'That is the headline. Give me the version you would tell someone ' +
+             'over a drink — what was actually going on?';
+    }
+    if (a.weOnly) {
+      return 'That is what the team did. What was yours specifically — the part that ' +
+             'would not have happened without you?';
+    }
+    if (!a.hasObstacle) {
+      return 'What got in the way? An interviewer is listening for the part that ' +
+             'nearly did not work.';
+    }
+    if (!a.hasNumber) {
+      return 'Put a number on it. Before and after, or how long it took — ' +
+             'whichever you actually remember.';
+    }
+    if (!a.hasOutcome) {
+      return 'And how did it end? Say the outcome the way you would want it repeated.';
+    }
+    if (a.vague) {
+      return 'Two things in there are still fuzzy. Name the account, the team, or the ' +
+             'quarter — specifics are what make it sound true.';
+    }
+    if (a.words < 45) {
+      return 'One more layer: what would you say if they asked "and what did you learn?"';
+    }
+    return null; /* enough to bank */
+  };
+
+  /* ---------------------------------------------------------- the brief ---
+     Likely questions, questions worth asking back, and the things to be
+     careful about — all assembled out of this campaign. */
+  Coach.questions = function (c, opts) {
+    opts = opts || {};
+    var wins = opts.wins || [];
+    var likely = [], toAsk = [], watch = [];
+
+    (c.match || []).forEach(function (r) {
+      var q = Coach.readReq(r);
+      if (r.strength === 'none') {
+        likely.push({
+          question: Coach.asQuestion(r.text),
+          why: 'They asked for it and nothing on your résumé answers it. This one is coming.',
+          gap: r.note ? '' : 'You have not worked out what to say. Do it in Prep.',
+          answer: r.note || '',
+          kind: 'gap', ref: r.id
+        });
+        watch.push('Nothing backs "' + clip(bare(r.text), 70) + '". Have the nearest thing ' +
+                   'you have done ready, and be the one to say what it is not.');
+      } else if (r.priority === 'must') {
+        likely.push({
+          question: Coach.asQuestion(r.text),
+          why: 'A must-have you can answer. Have one story, not three.',
+          answer: r.note || '',
+          kind: 'strength', ref: r.id
+        });
+      }
+      if (q.cat === 'method' && q.term) {
+        toAsk.push({ question: 'How strictly is ' + q.term + ' actually run here?',
+                     why: 'Listings name a methodology more often than teams run one.' });
+      }
+      if (q.cat === 'scale' && q.term) {
+        toAsk.push({ question: 'What did the last three people in this seat hit against that number?',
+                     why: 'The quota is in the listing. The attainment never is.' });
+      }
+    });
+
+    wins.forEach(function (w) {
+      var n = Coach.readWin(w);
+      if (n.kind === 'none') return;
+      likely.push({
+        question: n.kind === 'loss'
+          ? 'You mention ' + w.metric + '. What was your part in that?'
+          : 'You mention ' + w.metric + '. How did you get there?',
+        why: 'Any number on a résumé is an invitation. They will pick this one.',
+        kind: 'win', ref: w.id
+      });
+    });
+
+    /* a question someone reported being asked beats anything we could infer,
+       so those go to the top of the list and say where they came from */
+    (c.research || []).forEach(function (r) {
+      if (r.kind !== 'Interview question' || !r.title) return;
+      likely.unshift({
+        question: clip(r.title, 200),
+        why: 'Reported by a candidate' + (r.source ? ' on ' + r.source : '') +
+             '. This is not inference — someone was actually asked it.',
+        answer: r.use || '',
+        kind: 'reported', ref: r.id
+      });
+    });
+
+    /* what the product's own customers complain about is the best material
+       a salesperson can walk in with */
+    var gripes = (c.research || []).filter(function (r) { return r.kind === 'Customer gripe' && r.title; });
+    gripes.slice(0, 3).forEach(function (r) {
+      toAsk.unshift({
+        question: 'Customers keep saying ' + lower(clip(r.title, 110)) + ' How does the team handle that on a call?',
+        why: 'From a review' + (r.source ? ' on ' + r.source : '') + '. Asking it shows you did the work.'
+      });
+    });
+    if (gripes.length > 1) {
+      watch.push(gripes.length + ' customer complaints are on the same theme. Expect a question about ' +
+                 'selling against it, and have an answer that is not a denial.');
+    }
+
+    (c.research || []).filter(function (r) {
+      return r.kind !== 'Interview question' && r.kind !== 'Customer gripe' && r.kind !== 'Customer voice';
+    }).slice(0, 3).forEach(function (r) {
+      if (!r.title) return;
+      toAsk.push({
+        question: 'On ' + clip(r.title, 80) + ' \u2014 what has changed since?',
+        why: 'Asking about something you actually found lands differently from a generic question.'
+      });
+    });
+
+    (c.contacts || []).forEach(function (p) {
+      var act = (p.activity || [])[0];
+      if (!act || !act.text) return;
+      /* activity is our description of what they posted, not their words, so
+         it goes in as a description and never inside quote marks */
+      likely.push({
+        question: join((p.name || 'Someone on the panel') + ' ' + lower(clip(act.text, 120)),
+                       'How would you handle that?'),
+        why: 'Said in public. If they are in the room, it is already on their mind.',
+        kind: 'person', ref: p.id
+      });
+    });
+
+    var unanswered = (c.match || []).filter(function (r) {
+      return r.strength === 'none' && !r.note;
+    }).length;
+    if (unanswered > 2) {
+      watch.unshift(unanswered + ' requirements have nothing behind them and no answer written. ' +
+                    'That is the interview, not a detail.');
+    }
+
+    return {
+      likely: likely.slice(0, 10),
+      toAsk: toAsk.slice(0, 6),
+      watch: watch.slice(0, 5),
+      source: 'local'
+    };
+  };
+
+  window.Coach = Coach;
 })(window);
 
 ;
@@ -2914,24 +3550,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     /* What they will probably ask, worked out from the listing rather than
        from a list of generic interview questions. */
     questionsLocally: function (c) {
-      var out = [];
-      (c.match || []).forEach(function (r) {
-        if (r.strength === 'none') {
-          out.push({ question: 'Tell me about your experience with ' + r.text.toLowerCase().replace(/^(experience|a track record of|comfortable)\s+(with|in|of)?\s*/i, '') + '.',
-            why: 'They asked for this and nothing on your resume shows it. Expect it.',
-            kind: 'gap', ref: r.id });
-        } else if (r.priority === 'must' && r.strength === 'strong') {
-          out.push({ question: 'Walk me through a time you ' + r.text.charAt(0).toLowerCase() + r.text.slice(1) + '.',
-            why: 'A must-have you can answer. Have the specific story ready.',
-            kind: 'strength', ref: r.id });
-        }
-      });
-      Store.campaignWins(c).forEach(function (w) {
-        out.push({ question: 'You mention ' + w.metric + '. How did you get there?',
-          why: 'Any number on your resume is an invitation to ask about it.',
-          kind: 'win', ref: w.id });
-      });
-      return { likely: out.slice(0, 8), toAsk: [], watch: [] };
+      /* coach.js does the reading; this just hands it what it needs */
+      return Coach.questions(c, { wins: Store.campaignWins(c) });
     },
 
     /* ---- contacts -------------------------------------------------------- */
@@ -3899,7 +4519,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           /* Fetching LinkedIn through the model is still automated access to
              LinkedIn, which their user agreement prohibits and which is what
              ends in a terminated account. It also never works. */
-          blocked_domains: ['linkedin.com', 'www.linkedin.com']
+          blocked_domains: Sources.noFetch
         }]
       };
 
@@ -5596,15 +6216,19 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   var esc = UI.esc;
   window.Views = window.Views || {};
 
-  /* what to ask when there is no model to ask it */
-  var CANNED = {
-    story: ['What actually happened? Start where it went wrong.',
-            'What did you do about it, in the order you did it?',
-            'How did it end? A number if you have one.'],
-    gap: ['Nothing on your résumé answers this. What is the closest thing you have done?',
-          'What did that look like day to day?',
-          'If you had to say this out loud in an interview, how would you put it?']
-  };
+  /* With no model configured, coach.js works the questions out of the same
+     material a model would get: this listing line, this number, and what the
+     person has said so far. It is not a script — the second question depends
+     on what is missing from the first answer. */
+  function ctxFor(c, a) {
+    return { win: a.kind === 'story'
+      ? Store.campaignWins(c).filter(function (w) { return w.id === a.ref; })[0]
+      : null };
+  }
+  function said(history) {
+    return history.filter(function (m) { return m.role === 'user'; })
+                  .map(function (m) { return m.content; });
+  }
 
   window.Views.prep = function (params) {
     var c = Store.campaign(params.id);
@@ -5709,7 +6333,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         say('ai', 'Say more and it gets replaced, or pick another on the left.');
         return;
       }
-      if (!AI.ready()) return say('ai', CANNED[a.kind][0]);
+      if (!AI.ready()) return say('ai', Coach.opening(a, ctxFor(c, a)));
 
       busy = true;
       var b = say('ai', '…');
@@ -5720,7 +6344,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           b.textContent = out.reply;
           history.push({ role: 'assistant', content: out.reply });
         })
-        .catch(function () { if (openId === mine && b.isConnected) b.textContent = CANNED[a.kind][0]; })
+        .catch(function () { if (openId === mine && b.isConnected) b.textContent = Coach.opening(a, ctxFor(c, a)); })
         .then(function () { if (openId === mine) busy = false; });
     }
 
@@ -5737,13 +6361,14 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
         var a = item();
         if (!AI.ready()) {
-          /* no model: bank what they typed and walk the canned questions */
-          Store.answerAgenda(c.id, a.id, history.filter(function (m) { return m.role === 'user'; })
-            .map(function (m) { return m.content; }).join(' '));
+          /* no model: bank what they typed, then ask for whatever is still
+             missing from it rather than reading down a list */
+          var answers = said(history);
+          Store.answerAgenda(c.id, a.id, answers.join(' '));
           paintAgenda();
           setTimeout(function () {
-            if (turns < CANNED[a.kind].length) say('ai', CANNED[a.kind][turns]);
-            else say('ai', 'Good. That is banked. Pick the next one on the left.');
+            var next = Coach.followUp(a, answers, ctxFor(c, a));
+            say('ai', next || 'That holds up. It is banked — pick the next one on the left.');
           }, 380);
           return;
         }
@@ -6145,7 +6770,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     });
 
     function subtabs() {
-      var names = [['company', c.company], ['people', 'People (' + c.contacts.length + ')']];
+      var names = [['company', c.company + ' (' + c.research.length + ')'],
+                   ['people', 'People (' + c.contacts.length + ')'],
+                   ['sources', 'Where to look']];
       v.querySelector('#subtabs').innerHTML = names.map(function (n) {
         return '<button class="subtab" data-sub="' + n[0] + '" aria-selected="' + (tab === n[0]) + '">' + esc(n[1]) + '</button>';
       }).join('');
@@ -6175,6 +6802,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             '<h2>Nothing on ' + esc(c.company) + ' yet</h2>' +
             '<p>Paste anything you come across: a post, a podcast line, a pricing change. One specific sentence is what separates a reply from a delete.</p>' +
             '<button class="btn btn-primary btn-lg" id="add-empty">Add what you found <span class="arr">\u2192</span></button></div></div>';
+      } else if (tab === 'sources') {
+        feed.innerHTML = sourcesHTML();
       } else {
         var any = c.contacts.some(function (p) { return p.activity && p.activity.length; });
         feed.innerHTML = any
@@ -6186,6 +6815,92 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       }
     }
 
+    /* ---------------- where to look ----------------
+       Every row lands on a search that is already filled in. The ones behind
+       a login say so: we send you and take a paste back rather than pretending
+       to read a page we are not allowed to read. */
+    function sourcesHTML() {
+      return '<div class="src-note card p5">' +
+          '<b>Two kinds of source, and they work differently.</b>' +
+          '<p>The open ones we can read for you when Claude is on. Glassdoor, Blind and ' +
+          'Indeed need a login and their terms do not allow automated collection, so those ' +
+          'open in a tab with the search built and you paste back what is worth keeping. ' +
+          'Whatever you paste gets split into items and feeds the brief.</p>' +
+        '</div>' +
+        Sources.groups().map(function (g) {
+          return '<div class="card p5 mt4"><p class="cap mb3">' + esc(g.name) + '</p>' +
+            '<div class="src-list">' + g.items.map(function (s) {
+              return '<div class="src-row">' +
+                '<div class="src-main">' +
+                  '<b>' + esc(s.name) + '</b>' +
+                  '<span class="src-tag ' + (s.access === 'login' ? 'src-login' : 'src-open') + '">' +
+                    (s.access === 'login' ? 'login, paste back' : 'open') + '</span>' +
+                  '<p>' + esc(s.good) + '</p>' +
+                '</div>' +
+                '<div class="src-acts">' +
+                  '<a class="btn btn-ghost btn-sm" href="' + esc(s.url(c.company, c.role)) +
+                    '" target="_blank" rel="noopener noreferrer">Open \u2197</a>' +
+                  '<button class="btn btn-secondary btn-sm" data-paste="' + esc(s.id) + '">Paste what you found</button>' +
+                '</div></div>';
+            }).join('') + '</div></div>';
+        }).join('');
+    }
+
+    var PASTE_COPY = {
+      questions: { title: 'Interview questions you found',
+        hint: 'One per line. Numbering and bullets are fine — they get stripped. ' +
+              'Lines that are not questions are left out.' },
+      customers: { title: 'What customers said',
+        hint: 'One review or one line per row. Anything that reads like a complaint is ' +
+              'tagged as a gripe, because that is the half you can sell against.' },
+      notes:     { title: 'What you found',
+        hint: 'One thought per line. Long paragraphs are kept whole.' }
+    };
+
+    function pasteSheet(sid) {
+      var src = Sources.get(sid);
+      if (!src) return;
+      var mode = src.paste || 'notes';
+      var copy = PASTE_COPY[mode] || PASTE_COPY.notes;
+      UI.sheet({
+        title: copy.title + ' \u2014 ' + src.name,
+        html: '<form id="paste-form" class="col g3">' +
+          '<p class="dim" style="font-size:var(--fs-sm);line-height:1.6">' + esc(copy.hint) + '</p>' +
+          '<div class="field"><label for="p-text">Paste it here</label>' +
+            '<textarea class="input" id="p-text" rows="10"></textarea></div>' +
+          '<div id="p-prev" class="src-prev"></div>' +
+          '<div class="row g2 wrap"><button class="btn btn-primary btn-sm" type="submit">Keep these</button>' +
+          '<span class="dim" id="p-count" style="font-size:var(--fs-sm)"></span></div></form>',
+        onMount: function (node, close) {
+          var box = node.querySelector('#p-text');
+          var prev = node.querySelector('#p-prev');
+          var count = node.querySelector('#p-count');
+          function preview() {
+            var items = Sources.parse(mode, box.value, src.name);
+            count.textContent = items.length ? items.length + ' item' + (items.length === 1 ? '' : 's') : '';
+            prev.innerHTML = items.slice(0, 6).map(function (i) {
+              return '<div class="src-prev-row"><span class="fi-kind">' + esc(i.kind) + '</span>' +
+                '<span>' + esc(i.title) + '</span></div>';
+            }).join('') + (items.length > 6 ? '<p class="dim" style="font-size:var(--fs-xs)">and ' +
+              (items.length - 6) + ' more</p>' : '');
+          }
+          box.addEventListener('input', preview);
+          node.querySelector('#paste-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var items = Sources.parse(mode, box.value, src.name);
+            if (!items.length) { UI.toast('Nothing in there to keep.'); return; }
+            items.forEach(function (i) { Store.addResearch(c.id, i); });
+            close();
+            tab = 'company';
+            paint();
+            UI.toast('Kept ' + items.length + '. They show up in the brief.');
+          });
+          setTimeout(function () { box.focus(); }, 60);
+        }
+      });
+    }
+
+    UI.on(v, 'click', '[data-paste]', function (e, el) { pasteSheet(el.dataset.paste); });
     UI.on(v, 'click', '[data-sub]', function (e, el) { tab = el.dataset.sub; paint(); });
     UI.on(v, 'click', '[data-use]', function (e, el) {
       c.pendingInsert = el.dataset.use;
@@ -7119,15 +7834,13 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     if (!c) return Router.go('/', true);
     Store.touch(c.id);
 
+    /* the questions panel is never empty: work them out from the listing and
+       the gaps on first open, and let Claude redo them properly if it is on */
+    if (!c.questions) Store.setQuestions(c.id, Store.questionsLocally(c));
+
     var b = Store.brief(c);
     var pf = Store.state.profile;
     var busy = false;
-
-    function sec(id, title, sub, body) {
-      return '<section class="bf-sec" id="bf-' + id + '">' +
-        '<div class="bf-head"><h2>' + esc(title) + '</h2>' +
-        (sub ? '<p>' + esc(sub) + '</p>' : '') + '</div>' + body + '</section>';
-    }
 
     /* ---------------- what you lead with ---------------- */
     function leadHTML() {
@@ -7214,14 +7927,18 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     /* ---------------- the questions ---------------- */
     function questionsHTML() {
       var q = c.questions;
-      if (!q) {
+      if (!q || !(q.likely || []).length) {
         return '<div class="bf-empty">' +
-          '<p>' + (AI.ready()
-            ? 'Claude can work out what this company is likely to ask you, from the listing, your gaps and what these people have said.'
-            : 'Without a model these come from the listing and your gaps. Turn Claude on in Settings for the good version.') + '</p>' +
-          '<button class="btn btn-primary btn-sm" id="gen-q">Work out the questions</button></div>';
+          '<p>Nothing to work from yet — paste the listing on the company screen ' +
+          'and pick the wins you are leading with.</p>' +
+          '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '">Go back to ' + esc(c.company) + '</a></div>';
       }
-      return '<div class="bf-qs">' + (q.likely || []).map(function (x) {
+      return '<p class="bf-src-note">' + (q.source === 'claude'
+        ? 'Worked out by Claude from the listing, your gaps and what these people said.'
+        : 'Built from the listing and your gaps. ' +
+          (AI.ready() ? 'Claude can do this properly.' : 'Turn Claude on in Settings for the sharper version.')) +
+        '</p>' +
+        '<div class="bf-qs">' + (q.likely || []).map(function (x) {
         return '<div class="bf-q">' +
           '<b>' + esc(x.question) + '</b>' +
           '<p class="bf-why">' + esc(x.why) + '</p>' +
@@ -7239,35 +7956,71 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             return '<li>' + esc(x) + '</li>';
           }).join('') + '</ul>'
         : '') +
-      '<button class="btn btn-ghost btn-sm mt3" id="gen-q">Work them out again</button>';
+      '<button class="btn btn-secondary btn-sm mt3" id="gen-q">' +
+        (AI.ready() ? 'Work them out with Claude' : 'Work them out again') + '</button>';
+    }
+
+    /* ---------------- the dashboard ---------------- */
+    function panel(id, title, sub, body, span, tall) {
+      return '<section class="bf-panel' + (span ? ' sp-' + span : '') + (tall ? ' bf-tall' : '') +
+        '" id="bf-' + id + '">' +
+        '<div class="bf-head"><h2>' + esc(title) + '</h2>' +
+        (sub ? '<p>' + esc(sub) + '</p>' : '') + '</div>' +
+        '<div class="bf-body">' + body + '</div></section>';
+    }
+
+    function tile(cap, value, note, tone) {
+      return '<div class="bf-tile' + (tone ? ' ' + tone : '') + '">' +
+        '<span class="cap">' + esc(cap) + '</span>' +
+        '<p class="kpi mono">' + esc(String(value)) + '</p>' +
+        (note ? '<span class="bf-tile-note">' + esc(note) + '</span>' : '') + '</div>';
     }
 
     var ready = b.wins.filter(function (w) { return w.story; }).length;
+    var spoken = b.people.filter(function (p) { return p.touches.length; }).length;
+    var replied = b.people.filter(function (p) {
+      return p.touches.some(function (x) { return x.replied; });
+    }).length;
+    var answered = b.match.filter(function (m) { return m.strength !== 'none' || m.answer; }).length;
+    var qCount = ((c.questions || {}).likely || []).length;
+
     var html =
-      '<div class="page-head">' +
-        '<div class="row between wrap g3">' +
-          '<div><h1>' + esc(c.company) + ' brief</h1>' +
-          '<p>Everything this campaign knows, on one page. Read it the night before.</p></div>' +
+      '<div class="bf-bar">' +
+        '<div class="bf-id">' +
+          '<h1>' + esc(c.company) + '</h1>' +
+          '<p>' + esc(c.role) + (c.location ? ' &middot; ' + esc(c.location) : '') + '</p>' +
+        '</div>' +
+        '<div class="bf-bar-acts">' +
+          (/^https?:\/\//i.test(c.postingUrl || '')
+            ? '<a class="btn btn-ghost btn-sm" href="' + esc(c.postingUrl) +
+              '" target="_blank" rel="noopener noreferrer">The listing \u2197</a>'
+            : '') +
+          '<a class="btn btn-ghost btn-sm" href="#/c/' + c.id + '/prep">Prep</a>' +
           '<button class="btn btn-secondary btn-sm" id="print">Print it</button>' +
         '</div>' +
       '</div>' +
 
-      '<div class="bf-top">' +
-        '<div><span class="cap">Role</span><b>' + esc(c.role) + '</b></div>' +
-        (c.location ? '<div><span class="cap">Where</span><b>' + esc(c.location) + '</b></div>' : '') +
-        '<div><span class="cap">Stories ready</span><b>' + ready + ' of ' + b.wins.length + '</b></div>' +
-        '<div><span class="cap">Gaps</span><b>' + b.gaps.length + '</b></div>' +
-        (/^https?:\/\//i.test(c.postingUrl || '')
-          ? '<div><span class="cap">Posting</span><a href="' + esc(c.postingUrl) +
-            '" target="_blank" rel="noopener noreferrer">the listing \u2197</a></div>'
-          : '') +
+      '<div class="bf-tiles">' +
+        tile('Stories ready', ready + '/' + b.wins.length, 'behind your numbers',
+             ready === b.wins.length && b.wins.length ? 'ok' : (ready ? '' : 'warn')) +
+        tile('Requirements answered', answered + '/' + b.match.length, 'from the listing',
+             b.match.length && answered === b.match.length ? 'ok' : '') +
+        tile('Open gaps', b.gaps.length, b.gaps.length ? 'work these in Prep' : 'nothing unanswered',
+             b.gaps.length ? 'warn' : 'ok') +
+        tile('People reached', spoken + '/' + b.people.length,
+             replied ? replied + ' replied' : 'no replies yet', replied ? 'ok' : '') +
+        tile('Questions drilled', qCount, qCount ? 'with your answers' : 'not worked out yet',
+             qCount ? '' : 'warn') +
       '</div>' +
 
-      sec('lead', 'What you lead with', 'The three numbers and the story behind each one.', leadHTML()) +
-      sec('questions', 'What they will ask', 'Worked out from this listing and your gaps, not from a list.', '<div id="qbox">' + questionsHTML() + '</div>') +
-      sec('match', 'Where you line up', 'And what you have decided to say about the places you do not.', matchHTML()) +
-      sec('people', 'Who you have talked to', 'What passed between you, and what they have said in public.', peopleHTML()) +
-      sec('research', 'What ' + c.company + ' said', 'Specific things, said recently, that you can quote back.', researchHTML());
+      '<div class="bf-grid">' +
+        panel('lead', 'What you lead with', 'The numbers, and the story behind each one.', leadHTML(), 12) +
+        panel('questions', 'What they will ask', 'From this listing and your gaps.',
+              '<div id="qbox">' + questionsHTML() + '</div>', 7, true) +
+        panel('match', 'Where you line up', 'And what you say about where you do not.', matchHTML(), 5, true) +
+        panel('people', 'Who you have talked to', 'What passed between you.', peopleHTML(), 7, true) +
+        panel('research', 'What ' + c.company + ' said', 'Specific things you can quote back.', researchHTML(), 5, true) +
+      '</div>';
 
     var v = Shell.mount({
       nav: 'brief',
@@ -7290,6 +8043,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         return;
       }
       AI.interviewPrep(c).then(function (q) {
+        q.source = 'claude';
         Store.setQuestions(c.id, q);
         paintQ();
         UI.toast((q.likely || []).length + ' questions, with what you already have to answer them.');
