@@ -251,6 +251,7 @@
       pageTemplate: 'case',
       match: [],
       agenda: [],
+      questions: null,
       angles: clone(ANGLES),
       contacts: clone(CONTACTS),
       suggested: clone(SUGGESTED),
@@ -433,6 +434,7 @@
         pageTemplate: 'case',
         match: [],
         agenda: [],
+        questions: null,
         angles: [],
         contacts: [],
         suggested: Store.suggestFor(data.company || parsed.company, parsed.role),
@@ -548,6 +550,10 @@
       if (!it) return;
       it.text = text;
       it.done = !!(text && text.trim());
+      /* the page's story is the first thing you nailed down, not a field
+         nobody ever writes to */
+      var first = Store.stories(c)[0];
+      c.story = first ? first.text : '';
       Store.save();
     },
     agendaProgress: function (c) {
@@ -890,6 +896,85 @@
         name: name, title: '', persona: 'Other', tenure: '', prev: '', mutuals: 0,
         email: '', linkedin: 'in/' + slug, ask: '', activity: []
       } };
+    },
+
+    /* ---- the brief -------------------------------------------------------
+       Everything known about one company, assembled. The interview prep
+       screen renders it and every model prompt that needs context reads the
+       same thing, so what you rehearse and what gets written are one story. */
+    brief: function (c) {
+      if (!c) return null;
+      var wins = Store.campaignWins(c);
+      var stories = Store.stories(c);
+      var answered = {};
+      stories.forEach(function (a) { answered[a.ref] = a; });
+
+      return {
+        company: c.company, role: c.role, location: c.location,
+        req: c.req, postingUrl: c.postingUrl, day: c.day,
+
+        /* what you lead with, with the story behind it where there is one */
+        wins: wins.map(function (w) {
+          return { win: w, story: (answered[w.id] || {}).text || '' };
+        }),
+
+        /* what they asked for, what answers it, and what you will say if not */
+        match: (c.match || []).map(function (r) {
+          return {
+            req: r, strength: r.strength, note: r.note,
+            evidence: (r.winIds || []).map(function (id) {
+              return wins.filter(function (w) { return w.id === id; })[0] ||
+                     state.profile.wins.filter(function (w) { return w.id === id; })[0];
+            }).filter(Boolean),
+            answer: (answered[r.id] || {}).text || ''
+          };
+        }),
+
+        /* who you have actually spoken to, and what passed between you */
+        people: c.contacts.map(function (p) {
+          var touches = c.steps.filter(function (s) {
+            return s.contact === p.id && (s.status === 'sent' || s.status === 'replied');
+          }).map(function (s) {
+            return { day: s.day, channel: s.channel, note: s.note,
+                     replied: s.status === 'replied', body: s.body };
+          });
+          return { person: p, touches: touches, activity: p.activity || [], notes: p.notes || '' };
+        }),
+
+        research: c.research || [],
+        stories: stories,
+        gaps: (c.match || []).filter(function (r) { return r.strength === 'none'; }),
+        questions: c.questions || null
+      };
+    },
+
+    setQuestions: function (cid, q) {
+      var c = Store.campaign(cid); if (!c) return;
+      c.questions = q;
+      Store.save();
+    },
+
+    /* What they will probably ask, worked out from the listing rather than
+       from a list of generic interview questions. */
+    questionsLocally: function (c) {
+      var out = [];
+      (c.match || []).forEach(function (r) {
+        if (r.strength === 'none') {
+          out.push({ question: 'Tell me about your experience with ' + r.text.toLowerCase().replace(/^(experience|a track record of|comfortable)\s+(with|in|of)?\s*/i, '') + '.',
+            why: 'They asked for this and nothing on your resume shows it. Expect it.',
+            kind: 'gap', ref: r.id });
+        } else if (r.priority === 'must' && r.strength === 'strong') {
+          out.push({ question: 'Walk me through a time you ' + r.text.charAt(0).toLowerCase() + r.text.slice(1) + '.',
+            why: 'A must-have you can answer. Have the specific story ready.',
+            kind: 'strength', ref: r.id });
+        }
+      });
+      Store.campaignWins(c).forEach(function (w) {
+        out.push({ question: 'You mention ' + w.metric + '. How did you get there?',
+          why: 'Any number on your resume is an invitation to ask about it.',
+          kind: 'win', ref: w.id });
+      });
+      return { likely: out.slice(0, 8), toAsk: [], watch: [] };
     },
 
     /* ---- contacts -------------------------------------------------------- */

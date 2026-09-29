@@ -18,7 +18,8 @@
       { key: 'people',   icon: 'contacts', label: 'Contacts', href: '/c/:id/people',   count: 'contacts', hint: 'the people you are working, ranked', sc: 'G then P' },
       { key: 'research', icon: 'research', label: 'Research', href: '/c/:id/research', hint: 'what they said recently, in public', sc: 'G then R' },
       { key: 'sequence', icon: 'sequence', label: 'Sequence', href: '/c/:id/sequence', count: 'steps', hint: 'the touches and the days between them', sc: 'G then S' },
-      { key: 'page',     icon: 'page', label: 'Page',     href: '/c/:id/page', hint: 'the public page you send them to' }
+      { key: 'page',     icon: 'page', label: 'Page',     href: '/c/:id/page', hint: 'the public page you send them to' },
+      { key: 'brief',    icon: 'brief', label: 'Brief',    href: '/c/:id/brief', hint: 'everything you know, for the night before', sc: 'G then B' }
     ] },
     { group: 'Library', items: [
       { key: 'templates', icon: 'templates', label: 'Templates', href: '/templates', hint: 'messages you reuse across steps', sc: 'G then T' },

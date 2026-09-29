@@ -20,6 +20,7 @@
     sequence:  '<circle cx="6" cy="6.5" r="2"/><circle cx="6" cy="17.5" r="2"/><path d="M6 8.5v7"/><path d="M11 6.5h9M11 17.5h9M11 12h6"/>',
     page:      '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9h17M7 13h6M7 16h9"/>',
     templates: '<rect x="7.5" y="3.5" width="13" height="13" rx="2"/><path d="M16.5 20.5h-10a3 3 0 0 1-3-3v-10"/>',
+    brief:     '<path d="M6.5 3.5h11a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19V5a1.5 1.5 0 0 1 1.5-1.5Z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4"/>',
     settings:  '<path d="M4 7.5h4M12.5 7.5H20M4 16.5h9M17 16.5h3"/><circle cx="10.2" cy="7.5" r="2.2"/><circle cx="14.8" cy="16.5" r="2.2"/>',
     search:    '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/>',
 

@@ -407,6 +407,92 @@
       });
     },
 
+    /* ---- what they will ask, and what you will ask back ------------------ */
+    interviewPrep: function (c) {
+      var b = Store.brief(c);
+      var sys = [
+        'You prepare someone for a specific interview. You have their resume, the listing, what',
+        'they line up on, what they do not, the stories they have told you, who they have spoken',
+        'to and what those people said in public.',
+        '',
+        'Write the questions this company is actually likely to ask this person, in this role.',
+        'Not a generic list. Every question must be traceable to something in the material: a gap,',
+        'a number on their resume, something the listing dwells on, something a person there said.',
+        '',
+        'For each one, say in a line why it is coming, and give them the spine of an answer built',
+        'only from what they have told you. If they have not told you enough to answer it, leave',
+        'answer empty and say what they still need to work out. Never invent an experience.',
+        '',
+        'Then: questions worth asking back, each tied to something specific you know about the',
+        'company. And the things to be careful about, which are usually the gaps.'
+      ].join('\n');
+
+      var ctx = [
+        'Role: ' + b.role + ' at ' + b.company + (b.location ? ' (' + b.location + ')' : ''),
+        '',
+        'What they asked for and how it lines up:',
+        b.match.map(function (m) {
+          return '- [' + m.strength + '] ' + m.req.text +
+            (m.evidence.length ? ' | evidence: ' + m.evidence.map(function (w) { return w.text; }).join('; ') : ' | nothing on the resume') +
+            (m.answer ? ' | they say: ' + m.answer : '');
+        }).join('\n') || '(no requirements parsed)',
+        '',
+        'What they lead with:',
+        b.wins.map(function (w) {
+          return '- ' + w.win.metric + ' ' + w.win.text + (w.story ? '\n  story: ' + w.story : '');
+        }).join('\n') || '(none)',
+        '',
+        'People they have contacted:',
+        b.people.map(function (p) {
+          return '- ' + p.person.name + ', ' + (p.person.title || p.person.persona) +
+            (p.touches.length ? ' | ' + p.touches.length + ' touches, ' +
+              (p.touches.some(function (t) { return t.replied; }) ? 'replied' : 'no reply yet') : ' | not contacted') +
+            (p.activity.length ? '\n  said publicly: ' + p.activity.map(function (a) { return a.text; }).join(' / ') : '');
+        }).join('\n') || '(none)',
+        '',
+        'What the company said in public:',
+        b.research.map(function (r) { return '- ' + r.title + ': ' + (r.detail || r.use); }).join('\n') || '(nothing gathered)'
+      ].join('\n');
+
+      var q = {
+        type: 'object', additionalProperties: false,
+        required: ['question', 'why', 'answer', 'gap'],
+        properties: {
+          question: { type: 'string' },
+          why: { type: 'string', description: 'One line, under 20 words, on why this is coming.' },
+          answer: { type: 'string', description: 'The spine of their answer from their own material, or an empty string.' },
+          gap: { type: 'string', description: 'What they still need to work out, or an empty string.' }
+        }
+      };
+
+      return AI.send({
+        system: sys,
+        maxTokens: 6000,
+        schema: {
+          type: 'object', additionalProperties: false,
+          required: ['likely', 'toAsk', 'watch'],
+          properties: {
+            likely: { type: 'array', items: q, description: 'Six to nine questions they will probably be asked.' },
+            toAsk: {
+              type: 'array',
+              description: 'Three or four questions worth asking back, each tied to something specific.',
+              items: {
+                type: 'object', additionalProperties: false,
+                required: ['question', 'why'],
+                properties: { question: { type: 'string' }, why: { type: 'string' } }
+              }
+            },
+            watch: {
+              type: 'array',
+              description: 'Two or three things to be careful about in the room.',
+              items: { type: 'string' }
+            }
+          }
+        },
+        messages: [{ role: 'user', content: ctx }]
+      });
+    },
+
     /* ---- rewriting a draft ----------------------------------------------- */
     rewrite: function (ask, draft, campaign, contact) {
       var sys = [
@@ -419,8 +505,14 @@
         'there. Never invent a number, a name, or a claim that is not in the draft.'
       ].join('\n');
 
+      var told = Store.stories(campaign);
       var ctx = 'Company: ' + campaign.company + '\nRole: ' + campaign.role +
         (contact ? '\nGoing to: ' + contact.name + ', ' + (contact.title || contact.persona) : '') +
+        (told.length
+          ? '\n\nWhat they have told me about themselves, in their own words. Use these rather ' +
+            'than inventing anything, and keep their phrasing:\n' +
+            told.map(function (t) { return '- ' + t.text; }).join('\n')
+          : '') +
         '\n\nCurrent draft:\n' + draft + '\n\nWhat they want: ' + ask;
 
       return AI.send({

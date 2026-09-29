@@ -23,6 +23,7 @@
     .add('/c/:id/research', Views.research)
     .add('/c/:id/sequence', Views.sequence)
     .add('/c/:id/page',     Views.page)
+    .add('/c/:id/brief',    Views.brief)
     .notFound(function () { Router.go(Store.isAuthed() ? '/' : '/login', true); });
 
   /* ---- command palette contents --------------------------------------- */
@@ -39,7 +40,8 @@
         { group: 'Go to', icon: '◎', label: 'Contacts', hint: 'G P', run: function () { Router.go('/c/' + cid + '/people'); } },
         { group: 'Go to', icon: '◈', label: 'Research on the company and the people', hint: 'G R', run: function () { Router.go('/c/' + cid + '/research'); } },
         { group: 'Go to', icon: '≡', label: 'The fourteen day sequence', hint: 'G S', run: function () { Router.go('/c/' + cid + '/sequence'); } },
-        { group: 'Go to', icon: '▤', label: 'Your public page', run: function () { Router.go('/c/' + cid + '/page'); } }
+        { group: 'Go to', icon: '▤', label: 'Your public page', run: function () { Router.go('/c/' + cid + '/page'); } },
+        { group: 'Go to', icon: '◫', label: 'The interview brief', hint: 'G B', run: function () { Router.go('/c/' + cid + '/brief'); } }
       );
     }
     items.push(
@@ -82,6 +84,7 @@
       else if (k === 'n') Router.go('/new');
       else if (k === 'p' && cid) Router.go('/c/' + cid + '/people');
       else if (k === 'e' && cid) Router.go('/c/' + cid + '/prep');
+      else if (k === 'b' && cid) Router.go('/c/' + cid + '/brief');
       else if (k === 's' && cid) Router.go('/c/' + cid + '/sequence');
       else if (k === 'r' && cid) Router.go('/c/' + cid + '/research');
       else if (k === 't') Router.go('/templates');

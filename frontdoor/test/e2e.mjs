@@ -206,6 +206,17 @@ window.AI_FETCH = function (url, init) {
       ],
       leadWith: wins.slice(0, 3).map(function (w) { return w.id; })
     });
+  } else if (schema && schema.properties && schema.properties.likely) {
+    text = JSON.stringify({
+      likely: [
+        { question: 'You said 112% through a pricing change. What broke first?',
+          why: 'A number on your resume is an invitation.', answer: 'The forecast broke first.', gap: '' },
+        { question: 'Tell me about managing a team.',
+          why: 'They asked for it and nothing on your resume shows it.', answer: '', gap: 'You still need an example.' }
+      ],
+      toAsk: [{ question: 'How did the reprice land with the team?', why: 'Marcus wrote about it publicly.' }],
+      watch: ['Do not overclaim on the management gap.']
+    });
   } else if (schema && schema.properties && schema.properties.complete) {
     window.__prepTurns = (window.__prepTurns || 0) + 1;
     text = window.__prepTurns > 2
@@ -564,6 +575,103 @@ await group('Brand, icons and tips', async (page) => {
     const tips = await page.evaluate(() =>
       [...document.querySelectorAll('.tip')].map(t => t.dataset.tip));
     if (tips.includes('find-contacts')) throw new Error('it came back');
+  });
+});
+
+/* --------------------------------------------------------------- brief -- */
+await group('The interview brief', async (page) => {
+  await page.addInitScript(STUB);
+  await signIn(page);
+  await page.evaluate(() => {
+    var c = Store.campaign('c_acme');
+    Store.setMatch('c_acme', [
+      { id: 'r1', text: 'Sold through a pricing change', priority: 'must', winIds: [c.winIds[0]], strength: 'strong', note: '' },
+      { id: 'r2', text: 'Managed a team', priority: 'nice', winIds: [], strength: 'none', note: '' }
+    ]);
+    c.agenda = [];
+    Store.buildAgenda('c_acme');
+  });
+  await step('it pulls the whole campaign together', async () => {
+    await page.goto(BASE + '#/c/c_acme/brief', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.bf-sec', { timeout: 6000 });
+    for (const id of ['bf-lead', 'bf-questions', 'bf-match', 'bf-people', 'bf-research']) {
+      if (!(await page.locator('#' + id).count())) throw new Error('missing section ' + id);
+    }
+    if ((await page.locator('.bf-win').count()) !== 3) throw new Error('wrong number of wins');
+    if (!(await page.locator('.bf-person').count())) throw new Error('no people');
+    if (!(await page.locator('.bf-research li').count())) throw new Error('no research');
+  });
+  await step('it says which touches actually went out', async () => {
+    const t = await page.locator('.bf-person').first().textContent();
+    if (!/touch|not contacted/.test(t)) throw new Error('no touch history: ' + t.slice(0, 80));
+  });
+  await step('a win with no story is flagged, not faked', async () => {
+    const todo = await page.locator('.bf-win .bf-todo').count();
+    if (!todo) throw new Error('missing stories are not called out');
+    const t = await page.locator('.bf-win .bf-todo').first().textContent();
+    if (!/Prep/.test(t)) throw new Error('no route back to prep');
+  });
+  await step('a prep answer reaches the brief', async () => {
+    const id = await page.evaluate(() => {
+      var a = Store.campaign('c_acme').agenda.filter(x => x.kind === 'story')[0];
+      Store.answerAgenda('c_acme', a.id, 'The forecast broke first and I rewrote discovery around it.');
+      return a.id;
+    });
+    if (!id) throw new Error('no story item');
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('.bf-story', { timeout: 5000 });
+    const t = await page.locator('.bf-story').first().textContent();
+    if (!/forecast broke first/.test(t)) throw new Error('story not shown: ' + t);
+  });
+  await step('and reaches the public page, which it never used to', async () => {
+    const story = await page.evaluate(() => Store.campaign('c_acme').story);
+    if (!/forecast broke first/.test(story)) throw new Error('c.story still empty: ' + story);
+    await page.goto(BASE + '#/c/c_acme/page', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.pub', { timeout: 5000 });
+    if (!(await page.locator('.pg-story').count())) throw new Error('no story section on the page');
+    const t = await page.locator('.pg-story').first().textContent();
+    if (!/forecast broke first/.test(t)) throw new Error('page shows something else: ' + t);
+  });
+  await step('the questions come from the listing and the gaps', async () => {
+    await page.goto(BASE + '#/c/c_acme/brief', { waitUntil: 'networkidle' });
+    await page.waitForSelector('#gen-q', { timeout: 5000 });
+    await page.evaluate(() => { window.__useKey(); });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.click('#gen-q');
+    await page.waitForSelector('.bf-q', { timeout: 12000 });
+    const qs = await page.locator('.bf-q').count();
+    if (qs < 2) throw new Error(qs + ' questions');
+    if (!(await page.locator('.bf-ask li').count())) throw new Error('nothing to ask back');
+    if (!(await page.locator('.bf-watch li').count())) throw new Error('nothing to watch for');
+  });
+  await step('a question it cannot answer is marked, not invented', async () => {
+    const todo = await page.locator('.bf-q .bf-todo').count();
+    if (!todo) throw new Error('unanswerable questions are not flagged');
+  });
+  await step('the model gets the real campaign, not a summary', async () => {
+    const call = await page.evaluate(() => window.__calls.filter(c =>
+      c.body.output_config && c.body.output_config.format.schema.properties.likely)[0]);
+    if (!call) throw new Error('no prep request');
+    const sent = call.body.messages[0].content;
+    if (!/Managed a team/.test(sent)) throw new Error('gaps not sent');
+    if (!/Marcus Reed/.test(sent)) throw new Error('people not sent');
+    if (!/said publicly/.test(sent)) throw new Error('their public statements not sent');
+  });
+  await step('the questions survive a reload', async () => {
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('.bf-q', { timeout: 6000 });
+  });
+  await step('prep answers now reach the rewriter too', async () => {
+    await page.goto(BASE + '#/c/c_acme/sequence', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.stepcard', { timeout: 5000 });
+    await page.evaluate(() => { window.__calls = []; });
+    await page.locator('.stepcard').nth(3).click();
+    await page.waitForTimeout(260);
+    await page.locator('.sug', { hasText: 'Shorter' }).click();
+    await page.waitForTimeout(700);
+    const call = await page.evaluate(() => window.__calls[window.__calls.length - 1]);
+    if (!/forecast broke first/.test(call.body.messages[0].content))
+      throw new Error('the rewriter still does not know what you told prep');
   });
 });
 
@@ -1094,7 +1202,7 @@ await group('Mobile, 390px', async (page) => {
   await signIn(page);
   await step('no horizontal overflow on any screen', async () => {
     const routes = ['#/', '#/new', '#/c/c_acme', '#/c/c_acme/people', '#/c/c_acme/research',
-                    '#/c/c_acme/sequence', '#/c/c_acme/page', '#/templates', '#/settings', '#/import'];
+                    '#/c/c_acme/sequence', '#/c/c_acme/page', '#/c/c_acme/brief', '#/templates', '#/settings', '#/import'];
     for (const r of routes) {
       await page.goto(BASE + r, { waitUntil: 'networkidle' });
       await page.waitForTimeout(300);
@@ -1116,7 +1224,7 @@ await group('Mobile, 390px', async (page) => {
     if (m.w > 70) throw new Error('rail did not collapse (w=' + m.w + ')');
     if (m.h < 600) throw new Error('rail is not full height (h=' + m.h + ')');
     if (m.hidden !== 'none') throw new Error('labels still showing on the rail');
-    if (m.n < 9) throw new Error('only ' + m.n + ' nav items');
+    if (m.n < 10) throw new Error('only ' + m.n + ' nav items');
     if (!m.labelled) throw new Error('a rail icon has no tooltip');
   });
   await step('the builder is usable narrow', async () => {

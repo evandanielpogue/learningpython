@@ -70,9 +70,12 @@
       return '<section data-sec="why"><h2 class="pg-h">Why ' + esc(c.company) + '</h2>' + inner + '</section>';
     }
     function sStory() {
-      if (!c.story) return '';
+      var told = Store.stories(c).filter(function (a) { return a.kind === 'story'; });
+      if (!told.length && !c.story) return '';
       return '<section data-sec="story"><h2 class="pg-h">What happened last time</h2>' +
-        '<p class="pg-story">' + esc(c.story) + '</p></section>';
+        (told.length
+          ? told.slice(0, 2).map(function (a) { return '<p class="pg-story">' + esc(a.text) + '</p>'; }).join('')
+          : '<p class="pg-story">' + esc(c.story) + '</p>') + '</section>';
     }
     function sPlan() {
       return '<section data-sec="plan"><h2 class="pg-h">First 90 days at ' + esc(c.company) + '</h2>' +
