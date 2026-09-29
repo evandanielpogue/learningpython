@@ -181,7 +181,12 @@
           '<label class="field grow"><span>Note to yourself</span>' +
             '<input class="input" value="' + esc(s.note) + '" data-f="note"></label>' +
           '<button class="btn btn-secondary btn-sm" id="save-tpl">Save as template</button>' +
-          '<button class="btn btn-primary btn-sm" id="mark">' + (s.status === 'sent' || s.status === 'replied' ? 'Sent' : 'Mark sent') + '</button>' +
+          (s.status === 'sent'
+            ? '<button class="btn btn-secondary btn-sm" id="reply">They replied</button>'
+            : '') +
+          '<button class="btn btn-primary btn-sm" id="mark"' +
+            (s.status === 'sent' || s.status === 'replied' ? ' disabled' : '') + '>' +
+            (s.status === 'replied' ? 'Replied' : s.status === 'sent' ? 'Sent' : 'Mark sent') + '</button>' +
         '</div>' +
       '</div>' +
 
@@ -364,7 +369,34 @@
         c.sent += 1;
         Store.updateStep(c.id, s.id, { status: 'sent' });
         Store.completeTask(c.id, 't6');
-        paintAll(); UI.toast('Logged.');
+        paintAll();
+        /* the third moment: every planned touch has actually gone out */
+        var out = c.steps.filter(function (x) { return x.status === 'sent' || x.status === 'replied'; }).length;
+        if (c.steps.length && out >= c.steps.length) {
+          UI.cheerOnce(c.id, 'sent', {
+            title: 'All of it is out',
+            line: 'Every touch you planned for ' + c.company + ' has gone. ' +
+                  'Nothing else to write — now it is on them.'
+          });
+        } else {
+          UI.toast('Logged.');
+        }
+      });
+
+      /* the second moment: somebody wrote back */
+      var rep = v.querySelector('#reply');
+      if (rep) rep.addEventListener('click', function () {
+        if (s.status === 'replied') { UI.toast('Already logged.'); return; }
+        c.replies += 1;
+        Store.updateStep(c.id, s.id, { status: 'replied' });
+        Store.save();
+        paintAll();
+        var first = UI.cheerOnce(c.id, 'reply', {
+          title: 'Somebody wrote back',
+          line: 'That is the whole point of the fourteen days. Reply today, ' +
+                'while you are still the person who sent something specific.'
+        });
+        if (!first) UI.toast('Reply logged.');
       });
       var savet = v.querySelector('#save-tpl');
       if (savet) savet.addEventListener('click', function () {

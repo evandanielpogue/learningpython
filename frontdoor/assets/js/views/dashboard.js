@@ -95,10 +95,10 @@
       }, { sent: 0, rep: 0, views: 0, due: 0 });
 
       html += '<div class="grid cols-4 mt5">' +
-        '<div class="card hover p5"><p class="cap mb3">Companies</p><p class="kpi mono">' + list.length + '</p><p class="dimmer" style="font-size:var(--fs-sm)">running at once</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Due today</p><p class="kpi mono">' + totals.due + '</p><p class="dimmer" style="font-size:var(--fs-sm)">across all of them</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono">' + totals.rep + '</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + totals.sent + ' sent</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono">' + totals.views + '</p><p class="dimmer" style="font-size:var(--fs-sm)">people reading</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Companies</p><p class="kpi mono" data-count="' + list.length + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">running at once</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Due today</p><p class="kpi mono" data-count="' + totals.due + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">across all of them</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono" data-count="' + totals.rep + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + totals.sent + ' sent</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono" data-count="' + totals.views + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">people reading</p></div>' +
         '</div>';
     }
 

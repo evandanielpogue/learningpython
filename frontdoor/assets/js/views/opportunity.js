@@ -328,10 +328,10 @@
       '</div>' +
 
       '<div class="grid cols-4 mb4">' +
-        '<div class="card hover p5"><p class="cap mb3">People</p><p class="kpi mono">' + c.contacts.length + '</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (sugg.length ? sugg.length + ' more suggested' : 'all added') + '</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><p class="kpi mono">' + c.sent + '</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + c.steps.length + ' planned</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono">' + c.replies + '</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (c.replies ? 'keep going' : 'early days') + '</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono">' + c.views + '</p><p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">People</p><p class="kpi mono" data-count="' + c.contacts.length + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (sugg.length ? sugg.length + ' more suggested' : 'all added') + '</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><p class="kpi mono" data-count="' + c.sent + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + c.steps.length + ' planned</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono" data-count="' + c.replies + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (c.replies ? 'keep going' : 'early days') + '</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono" data-count="' + c.views + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div>' +
       '</div>' +
 
       '<div class="split-wide">' +

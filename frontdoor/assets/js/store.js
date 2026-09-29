@@ -339,6 +339,7 @@
         if (typeof c.replies !== 'number') c.replies = 0;
         if (typeof c.views !== 'number') c.views = 0;
         if (typeof c.day !== 'number') c.day = 0;
+        if (!c.cheered || typeof c.cheered !== 'object') c.cheered = {};
       });
       if (!state.profile || typeof state.profile !== 'object') state.profile = blankProfile();
       ['roles', 'wins', 'stack'].forEach(function (k) {
@@ -602,6 +603,21 @@
       c.story = first ? first.text : '';
       Store.save();
     },
+    /* A milestone is celebrated once and then never again. Returning false
+       means it has already happened, which is how the views stay honest on
+       a reload: the data says done, the confetti does not fire twice. */
+    markCheered: function (cid, key) {
+      var c = Store.campaign(cid); if (!c) return false;
+      c.cheered = c.cheered || {};
+      if (c.cheered[key]) return false;
+      c.cheered[key] = true;
+      Store.save();
+      return true;
+    },
+    hasCheered: function (c, key) {
+      return !!(c && c.cheered && c.cheered[key]);
+    },
+
     agendaProgress: function (c) {
       var a = (c && c.agenda) || [];
       return { done: a.filter(function (x) { return x.done; }).length, total: a.length };

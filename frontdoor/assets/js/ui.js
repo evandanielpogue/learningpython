@@ -371,5 +371,148 @@
     });
   };
 
+  /* ---- progress, and the feeling of it --------------------------------
+     Three pieces, all of which take a fraction and show it moving: a meter
+     for a row, a ring for a corner, and a counter for a figure. Each one
+     starts at where it was and animates to where it is, because the point
+     is the change, not the value. */
+
+  UI.calm = function () {
+    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    catch (e) { return false; }
+  };
+
+  UI.meterHTML = function (done, total, label) {
+    var pct = total ? Math.round((done / total) * 100) : 0;
+    return '<div class="meter-row">' +
+        (label
+          ? '<div class="meter-cap"><span>' + UI.esc(label) + '</span>' +
+            '<b>' + done + '/' + total + '</b></div>'
+          : '') +
+        '<div class="meter' + (total && done >= total ? ' done' : '') + '" role="progressbar" ' +
+          'aria-valuenow="' + done + '" aria-valuemin="0" aria-valuemax="' + total + '" ' +
+          'aria-label="' + UI.esc(label || 'Progress') + '">' +
+          '<span class="meter-fill" data-pct="' + pct + '"></span>' +
+        '</div></div>';
+  };
+
+  /* the fill is written after a frame so the transition has somewhere to go */
+  UI.fillMeters = function (root) {
+    var fills = (root || document).querySelectorAll('.meter-fill[data-pct]');
+    requestAnimationFrame(function () {
+      [].forEach.call(fills, function (f) { f.style.width = f.dataset.pct + '%'; });
+    });
+  };
+
+  UI.ringHTML = function (done, total, size) {
+    size = size || 38;
+    var r = 15.5, circ = 2 * Math.PI * r;
+    var pct = total ? done / total : 0;
+    return '<svg class="ring' + (total && done >= total ? ' done' : '') + '" viewBox="0 0 38 38" ' +
+      'width="' + size + '" height="' + size + '" role="img" ' +
+      'aria-label="' + done + ' of ' + total + ' done">' +
+      '<circle class="ring-track" cx="19" cy="19" r="' + r + '"></circle>' +
+      '<circle class="ring-fill" cx="19" cy="19" r="' + r + '" ' +
+        'stroke-dasharray="' + circ.toFixed(1) + '" ' +
+        'stroke-dashoffset="' + circ.toFixed(1) + '" ' +
+        'data-off="' + (circ * (1 - pct)).toFixed(1) + '"></circle>' +
+      '<text class="ring-label" x="19" y="19">' + done + '</text></svg>';
+  };
+
+  UI.fillRings = function (root) {
+    var arcs = (root || document).querySelectorAll('.ring-fill[data-off]');
+    requestAnimationFrame(function () {
+      [].forEach.call(arcs, function (a) { a.setAttribute('stroke-dashoffset', a.dataset.off); });
+    });
+  };
+
+  /* A figure climbs to its value. Short, eased, and it always lands exactly
+     on the number — a counter that stops at 47 of 48 is worse than no
+     counter at all. */
+  UI.countUp = function (el, to, ms) {
+    if (!el) return;
+    var target = Number(to) || 0;
+    el.classList.add('counting');
+    if (UI.calm() || !target) { el.textContent = String(to); return; }
+    var from = 0, start = null, dur = ms || 620;
+    function step(t) {
+      if (!el.isConnected) return;
+      if (start === null) start = t;
+      var k = Math.min((t - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - k, 3);
+      el.textContent = String(Math.round(from + (target - from) * eased));
+      if (k < 1) requestAnimationFrame(step);
+      else el.textContent = String(to);   /* land on the real value, always */
+    }
+    requestAnimationFrame(step);
+  };
+
+  UI.countAll = function (root) {
+    var els = (root || document).querySelectorAll('[data-count]');
+    [].forEach.call(els, function (e) { UI.countUp(e, e.dataset.count); });
+  };
+
+  /* run every entrance in one call, from a view that has just painted */
+  UI.animate = function (root) {
+    UI.fillMeters(root);
+    UI.fillRings(root);
+    UI.countAll(root);
+  };
+
+  /* ---- the three moments ----------------------------------------------
+     Reserved for finishing the agenda, the first reply, and the last message
+     going out. Each fires once per campaign and is remembered, so nobody is
+     congratulated twice for the same thing. Under reduced motion it is a
+     toast — the news still arrives, it just does not fly. */
+  var CHEER_COLOURS = ['--glow', '--brand', '--pos', '--p-recruiter', '--glow-deep'];
+
+  function burst(host) {
+    var w = window.innerWidth, h = window.innerHeight;
+    var css = getComputedStyle(document.documentElement);
+    var i, n = 34;
+    for (i = 0; i < n; i++) {
+      var s = document.createElement('span');
+      var ang = (Math.PI * 2 * i) / n + Math.random() * 0.4;
+      var dist = 140 + Math.random() * 260;
+      s.className = 'confetti';
+      s.style.left = (w / 2) + 'px';
+      s.style.top = (h / 2) + 'px';
+      s.style.background = css.getPropertyValue(CHEER_COLOURS[i % CHEER_COLOURS.length]).trim();
+      s.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+      s.style.setProperty('--dy', (Math.sin(ang) * dist + 180) + 'px');
+      s.style.setProperty('--rot', Math.round(Math.random() * 720 - 360) + 'deg');
+      s.style.setProperty('--dur', (1100 + Math.random() * 700) + 'ms');
+      host.appendChild(s);
+    }
+  }
+
+  UI.cheer = function (opts) {
+    opts = opts || {};
+    if (UI.calm()) { UI.toast(opts.title + ' ' + (opts.line || '')); return; }
+    var layer = document.createElement('div');
+    layer.className = 'cheer-layer';
+    layer.setAttribute('role', 'status');
+    layer.innerHTML =
+      '<div class="cheer-card">' +
+        '<div class="cheer-mark">' +
+          '<svg class="tick-draw" width="22" height="22" viewBox="0 0 24 24" fill="none" ' +
+            'stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" ' +
+            'aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>' +
+        '</div>' +
+        '<h3>' + UI.esc(opts.title || 'Done') + '</h3>' +
+        (opts.line ? '<p>' + UI.esc(opts.line) + '</p>' : '') +
+      '</div>';
+    document.body.appendChild(layer);
+    burst(layer);
+    setTimeout(function () { if (layer.parentNode) layer.parentNode.removeChild(layer); }, 2800);
+  };
+
+  /* fires only the first time this campaign reaches this milestone */
+  UI.cheerOnce = function (campaignId, key, opts) {
+    if (!Store.markCheered(campaignId, key)) return false;
+    UI.cheer(opts);
+    return true;
+  };
+
   window.UI = UI;
 })(window, document);

@@ -591,8 +591,20 @@ await group('Brand, icons and tips', async (page) => {
       getComputedStyle(document.documentElement).getPropertyValue('--ac').trim());
     const brand = await page.evaluate(() =>
       getComputedStyle(document.documentElement).getPropertyValue('--brand').trim());
-    if (brand !== '#0D6E88') throw new Error('brand is ' + brand);
-    if (!/brand|#0D6E88/.test(ac)) throw new Error('--ac is ' + ac);
+    /* the brand can move; what must hold is that the accent is the brand and
+       that the brand is not the blue every other job platform uses */
+    if (!/^#[0-9a-f]{6}$/i.test(brand)) throw new Error('brand is ' + brand);
+    /* --ac is what the app actually refers to, so it has to resolve to the
+       brand rather than to a copy of it */
+    if (ac !== brand) throw new Error('--ac is ' + ac + ' but the brand is ' + brand);
+    const blue = await page.evaluate((hex) => {
+      const p = document.createElement('span');
+      p.style.color = hex; document.body.appendChild(p);
+      const m = getComputedStyle(p).color.match(/(\d+),\s*(\d+),\s*(\d+)/);
+      p.remove();
+      return m ? { r: +m[1], g: +m[2], b: +m[3] } : null;
+    }, brand);
+    if (blue && blue.b > blue.r) throw new Error('the brand is still a blue: ' + brand);
   });
   await step('the tab has the mark as its icon', async () => {
     const href = await page.locator('link[rel="icon"]').getAttribute('href');
@@ -1399,6 +1411,225 @@ await group('Prep sources', async (page) => {
       Sources.parseReviews('Best tool we have bought all year\nReporting is slow and clunky', 'G2')
         .map(r => r.kind));
     if (kinds[0] !== 'Customer voice' || kinds[1] !== 'Customer gripe') throw new Error(kinds.join(', '));
+  });
+});
+
+/* ---------------------------------------------- the palette and the feel -- */
+await group('Colour, motion and the three moments', async (page) => {
+  await signIn(page);
+
+  const ratio = async (aTok, bTok) => page.evaluate(([x, y]) => {
+    const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    const css = getComputedStyle(document.documentElement);
+    const probe = document.createElement('span');
+    document.body.appendChild(probe);
+    const lum = tok => {
+      probe.style.color = css.getPropertyValue(tok).trim();
+      const m = getComputedStyle(probe).color.match(/(\d+),\s*(\d+),\s*(\d+)/);
+      return 0.2126 * lin(+m[1]) + 0.7152 * lin(+m[2]) + 0.0722 * lin(+m[3]);
+    };
+    const a = lum(x), b = lum(y);
+    probe.remove();
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  }, [aTok, bTok]);
+
+  await step('the brand carries text on every surface', async () => {
+    for (const surface of ['--panel', '--bg', '--sunk', '--sunk-2']) {
+      const r = await ratio('--brand', surface);
+      if (r < 4.5) throw new Error('--brand on ' + surface + ' = ' + r.toFixed(2));
+    }
+  });
+
+  await step('the brand also takes white back, for a filled button', async () => {
+    const r = await ratio('--brand', '--ink-inv');
+    if (r < 4.5) throw new Error('white on the brand = ' + r.toFixed(2));
+  });
+
+  await step('every semantic colour clears the bar too', async () => {
+    const bad = [];
+    for (const tok of ['--pos', '--warn', '--neg', '--info', '--brand-ink', '--brand-deep']) {
+      for (const surface of ['--panel', '--sunk-2']) {
+        const r = await ratio(tok, surface);
+        if (r < 4.5) bad.push(tok + ' on ' + surface + ' = ' + r.toFixed(2));
+      }
+    }
+    if (bad.length) throw new Error(bad.join('; '));
+  });
+
+  await step('a warning does not read as the brand', async () => {
+    const apart = await ratio('--warn', '--brand');
+    const hues = await page.evaluate(() => {
+      const css = getComputedStyle(document.documentElement);
+      const probe = document.createElement('span');
+      document.body.appendChild(probe);
+      const rgb = t => {
+        probe.style.color = css.getPropertyValue(t).trim();
+        const m = getComputedStyle(probe).color.match(/(\d+),\s*(\d+),\s*(\d+)/);
+        return { r: +m[1], g: +m[2], b: +m[3] };
+      };
+      const out = { warn: rgb('--warn'), brand: rgb('--brand') };
+      probe.remove();
+      return out;
+    });
+    /* both are warm, but the copper is far redder: a warning that looks like
+       the brand is a warning nobody reads as one */
+    const brandG = hues.brand.g / hues.brand.r;
+    const warnG = hues.warn.g / hues.warn.r;
+    if (warnG - brandG < 0.2)
+      throw new Error('warning g/r ' + warnG.toFixed(2) + ' vs brand ' + brandG.toFixed(2));
+    if (apart < 1.05) throw new Error('they are the same weight as well as the same hue');
+  });
+
+  await step('the glow is never used for text', async () => {
+    const hits = await page.evaluate(() => {
+      const out = [];
+      [...document.styleSheets].forEach(sh => {
+        let rules; try { rules = [...sh.cssRules]; } catch (e) { return; }
+        rules.forEach(r => {
+          if (r.style && /--glow|--porch\b/.test(r.style.color || '')) out.push(r.selectorText);
+        });
+      });
+      return out;
+    });
+    if (hits.length) throw new Error('glow set as text colour on: ' + hits.join(', '));
+  });
+
+  await step('a meter reports its real position to a screen reader', async () => {
+    await page.goto(BASE + '#/c/c_acme/prep', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.meter', { timeout: 5000 });
+    const m = await page.evaluate(() => {
+      const el = document.querySelector('.meter');
+      return {
+        now: el.getAttribute('aria-valuenow'),
+        max: el.getAttribute('aria-valuemax'),
+        role: el.getAttribute('role')
+      };
+    });
+    if (m.role !== 'progressbar') throw new Error('the meter has no role');
+    const real = await page.evaluate(() => Store.agendaProgress(Store.campaign('c_acme')));
+    if (+m.now !== real.done || +m.max !== real.total)
+      throw new Error('says ' + m.now + '/' + m.max + ', really ' + real.done + '/' + real.total);
+  });
+
+  await step('the fill actually moves off zero', async () => {
+    await page.waitForTimeout(700);
+    const w = await page.evaluate(() => {
+      const f = document.querySelector('.meter-fill');
+      return { set: f.style.width, pct: f.dataset.pct };
+    });
+    if (w.set !== w.pct + '%') throw new Error('fill is ' + w.set + ', should be ' + w.pct + '%');
+  });
+
+  await step('a counter lands exactly on the real number', async () => {
+    await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
+    await page.waitForSelector('[data-count]', { timeout: 5000 });
+    await page.waitForTimeout(900);
+    const bad = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-count]')]
+        .filter(e => e.textContent.trim() !== e.dataset.count)
+        .map(e => e.textContent.trim() + ' != ' + e.dataset.count));
+    if (bad.length) throw new Error(bad.join('; '));
+  });
+
+  await step('finishing the agenda is celebrated, once', async () => {
+    await page.goto(BASE + '#/c/c_acme/prep', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.agitem', { timeout: 5000 });
+    const fired = await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      c.agenda.forEach(a => { a.done = true; a.text = 'x'; });
+      c.cheered = {};
+      Store.save();
+      return [Store.markCheered('c_acme', 'agenda'), Store.markCheered('c_acme', 'agenda')];
+    });
+    if (fired[0] !== true) throw new Error('the first time did not count');
+    if (fired[1] !== false) throw new Error('it would fire again on a reload');
+  });
+
+  await step('the celebration appears and then leaves', async () => {
+    await page.evaluate(() => UI.cheer({ title: 'Test', line: 'A line.' }));
+    await page.waitForSelector('.cheer-card', { timeout: 2000 });
+    const bits = await page.locator('.confetti').count();
+    if (bits < 10) throw new Error('only ' + bits + ' pieces');
+    await page.waitForTimeout(3200);
+    if (await page.locator('.cheer-layer').count()) throw new Error('it never left');
+  });
+
+  await step('a reply can be logged, and it is the second moment', async () => {
+    await page.goto(BASE + '#/c/c_acme/sequence', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.stepcard', { timeout: 5000 });
+    await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      c.cheered = {};
+      c.steps.forEach(s => { s.status = 'due'; });
+      c.steps[0].status = 'sent';
+      c.activeStep = c.steps[0].id;
+      Store.save();
+    });
+    /* reload rather than goto: the hash has not changed, so the router would
+       not re-fire and the view would never repaint */
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('#reply', { timeout: 5000 });
+    await page.locator('#reply').click();
+    await page.waitForSelector('.cheer-card', { timeout: 3000 });
+    const status = await page.evaluate(() => Store.campaign('c_acme').steps[0].status);
+    if (status !== 'replied') throw new Error('the step is ' + status);
+    await page.waitForTimeout(3000);
+  });
+
+  await step('a second reply does not celebrate again', async () => {
+    await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      c.steps[1].status = 'sent';
+      c.activeStep = c.steps[1].id;
+      Store.save();
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('#reply', { timeout: 5000 });
+    await page.locator('#reply').click();
+    await page.waitForTimeout(600);
+    if (await page.locator('.cheer-card').count()) throw new Error('it congratulated them twice');
+  });
+
+  await step('under reduced motion the news still arrives, as a toast', async () => {
+    const ctx2 = await browser.newContext({ reducedMotion: 'reduce' });
+    const p2 = await ctx2.newPage();
+    await p2.goto(BASE, { waitUntil: 'networkidle' });
+    await p2.fill('#f-pass', 'demo1234');
+    await p2.click('#f-submit');
+    await p2.waitForSelector('.shell', { timeout: 6000 });
+    await p2.evaluate(() => UI.cheer({ title: 'Quietly', line: 'No confetti.' }));
+    await p2.waitForTimeout(250);
+    const out = {
+      cheer: await p2.locator('.cheer-card').count(),
+      toast: await p2.locator('.toast').count(),
+      bits: await p2.locator('.confetti').count()
+    };
+    await ctx2.close();
+    if (out.cheer || out.bits) throw new Error('it animated anyway');
+    if (!out.toast) throw new Error('the news was lost entirely');
+  });
+
+  await step('the brand sheet reads the live token, not a copy', async () => {
+    await page.goto(BASE + '#/brand', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.swatch', { timeout: 5000 });
+    const bad = await page.evaluate(() => {
+      const css = getComputedStyle(document.documentElement);
+      const probe = document.createElement('span');
+      document.body.appendChild(probe);
+      const out = [];
+      [...document.querySelectorAll('.swatch')].forEach(sw => {
+        const tok = sw.querySelector('.sw-tok').textContent.trim();
+        const shown = sw.querySelector('code').textContent.trim().toLowerCase();
+        probe.style.color = css.getPropertyValue(tok).trim();
+        const m = getComputedStyle(probe).color.match(/(\d+),\s*(\d+),\s*(\d+)/);
+        const hex = '#' + [m[1], m[2], m[3]]
+          .map(n => ('0' + Number(n).toString(16)).slice(-2)).join('');
+        if (hex !== shown) out.push(tok + ': sheet says ' + shown + ', token is ' + hex);
+      });
+      probe.remove();
+      return out;
+    });
+    if (bad.length) throw new Error(bad.join('; '));
   });
 });
 

@@ -136,6 +136,9 @@
       v.className = 'view view-enter';
       v.innerHTML = opts.html;
       window.scrollTo({ top: 0 });
+      /* every entrance animation in the view runs from here, so no view has
+         to remember to start its own meters, rings and counters */
+      UI.animate(v);
       return v;
     },
     activeCampaignId: activeCampaignId,

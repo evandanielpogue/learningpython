@@ -16,6 +16,10 @@
      material a model would get: this listing line, this number, and what the
      person has said so far. It is not a script — the second question depends
      on what is missing from the first answer. */
+  var TICK = '<svg class="tick-draw" width="12" height="12" viewBox="0 0 24 24" fill="none" ' +
+    'stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" ' +
+    'aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+
   function ctxFor(c, a) {
     return { win: a.kind === 'story'
       ? Store.campaignWins(c).filter(function (w) { return w.id === a.ref; })[0]
@@ -57,16 +61,19 @@
     function item() { return agenda.filter(function (x) { return x.id === openId; })[0] || agenda[0]; }
 
     /* ---------------- the list of things to get through ---------------- */
-    function paintAgenda() {
+    function paintAgenda(justDid) {
       var pr = Store.agendaProgress(c);
       v.querySelector('#agenda').innerHTML =
         '<div class="card p5">' +
-          '<div class="row between wrap g2 mb4"><h3>Agenda</h3>' +
+          '<div class="row between wrap g2 mb3"><h3>Agenda</h3>' +
           '<span class="cap">' + pr.done + ' of ' + pr.total + '</span></div>' +
+          UI.meterHTML(pr.done, pr.total, '') +
+          '<div class="mb4"></div>' +
           '<div class="col g2">' + agenda.map(function (a) {
             return '<button class="agitem' + (a.id === openId ? ' on' : '') + (a.done ? ' done' : '') +
+              (a.id === justDid ? ' just-done' : '') +
               '" data-ag="' + a.id + '"' + (a.id === openId ? ' aria-current="true"' : '') + '>' +
-              '<span class="ag-tick"></span>' +
+              '<span class="ag-tick">' + (a.done ? TICK : '') + '</span>' +
               '<span class="ag-main"><span class="ag-kind">' + (a.kind === 'gap' ? 'Gap' : 'Story') + '</span>' +
               '<span class="ag-label">' + esc(a.label) + '</span></span></button>';
           }).join('') + '</div>' +
@@ -80,6 +87,8 @@
               return '<p class="storyline">' + esc(a.text) + '</p>';
             }).join('') + '</div>'
           : '');
+
+      UI.animate(v.querySelector('#agenda'));
 
       var chip = document.getElementById('prep-chip');
       if (chip) {
@@ -214,7 +223,8 @@
             if (out.complete && out.story) {
               Store.answerAgenda(c.id, a.id, out.story);
               Store.completeTask(c.id, 't7');
-              paintAgenda();
+              paintAgenda(a.id);
+              landed();
             }
             busy = false;
           });
@@ -239,14 +249,28 @@
         }).then(function () { if (openId === mine) busy = false; });
       });
 
+      /* the first of the three moments: every story and every gap answered */
+      function landed() {
+        var pr = Store.agendaProgress(c);
+        if (pr.total && pr.done >= pr.total) {
+          UI.cheerOnce(c.id, 'agenda', {
+            title: 'That is all of it',
+            line: 'Every number has a story behind it and every gap has an answer. ' +
+                  'The messages and the page write themselves from here.'
+          });
+        }
+      }
+
       v.querySelector('#save-it').addEventListener('click', function () {
         var said = history.filter(function (m) { return m.role === 'user'; })
           .map(function (m) { return m.content; }).join(' ');
         if (!said) { UI.toast('Say something first.'); return; }
-        Store.answerAgenda(c.id, item().id, said);
+        var id = item().id;
+        Store.answerAgenda(c.id, id, said);
         Store.completeTask(c.id, 't7');
-        paintAgenda();
+        paintAgenda(id);
         UI.toast('Saved in your words.');
+        landed();
       });
       v.querySelector('#skip-it').addEventListener('click', function () {
         var next = agenda.filter(function (x) { return !x.done && x.id !== openId; })[0];

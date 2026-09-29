@@ -11,39 +11,62 @@
   var esc = UI.esc;
   window.Views = window.Views || {};
 
+  /* The hex is never written here — it is read out of the token at render
+     time. A sheet that keeps its own copy of a colour is a sheet that goes
+     out of date the first time the brand moves. */
   var SWATCHES = [
-    { group: 'Brand', note: 'Threshold carries every link, focus ring and active row. Porch is the light in the mark and nothing else.',
+    { group: 'Brand',
+      note: 'Porch carries every link, focus ring and active row. Glow is the light itself: ' +
+            'fills, glints and the three moments. Glow never carries text.',
       items: [
-        ['--brand', 'Threshold', '#0D6E88', '5.8:1 on white, both ways'],
-        ['--brand-deep', 'Threshold deep', '#0A5E76', 'hover and pressed'],
-        ['--brand-wash', 'Threshold wash', '#E9F3F7', 'tips, active fills'],
-        ['--porch', 'Porch', '#D98A18', 'graphic only, never text'],
-        ['--solid', 'Door', '#15181C', 'primary buttons']
+        ['--brand', 'Porch', 'links, focus, the active row'],
+        ['--brand-deep', 'Porch deep', 'hover and pressed'],
+        ['--brand-wash', 'Porch wash', 'tips, active fills'],
+        ['--glow', 'Glow', 'graphic only, never text'],
+        ['--info', 'Threshold', 'neutral information, demoted'],
+        ['--solid', 'Door', 'primary buttons']
       ] },
     { group: 'Ink and surface', note: 'Four inks, three lines. If a fifth is needed the layout is wrong.',
       items: [
-        ['--ink', 'Ink', '#0F1214', 'headings and body'],
-        ['--ink-2', 'Ink 2', '#555963', 'secondary text'],
-        ['--ink-3', 'Ink 3', '#868B96', 'labels, captions'],
-        ['--ink-4', 'Ink 4', '#B0B4BD', 'placeholders'],
-        ['--bg', 'Canvas', '#F7F7F8', 'the app behind the cards'],
-        ['--panel', 'Panel', '#FFFFFF', 'cards, inputs, sheets']
+        ['--ink', 'Ink', 'headings and body'],
+        ['--ink-2', 'Ink 2', 'secondary text'],
+        ['--ink-3', 'Ink 3', 'labels, captions'],
+        ['--ink-4', 'Ink 4', 'the quietest ink that is still text'],
+        ['--ink-faint', 'Faint', 'separators and dots, never text'],
+        ['--bg', 'Canvas', 'the app behind the cards'],
+        ['--panel', 'Panel', 'cards, inputs, sheets']
       ] },
     { group: 'Semantic', note: 'Meaning, never decoration. A green chip means it happened.',
       items: [
-        ['--pos', 'Positive', '#0F7A50', 'replied, done, covered'],
-        ['--warn', 'Warning', '#9A6206', 'due, needs a name'],
-        ['--neg', 'Negative', '#BE3226', 'gaps, delete, errors']
+        ['--pos', 'Positive', 'replied, done, covered'],
+        ['--warn', 'Warning', 'due, needs a name'],
+        ['--neg', 'Negative', 'gaps, delete, errors']
       ] },
     { group: 'The five people', note: 'One hue each, assigned by who they are to you. All dark enough to take white initials.',
       items: [
-        ['--p-peer', 'Peer', '#14785C', 'least to lose by helping'],
-        ['--p-recruiter', 'Recruiter', '#6B4FC4', 'owns the req'],
-        ['--p-manager', 'Hiring manager', '#0D6E88', 'owns the number'],
-        ['--p-exec', 'Skip level', '#9A6206', 'one above them'],
-        ['--p-tie', 'Shared tie', '#B03F63', 'already knows you']
+        ['--p-peer', 'Peer', 'least to lose by helping'],
+        ['--p-recruiter', 'Recruiter', 'owns the req'],
+        ['--p-manager', 'Hiring manager', 'owns the number'],
+        ['--p-exec', 'Skip level', 'one above them'],
+        ['--p-tie', 'Shared tie', 'already knows you']
       ] }
   ];
+
+  /* resolve a token to the hex the browser actually paints */
+  function hexOf(token) {
+    var v = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+    if (/^#/.test(v)) return v.toUpperCase();
+    var probe = document.createElement('span');
+    probe.style.color = v;
+    document.body.appendChild(probe);
+    var rgb = getComputedStyle(probe).color;
+    probe.remove();
+    var m = rgb.match(/(\d+),\s*(\d+),\s*(\d+)/);
+    if (!m) return v;
+    return '#' + [m[1], m[2], m[3]].map(function (n) {
+      return ('0' + Number(n).toString(16)).slice(-2);
+    }).join('').toUpperCase();
+  }
 
   var ICONS = ['overview', 'company', 'prep', 'contacts', 'research', 'sequence', 'page',
                'templates', 'settings', 'search', 'email', 'call', 'reply', 'ats', 'text',
@@ -81,8 +104,8 @@
             return '<div class="swatch">' +
               '<span class="sw-chip" style="background:var(' + i[0] + ')"></span>' +
               '<b>' + esc(i[1]) + '</b>' +
-              '<code>' + esc(i[2]) + '</code>' +
-              '<em>' + esc(i[3]) + '</em>' +
+              '<code>' + esc(hexOf(i[0])) + '</code>' +
+              '<em>' + esc(i[2]) + '</em>' +
               '<span class="sw-tok mono">' + esc(i[0]) + '</span>' +
             '</div>';
           }).join('') + '</div></div>';

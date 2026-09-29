@@ -35,14 +35,19 @@
 /* ==========================================================================
    Frontdoor — design tokens
 
-   The brand is a door with the light left on. Two colours carry it:
+   The brand is a door with the light left on, and the light leads.
 
-     Threshold  a deep teal blue. Every link, focus ring, active row and
-                number you are meant to read. Dark enough to set text on
-                white (5.8:1) and to take white text back (5.8:1).
-     Porch      a warm amber. The light in the mark, and the mark only, plus
-                anything asking for attention. It is 2.8:1 on white, so it
-                never carries text; the warn ink does that.
+     Porch      a burnt copper. Every link, focus ring, active row and number
+                you are meant to read. 5.65:1 on white, 4.7:1 on the heaviest
+                well, so it carries text anywhere in the app.
+     Glow       the porch light itself, at full brightness. Progress fills,
+                glints, the celebration when something lands. 2.76:1 on white,
+                so it NEVER carries text — a test enforces that.
+     Threshold  the old teal, demoted. Neutral information, the calm half of a
+                two-colour chart, one persona. It is not the brand any more.
+
+   Every other job platform is blue. This one is the light on a porch at
+   night, which is a different argument and should not look like theirs.
 
    Ink is near black with a cool cast, because the door is the solid thing on
    the page and a button should look like the door, not like a link.
@@ -72,16 +77,25 @@
   --line-3:        #C2C5CC;
 
   /* ---- brand ---------------------------------------------------------- */
-  /* Threshold: links, focus, the active row, any number worth reading */
-  --brand:         #0D6E88;   /* 5.8:1 on white, both directions */
-  --brand-deep:    #0A5E76;   /* hover, pressed */
-  --brand-ink:     #0B5265;   /* text on a brand wash */
-  --brand-wash:    #E9F3F7;
-  --brand-line:    #BCD9E4;
-  /* Porch: the light in the mark. Graphic use only, never text on white */
-  --porch:         #D98A18;
-  --porch-deep:    #B4720C;
-  --porch-wash:    #FDF3E3;
+  /* Porch: links, focus, the active row, any number worth reading */
+  --brand:         #A0521B;   /* 5.65:1 white · 4.70:1 on the heaviest well */
+  --brand-deep:    #8A3E12;   /* hover, pressed — 7.56:1 */
+  --brand-ink:     #7A3E0F;   /* text on a brand wash — 8.32:1 */
+  --brand-wash:    #FBF1E8;
+  --brand-line:    #E8CEB4;
+  --brand-tint:    #F5E3D3;   /* heavier wash, pressed states */
+  /* Glow: the light at full brightness. NEVER text — fills, glints, joy. */
+  --glow:          #D98A18;
+  --glow-deep:     #B4720C;
+  --glow-wash:     #FDF3E3;
+  /* kept so nothing that still says porch breaks; same colour, same rule */
+  --porch:         var(--glow);
+  --porch-deep:    var(--glow-deep);
+  --porch-wash:    var(--glow-wash);
+  /* Threshold: demoted to neutral information */
+  --info:          #0D6E88;
+  --info-wash:     #E9F3F7;
+  --info-line:     #BCD9E4;
 
   /* the app refers to the accent by role, so the brand can move under it */
   --ac:            var(--brand);
@@ -95,8 +109,11 @@
   --solid-hover:   #0A0C0F;
 
   /* ---- semantic ------------------------------------------------------- */
-  --pos:           #0F7A50;   --pos-wash: #E5F3EC;   --pos-line: #B4DEC9;
-  --warn:          #9A6206;   --warn-wash: #FDF3E3;  --warn-line: #EDD3A2;
+  --pos:           #0C6B46;   --pos-wash: #E5F3EC;   --pos-line: #B4DEC9;
+  /* Deep olive, not amber. A warning has to differ from the copper brand in
+     weight as well as hue, or it is indistinguishable to anyone who does not
+     separate red from green: 7.78:1 against 5.65:1 does that. */
+  --warn:          #5F520E;   --warn-wash: #F6F2DF;  --warn-line: #DFD5A4;
   --neg:           #BE3226;   --neg-wash: #FBEAE8;   --neg-line: #F0C4BF;
 
   /* ---- persona colours (assigned, never decorative) -------------------
@@ -104,7 +121,7 @@
   --p-peer:        #14785C;   /* the one with least to lose  */
   --p-recruiter:   #6B4FC4;   /* the one who owns the req    */
   --p-manager:     #0D6E88;   /* the one who owns the number */
-  --p-exec:        #9A6206;   /* the one above them          */
+  --p-exec:        #3B4B8F;   /* the one above them          */
   --p-tie:         #B03F63;   /* the one who already knows you */
 
   /* ---- spacing: 4px base ---------------------------------------------- */
@@ -129,7 +146,10 @@
   --t-3: 240ms;   /* enter, layout */
   --t-4: 380ms;   /* page transitions */
   --ease:   cubic-bezier(.2, .8, .3, 1);
-  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --spring: cubic-bezier(.34, 1.56, .64, 1);   /* overshoots — presses, pops */
+  --out:    cubic-bezier(.16, 1, .3, 1);       /* long, settles — fills, reveals */
+  --t-5: 620ms;   /* a fill sweeping across, a number counting up */
+  --t-6: 1100ms;  /* a moment that is meant to be noticed */
 
   /* ---- type ------------------------------------------------------------ */
   --ui:   'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -1561,6 +1581,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   transition: border-color var(--t-1) var(--ease), box-shadow var(--t-1) var(--ease), transform var(--t-1) var(--ease);
 }
 .agitem:hover { box-shadow: var(--e-2); transform: translateX(2px); }
+.agitem:active { transform: translateX(2px) scale(.992); }
 .agitem.on { border-color: var(--ac); box-shadow: 0 0 0 1px var(--ac-edge); }
 .ag-tick {
   width: 16px; height: 16px; border-radius: var(--r-full); border: 1.5px solid var(--line-3);
@@ -1568,7 +1589,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   transition: background var(--t-2) var(--ease), border-color var(--t-2) var(--ease);
 }
 .agitem.done .ag-tick { background: var(--pos); border-color: var(--pos); }
-.agitem.done .ag-tick::after { content: "✓"; }
+/* the tick is an SVG now, so it can draw itself in rather than appear */
+.agitem.done .ag-tick svg { width: 11px; height: 11px; }
 .agitem.done .ag-label { color: var(--ink-3); }
 .ag-main { min-width: 0; }
 .ag-kind {
@@ -1802,6 +1824,175 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .pg-note { font-size: 12px; color: var(--pg-dim); margin-top: var(--s-2); }
 .opp-x { opacity: 0; transition: opacity var(--t-1) var(--ease); }
 .opp:hover .opp-x, .opp-x:focus-visible { opacity: 1; }
+
+/* assets/css/motion.css */
+/* ==========================================================================
+   motion.css — how the app feels when you touch it.
+
+   The rule underneath all of this: everyday interactions are quiet and fast,
+   and three moments are loud. If everything celebrates, nothing does. So a
+   press springs, a row lifts, a meter sweeps and a number counts up — and
+   then finishing the agenda, the first reply landing, and the last message
+   going out get the full thing, once each, and never again.
+
+   Everything here is switched off wholesale under prefers-reduced-motion;
+   the celebration path checks it in JavaScript too and falls back to a toast,
+   because an invisible animation is not an accessible one.
+   ========================================================================== */
+
+/* ---- press ---------------------------------------------------------------
+   A button that springs back reads as a physical thing. 97% is enough: any
+   more and it looks broken on a mouse, any less and a phone feels dead. */
+.btn, .icon-btn, .subtab, .nav-item, .agitem, .stepcard, .tplrow, .rankrow .rr-main {
+  transition: background var(--t-2) var(--ease), border-color var(--t-2) var(--ease),
+              color var(--t-2) var(--ease), box-shadow var(--t-2) var(--ease),
+              transform var(--t-2) var(--spring);
+}
+.btn:active, .icon-btn:active, .subtab:active { transform: scale(.965); }
+.agitem:active, .stepcard:active, .tplrow:active { transform: scale(.992); }
+
+/* the primary action carries the light when you are on it */
+.btn-primary:hover { box-shadow: var(--e-2), 0 0 0 3px var(--brand-wash); }
+.btn-primary:active { box-shadow: var(--e-1); }
+
+/* ---- lift ----------------------------------------------------------------
+   Anything you can click and open rises a hair toward the cursor. */
+.card.hover:hover, .opp:hover, .feed-item:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--e-3);
+}
+.card.hover, .opp, .feed-item {
+  transition: transform var(--t-2) var(--ease), box-shadow var(--t-2) var(--ease),
+              border-color var(--t-2) var(--ease);
+}
+
+/* ---- the active row ------------------------------------------------------
+   A copper bar that grows out of nothing, rather than a background that
+   blinks on. It is the one place the brand is allowed to be decorative. */
+.nav-item { position: relative; }
+.nav-item::before {
+  content: ''; position: absolute; left: 0; top: 50%;
+  width: 3px; height: 0; border-radius: 0 2px 2px 0;
+  background: var(--brand); transform: translateY(-50%);
+  transition: height var(--t-3) var(--spring);
+}
+.nav-item[aria-current="page"]::before { height: 60%; }
+
+/* ---- meters --------------------------------------------------------------
+   Progress is the whole emotional payload of this app, so it gets a real
+   component rather than a number in a corner. The fill sweeps out on mount
+   with the porch light running across it. */
+.meter {
+  height: 6px; border-radius: var(--r-full); background: var(--sunk-2);
+  overflow: hidden; position: relative;
+}
+.meter-fill {
+  height: 100%; width: 0; border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand), var(--glow));
+  transition: width var(--t-5) var(--out);
+  position: relative;
+}
+/* the glint that runs across a fill once it has settled */
+.meter-fill::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent);
+  transform: translateX(-100%);
+  animation: sweep var(--t-6) var(--out) var(--t-5) 1;
+}
+.meter.done .meter-fill { background: linear-gradient(90deg, var(--pos), #2FA97A); }
+@keyframes sweep { to { transform: translateX(100%); } }
+
+.meter-row { display: grid; gap: 6px; }
+.meter-cap {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: var(--fs-xs); color: var(--ink-3);
+}
+.meter-cap b { font-family: var(--mono); color: var(--ink-2); font-size: var(--fs-sm); }
+
+/* ---- rings ---------------------------------------------------------------
+   The same information as a meter, where a card has a corner and not a row. */
+.ring { width: 38px; height: 38px; display: block; flex: none; }
+.ring circle { fill: none; stroke-width: 3.5; }
+.ring .ring-track { stroke: var(--sunk-2); }
+.ring .ring-fill {
+  stroke: var(--brand); stroke-linecap: round;
+  transform: rotate(-90deg); transform-origin: 50% 50%;
+  transition: stroke-dashoffset var(--t-5) var(--out);
+}
+.ring.done .ring-fill { stroke: var(--pos); }
+.ring-label {
+  font-family: var(--mono); font-size: 9.5px; fill: var(--ink-2);
+  text-anchor: middle; dominant-baseline: central;
+}
+
+/* ---- a thing getting ticked ---------------------------------------------
+   The check draws itself rather than appearing, because a line being drawn
+   reads as something you did and a shape appearing reads as a state change. */
+.tick-draw path {
+  stroke-dasharray: 22; stroke-dashoffset: 22;
+  animation: draw var(--t-3) var(--out) forwards;
+}
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+/* an item that has just been completed pulses its own edge, once */
+@keyframes settle {
+  0%   { box-shadow: 0 0 0 0 var(--brand-tint); }
+  40%  { box-shadow: 0 0 0 6px var(--brand-tint); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+}
+.just-done { animation: settle var(--t-6) var(--out) 1; }
+
+/* ---- counters ------------------------------------------------------------
+   A number that climbs is the cheapest honest reward in the whole app. */
+.counting { font-variant-numeric: tabular-nums; }
+
+/* ---- the three moments ---------------------------------------------------
+   One card, one line, a burst of the porch light, and then it is gone. It
+   fires once per campaign per milestone and is remembered, so nobody gets
+   congratulated twice for the same thing. */
+.cheer-layer {
+  position: fixed; inset: 0; z-index: 400; pointer-events: none;
+  display: grid; place-items: center;
+}
+.cheer-card {
+  background: var(--panel); border: 1px solid var(--brand-line);
+  border-radius: var(--r-4); padding: var(--s-6) var(--s-7);
+  box-shadow: var(--e-5), 0 0 0 6px var(--brand-wash);
+  text-align: center; max-width: 340px;
+  animation: cheerIn 520ms var(--spring) 1, cheerOut 360ms var(--ease) 2300ms forwards;
+}
+.cheer-card .cheer-mark {
+  width: 44px; height: 44px; margin: 0 auto var(--s-3);
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--brand-wash); color: var(--brand);
+}
+.cheer-card h3 { font-size: var(--fs-lg); letter-spacing: -.022em; }
+.cheer-card p { font-size: var(--fs-sm); color: var(--ink-2); margin-top: var(--s-2); line-height: 1.6; }
+@keyframes cheerIn  { from { opacity: 0; transform: scale(.88) translateY(8px); } }
+@keyframes cheerOut { to { opacity: 0; transform: scale(.97) translateY(-6px); } }
+
+.confetti {
+  position: absolute; width: 7px; height: 11px; border-radius: 1.5px;
+  will-change: transform, opacity;
+  animation: fall var(--dur, 1400ms) cubic-bezier(.2, .5, .5, 1) forwards;
+}
+@keyframes fall {
+  0%   { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); }
+}
+
+/* ---- reduced motion ------------------------------------------------------
+   Not "faster" — off. The JavaScript checks the same query and swaps the
+   celebration for a toast, so nothing important lives only in an animation. */
+@media (prefers-reduced-motion: reduce) {
+  .meter-fill::after, .confetti { display: none; }
+  .meter-fill, .ring .ring-fill { transition: none; }
+  .tick-draw path { animation: none; stroke-dashoffset: 0; }
+  .just-done { animation: none; }
+  .cheer-card { animation: none; }
+  .card.hover:hover, .opp:hover, .feed-item:hover { transform: none; }
+  .btn:active, .icon-btn:active, .subtab:active { transform: none; }
+}
 
 </style>
 </head>
@@ -3195,6 +3386,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         if (typeof c.replies !== 'number') c.replies = 0;
         if (typeof c.views !== 'number') c.views = 0;
         if (typeof c.day !== 'number') c.day = 0;
+        if (!c.cheered || typeof c.cheered !== 'object') c.cheered = {};
       });
       if (!state.profile || typeof state.profile !== 'object') state.profile = blankProfile();
       ['roles', 'wins', 'stack'].forEach(function (k) {
@@ -3458,6 +3650,21 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       c.story = first ? first.text : '';
       Store.save();
     },
+    /* A milestone is celebrated once and then never again. Returning false
+       means it has already happened, which is how the views stay honest on
+       a reload: the data says done, the confetti does not fire twice. */
+    markCheered: function (cid, key) {
+      var c = Store.campaign(cid); if (!c) return false;
+      c.cheered = c.cheered || {};
+      if (c.cheered[key]) return false;
+      c.cheered[key] = true;
+      Store.save();
+      return true;
+    },
+    hasCheered: function (c, key) {
+      return !!(c && c.cheered && c.cheered[key]);
+    },
+
     agendaProgress: function (c) {
       var a = (c && c.agenda) || [];
       return { done: a.filter(function (x) { return x.done; }).length, total: a.length };
@@ -4486,6 +4693,149 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     });
   };
 
+  /* ---- progress, and the feeling of it --------------------------------
+     Three pieces, all of which take a fraction and show it moving: a meter
+     for a row, a ring for a corner, and a counter for a figure. Each one
+     starts at where it was and animates to where it is, because the point
+     is the change, not the value. */
+
+  UI.calm = function () {
+    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    catch (e) { return false; }
+  };
+
+  UI.meterHTML = function (done, total, label) {
+    var pct = total ? Math.round((done / total) * 100) : 0;
+    return '<div class="meter-row">' +
+        (label
+          ? '<div class="meter-cap"><span>' + UI.esc(label) + '</span>' +
+            '<b>' + done + '/' + total + '</b></div>'
+          : '') +
+        '<div class="meter' + (total && done >= total ? ' done' : '') + '" role="progressbar" ' +
+          'aria-valuenow="' + done + '" aria-valuemin="0" aria-valuemax="' + total + '" ' +
+          'aria-label="' + UI.esc(label || 'Progress') + '">' +
+          '<span class="meter-fill" data-pct="' + pct + '"></span>' +
+        '</div></div>';
+  };
+
+  /* the fill is written after a frame so the transition has somewhere to go */
+  UI.fillMeters = function (root) {
+    var fills = (root || document).querySelectorAll('.meter-fill[data-pct]');
+    requestAnimationFrame(function () {
+      [].forEach.call(fills, function (f) { f.style.width = f.dataset.pct + '%'; });
+    });
+  };
+
+  UI.ringHTML = function (done, total, size) {
+    size = size || 38;
+    var r = 15.5, circ = 2 * Math.PI * r;
+    var pct = total ? done / total : 0;
+    return '<svg class="ring' + (total && done >= total ? ' done' : '') + '" viewBox="0 0 38 38" ' +
+      'width="' + size + '" height="' + size + '" role="img" ' +
+      'aria-label="' + done + ' of ' + total + ' done">' +
+      '<circle class="ring-track" cx="19" cy="19" r="' + r + '"></circle>' +
+      '<circle class="ring-fill" cx="19" cy="19" r="' + r + '" ' +
+        'stroke-dasharray="' + circ.toFixed(1) + '" ' +
+        'stroke-dashoffset="' + circ.toFixed(1) + '" ' +
+        'data-off="' + (circ * (1 - pct)).toFixed(1) + '"></circle>' +
+      '<text class="ring-label" x="19" y="19">' + done + '</text></svg>';
+  };
+
+  UI.fillRings = function (root) {
+    var arcs = (root || document).querySelectorAll('.ring-fill[data-off]');
+    requestAnimationFrame(function () {
+      [].forEach.call(arcs, function (a) { a.setAttribute('stroke-dashoffset', a.dataset.off); });
+    });
+  };
+
+  /* A figure climbs to its value. Short, eased, and it always lands exactly
+     on the number — a counter that stops at 47 of 48 is worse than no
+     counter at all. */
+  UI.countUp = function (el, to, ms) {
+    if (!el) return;
+    var target = Number(to) || 0;
+    el.classList.add('counting');
+    if (UI.calm() || !target) { el.textContent = String(to); return; }
+    var from = 0, start = null, dur = ms || 620;
+    function step(t) {
+      if (!el.isConnected) return;
+      if (start === null) start = t;
+      var k = Math.min((t - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - k, 3);
+      el.textContent = String(Math.round(from + (target - from) * eased));
+      if (k < 1) requestAnimationFrame(step);
+      else el.textContent = String(to);   /* land on the real value, always */
+    }
+    requestAnimationFrame(step);
+  };
+
+  UI.countAll = function (root) {
+    var els = (root || document).querySelectorAll('[data-count]');
+    [].forEach.call(els, function (e) { UI.countUp(e, e.dataset.count); });
+  };
+
+  /* run every entrance in one call, from a view that has just painted */
+  UI.animate = function (root) {
+    UI.fillMeters(root);
+    UI.fillRings(root);
+    UI.countAll(root);
+  };
+
+  /* ---- the three moments ----------------------------------------------
+     Reserved for finishing the agenda, the first reply, and the last message
+     going out. Each fires once per campaign and is remembered, so nobody is
+     congratulated twice for the same thing. Under reduced motion it is a
+     toast — the news still arrives, it just does not fly. */
+  var CHEER_COLOURS = ['--glow', '--brand', '--pos', '--p-recruiter', '--glow-deep'];
+
+  function burst(host) {
+    var w = window.innerWidth, h = window.innerHeight;
+    var css = getComputedStyle(document.documentElement);
+    var i, n = 34;
+    for (i = 0; i < n; i++) {
+      var s = document.createElement('span');
+      var ang = (Math.PI * 2 * i) / n + Math.random() * 0.4;
+      var dist = 140 + Math.random() * 260;
+      s.className = 'confetti';
+      s.style.left = (w / 2) + 'px';
+      s.style.top = (h / 2) + 'px';
+      s.style.background = css.getPropertyValue(CHEER_COLOURS[i % CHEER_COLOURS.length]).trim();
+      s.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+      s.style.setProperty('--dy', (Math.sin(ang) * dist + 180) + 'px');
+      s.style.setProperty('--rot', Math.round(Math.random() * 720 - 360) + 'deg');
+      s.style.setProperty('--dur', (1100 + Math.random() * 700) + 'ms');
+      host.appendChild(s);
+    }
+  }
+
+  UI.cheer = function (opts) {
+    opts = opts || {};
+    if (UI.calm()) { UI.toast(opts.title + ' ' + (opts.line || '')); return; }
+    var layer = document.createElement('div');
+    layer.className = 'cheer-layer';
+    layer.setAttribute('role', 'status');
+    layer.innerHTML =
+      '<div class="cheer-card">' +
+        '<div class="cheer-mark">' +
+          '<svg class="tick-draw" width="22" height="22" viewBox="0 0 24 24" fill="none" ' +
+            'stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" ' +
+            'aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>' +
+        '</div>' +
+        '<h3>' + UI.esc(opts.title || 'Done') + '</h3>' +
+        (opts.line ? '<p>' + UI.esc(opts.line) + '</p>' : '') +
+      '</div>';
+    document.body.appendChild(layer);
+    burst(layer);
+    setTimeout(function () { if (layer.parentNode) layer.parentNode.removeChild(layer); }, 2800);
+  };
+
+  /* fires only the first time this campaign reaches this milestone */
+  UI.cheerOnce = function (campaignId, key, opts) {
+    if (!Store.markCheered(campaignId, key)) return false;
+    UI.cheer(opts);
+    return true;
+  };
+
   window.UI = UI;
 })(window, document);
 
@@ -5391,6 +5741,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       v.className = 'view view-enter';
       v.innerHTML = opts.html;
       window.scrollTo({ top: 0 });
+      /* every entrance animation in the view runs from here, so no view has
+         to remember to start its own meters, rings and counters */
+      UI.animate(v);
       return v;
     },
     activeCampaignId: activeCampaignId,
@@ -5603,10 +5956,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       }, { sent: 0, rep: 0, views: 0, due: 0 });
 
       html += '<div class="grid cols-4 mt5">' +
-        '<div class="card hover p5"><p class="cap mb3">Companies</p><p class="kpi mono">' + list.length + '</p><p class="dimmer" style="font-size:var(--fs-sm)">running at once</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Due today</p><p class="kpi mono">' + totals.due + '</p><p class="dimmer" style="font-size:var(--fs-sm)">across all of them</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono">' + totals.rep + '</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + totals.sent + ' sent</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono">' + totals.views + '</p><p class="dimmer" style="font-size:var(--fs-sm)">people reading</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Companies</p><p class="kpi mono" data-count="' + list.length + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">running at once</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Due today</p><p class="kpi mono" data-count="' + totals.due + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">across all of them</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono" data-count="' + totals.rep + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + totals.sent + ' sent</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono" data-count="' + totals.views + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">people reading</p></div>' +
         '</div>';
     }
 
@@ -6181,10 +6534,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       '</div>' +
 
       '<div class="grid cols-4 mb4">' +
-        '<div class="card hover p5"><p class="cap mb3">People</p><p class="kpi mono">' + c.contacts.length + '</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (sugg.length ? sugg.length + ' more suggested' : 'all added') + '</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><p class="kpi mono">' + c.sent + '</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + c.steps.length + ' planned</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono">' + c.replies + '</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (c.replies ? 'keep going' : 'early days') + '</p></div>' +
-        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono">' + c.views + '</p><p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">People</p><p class="kpi mono" data-count="' + c.contacts.length + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (sugg.length ? sugg.length + ' more suggested' : 'all added') + '</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Touches sent</p><p class="kpi mono" data-count="' + c.sent + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">of ' + c.steps.length + ' planned</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Replies</p><p class="kpi mono" data-count="' + c.replies + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">' + (c.replies ? 'keep going' : 'early days') + '</p></div>' +
+        '<div class="card hover p5"><p class="cap mb3">Page opens</p><p class="kpi mono" data-count="' + c.views + '">0</p><p class="dimmer" style="font-size:var(--fs-sm)">Last one ' + esc(c.lastView) + '</p></div>' +
       '</div>' +
 
       '<div class="split-wide">' +
@@ -6555,6 +6908,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
      material a model would get: this listing line, this number, and what the
      person has said so far. It is not a script — the second question depends
      on what is missing from the first answer. */
+  var TICK = '<svg class="tick-draw" width="12" height="12" viewBox="0 0 24 24" fill="none" ' +
+    'stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" ' +
+    'aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+
   function ctxFor(c, a) {
     return { win: a.kind === 'story'
       ? Store.campaignWins(c).filter(function (w) { return w.id === a.ref; })[0]
@@ -6596,16 +6953,19 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     function item() { return agenda.filter(function (x) { return x.id === openId; })[0] || agenda[0]; }
 
     /* ---------------- the list of things to get through ---------------- */
-    function paintAgenda() {
+    function paintAgenda(justDid) {
       var pr = Store.agendaProgress(c);
       v.querySelector('#agenda').innerHTML =
         '<div class="card p5">' +
-          '<div class="row between wrap g2 mb4"><h3>Agenda</h3>' +
+          '<div class="row between wrap g2 mb3"><h3>Agenda</h3>' +
           '<span class="cap">' + pr.done + ' of ' + pr.total + '</span></div>' +
+          UI.meterHTML(pr.done, pr.total, '') +
+          '<div class="mb4"></div>' +
           '<div class="col g2">' + agenda.map(function (a) {
             return '<button class="agitem' + (a.id === openId ? ' on' : '') + (a.done ? ' done' : '') +
+              (a.id === justDid ? ' just-done' : '') +
               '" data-ag="' + a.id + '"' + (a.id === openId ? ' aria-current="true"' : '') + '>' +
-              '<span class="ag-tick"></span>' +
+              '<span class="ag-tick">' + (a.done ? TICK : '') + '</span>' +
               '<span class="ag-main"><span class="ag-kind">' + (a.kind === 'gap' ? 'Gap' : 'Story') + '</span>' +
               '<span class="ag-label">' + esc(a.label) + '</span></span></button>';
           }).join('') + '</div>' +
@@ -6619,6 +6979,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
               return '<p class="storyline">' + esc(a.text) + '</p>';
             }).join('') + '</div>'
           : '');
+
+      UI.animate(v.querySelector('#agenda'));
 
       var chip = document.getElementById('prep-chip');
       if (chip) {
@@ -6753,7 +7115,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             if (out.complete && out.story) {
               Store.answerAgenda(c.id, a.id, out.story);
               Store.completeTask(c.id, 't7');
-              paintAgenda();
+              paintAgenda(a.id);
+              landed();
             }
             busy = false;
           });
@@ -6778,14 +7141,28 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         }).then(function () { if (openId === mine) busy = false; });
       });
 
+      /* the first of the three moments: every story and every gap answered */
+      function landed() {
+        var pr = Store.agendaProgress(c);
+        if (pr.total && pr.done >= pr.total) {
+          UI.cheerOnce(c.id, 'agenda', {
+            title: 'That is all of it',
+            line: 'Every number has a story behind it and every gap has an answer. ' +
+                  'The messages and the page write themselves from here.'
+          });
+        }
+      }
+
       v.querySelector('#save-it').addEventListener('click', function () {
         var said = history.filter(function (m) { return m.role === 'user'; })
           .map(function (m) { return m.content; }).join(' ');
         if (!said) { UI.toast('Say something first.'); return; }
-        Store.answerAgenda(c.id, item().id, said);
+        var id = item().id;
+        Store.answerAgenda(c.id, id, said);
         Store.completeTask(c.id, 't7');
-        paintAgenda();
+        paintAgenda(id);
         UI.toast('Saved in your words.');
+        landed();
       });
       v.querySelector('#skip-it').addEventListener('click', function () {
         var next = agenda.filter(function (x) { return !x.done && x.id !== openId; })[0];
@@ -7537,7 +7914,12 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '<label class="field grow"><span>Note to yourself</span>' +
             '<input class="input" value="' + esc(s.note) + '" data-f="note"></label>' +
           '<button class="btn btn-secondary btn-sm" id="save-tpl">Save as template</button>' +
-          '<button class="btn btn-primary btn-sm" id="mark">' + (s.status === 'sent' || s.status === 'replied' ? 'Sent' : 'Mark sent') + '</button>' +
+          (s.status === 'sent'
+            ? '<button class="btn btn-secondary btn-sm" id="reply">They replied</button>'
+            : '') +
+          '<button class="btn btn-primary btn-sm" id="mark"' +
+            (s.status === 'sent' || s.status === 'replied' ? ' disabled' : '') + '>' +
+            (s.status === 'replied' ? 'Replied' : s.status === 'sent' ? 'Sent' : 'Mark sent') + '</button>' +
         '</div>' +
       '</div>' +
 
@@ -7720,7 +8102,34 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         c.sent += 1;
         Store.updateStep(c.id, s.id, { status: 'sent' });
         Store.completeTask(c.id, 't6');
-        paintAll(); UI.toast('Logged.');
+        paintAll();
+        /* the third moment: every planned touch has actually gone out */
+        var out = c.steps.filter(function (x) { return x.status === 'sent' || x.status === 'replied'; }).length;
+        if (c.steps.length && out >= c.steps.length) {
+          UI.cheerOnce(c.id, 'sent', {
+            title: 'All of it is out',
+            line: 'Every touch you planned for ' + c.company + ' has gone. ' +
+                  'Nothing else to write — now it is on them.'
+          });
+        } else {
+          UI.toast('Logged.');
+        }
+      });
+
+      /* the second moment: somebody wrote back */
+      var rep = v.querySelector('#reply');
+      if (rep) rep.addEventListener('click', function () {
+        if (s.status === 'replied') { UI.toast('Already logged.'); return; }
+        c.replies += 1;
+        Store.updateStep(c.id, s.id, { status: 'replied' });
+        Store.save();
+        paintAll();
+        var first = UI.cheerOnce(c.id, 'reply', {
+          title: 'Somebody wrote back',
+          line: 'That is the whole point of the fourteen days. Reply today, ' +
+                'while you are still the person who sent something specific.'
+        });
+        if (!first) UI.toast('Reply logged.');
       });
       var savet = v.querySelector('#save-tpl');
       if (savet) savet.addEventListener('click', function () {
@@ -8459,39 +8868,62 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   var esc = UI.esc;
   window.Views = window.Views || {};
 
+  /* The hex is never written here — it is read out of the token at render
+     time. A sheet that keeps its own copy of a colour is a sheet that goes
+     out of date the first time the brand moves. */
   var SWATCHES = [
-    { group: 'Brand', note: 'Threshold carries every link, focus ring and active row. Porch is the light in the mark and nothing else.',
+    { group: 'Brand',
+      note: 'Porch carries every link, focus ring and active row. Glow is the light itself: ' +
+            'fills, glints and the three moments. Glow never carries text.',
       items: [
-        ['--brand', 'Threshold', '#0D6E88', '5.8:1 on white, both ways'],
-        ['--brand-deep', 'Threshold deep', '#0A5E76', 'hover and pressed'],
-        ['--brand-wash', 'Threshold wash', '#E9F3F7', 'tips, active fills'],
-        ['--porch', 'Porch', '#D98A18', 'graphic only, never text'],
-        ['--solid', 'Door', '#15181C', 'primary buttons']
+        ['--brand', 'Porch', 'links, focus, the active row'],
+        ['--brand-deep', 'Porch deep', 'hover and pressed'],
+        ['--brand-wash', 'Porch wash', 'tips, active fills'],
+        ['--glow', 'Glow', 'graphic only, never text'],
+        ['--info', 'Threshold', 'neutral information, demoted'],
+        ['--solid', 'Door', 'primary buttons']
       ] },
     { group: 'Ink and surface', note: 'Four inks, three lines. If a fifth is needed the layout is wrong.',
       items: [
-        ['--ink', 'Ink', '#0F1214', 'headings and body'],
-        ['--ink-2', 'Ink 2', '#555963', 'secondary text'],
-        ['--ink-3', 'Ink 3', '#868B96', 'labels, captions'],
-        ['--ink-4', 'Ink 4', '#B0B4BD', 'placeholders'],
-        ['--bg', 'Canvas', '#F7F7F8', 'the app behind the cards'],
-        ['--panel', 'Panel', '#FFFFFF', 'cards, inputs, sheets']
+        ['--ink', 'Ink', 'headings and body'],
+        ['--ink-2', 'Ink 2', 'secondary text'],
+        ['--ink-3', 'Ink 3', 'labels, captions'],
+        ['--ink-4', 'Ink 4', 'the quietest ink that is still text'],
+        ['--ink-faint', 'Faint', 'separators and dots, never text'],
+        ['--bg', 'Canvas', 'the app behind the cards'],
+        ['--panel', 'Panel', 'cards, inputs, sheets']
       ] },
     { group: 'Semantic', note: 'Meaning, never decoration. A green chip means it happened.',
       items: [
-        ['--pos', 'Positive', '#0F7A50', 'replied, done, covered'],
-        ['--warn', 'Warning', '#9A6206', 'due, needs a name'],
-        ['--neg', 'Negative', '#BE3226', 'gaps, delete, errors']
+        ['--pos', 'Positive', 'replied, done, covered'],
+        ['--warn', 'Warning', 'due, needs a name'],
+        ['--neg', 'Negative', 'gaps, delete, errors']
       ] },
     { group: 'The five people', note: 'One hue each, assigned by who they are to you. All dark enough to take white initials.',
       items: [
-        ['--p-peer', 'Peer', '#14785C', 'least to lose by helping'],
-        ['--p-recruiter', 'Recruiter', '#6B4FC4', 'owns the req'],
-        ['--p-manager', 'Hiring manager', '#0D6E88', 'owns the number'],
-        ['--p-exec', 'Skip level', '#9A6206', 'one above them'],
-        ['--p-tie', 'Shared tie', '#B03F63', 'already knows you']
+        ['--p-peer', 'Peer', 'least to lose by helping'],
+        ['--p-recruiter', 'Recruiter', 'owns the req'],
+        ['--p-manager', 'Hiring manager', 'owns the number'],
+        ['--p-exec', 'Skip level', 'one above them'],
+        ['--p-tie', 'Shared tie', 'already knows you']
       ] }
   ];
+
+  /* resolve a token to the hex the browser actually paints */
+  function hexOf(token) {
+    var v = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+    if (/^#/.test(v)) return v.toUpperCase();
+    var probe = document.createElement('span');
+    probe.style.color = v;
+    document.body.appendChild(probe);
+    var rgb = getComputedStyle(probe).color;
+    probe.remove();
+    var m = rgb.match(/(\d+),\s*(\d+),\s*(\d+)/);
+    if (!m) return v;
+    return '#' + [m[1], m[2], m[3]].map(function (n) {
+      return ('0' + Number(n).toString(16)).slice(-2);
+    }).join('').toUpperCase();
+  }
 
   var ICONS = ['overview', 'company', 'prep', 'contacts', 'research', 'sequence', 'page',
                'templates', 'settings', 'search', 'email', 'call', 'reply', 'ats', 'text',
@@ -8529,8 +8961,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             return '<div class="swatch">' +
               '<span class="sw-chip" style="background:var(' + i[0] + ')"></span>' +
               '<b>' + esc(i[1]) + '</b>' +
-              '<code>' + esc(i[2]) + '</code>' +
-              '<em>' + esc(i[3]) + '</em>' +
+              '<code>' + esc(hexOf(i[0])) + '</code>' +
+              '<em>' + esc(i[2]) + '</em>' +
               '<span class="sw-tok mono">' + esc(i[0]) + '</span>' +
             '</div>';
           }).join('') + '</div></div>';

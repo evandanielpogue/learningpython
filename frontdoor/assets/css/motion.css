@@ -1,0 +1,167 @@
+/* ==========================================================================
+   motion.css — how the app feels when you touch it.
+
+   The rule underneath all of this: everyday interactions are quiet and fast,
+   and three moments are loud. If everything celebrates, nothing does. So a
+   press springs, a row lifts, a meter sweeps and a number counts up — and
+   then finishing the agenda, the first reply landing, and the last message
+   going out get the full thing, once each, and never again.
+
+   Everything here is switched off wholesale under prefers-reduced-motion;
+   the celebration path checks it in JavaScript too and falls back to a toast,
+   because an invisible animation is not an accessible one.
+   ========================================================================== */
+
+/* ---- press ---------------------------------------------------------------
+   A button that springs back reads as a physical thing. 97% is enough: any
+   more and it looks broken on a mouse, any less and a phone feels dead. */
+.btn, .icon-btn, .subtab, .nav-item, .agitem, .stepcard, .tplrow, .rankrow .rr-main {
+  transition: background var(--t-2) var(--ease), border-color var(--t-2) var(--ease),
+              color var(--t-2) var(--ease), box-shadow var(--t-2) var(--ease),
+              transform var(--t-2) var(--spring);
+}
+.btn:active, .icon-btn:active, .subtab:active { transform: scale(.965); }
+.agitem:active, .stepcard:active, .tplrow:active { transform: scale(.992); }
+
+/* the primary action carries the light when you are on it */
+.btn-primary:hover { box-shadow: var(--e-2), 0 0 0 3px var(--brand-wash); }
+.btn-primary:active { box-shadow: var(--e-1); }
+
+/* ---- lift ----------------------------------------------------------------
+   Anything you can click and open rises a hair toward the cursor. */
+.card.hover:hover, .opp:hover, .feed-item:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--e-3);
+}
+.card.hover, .opp, .feed-item {
+  transition: transform var(--t-2) var(--ease), box-shadow var(--t-2) var(--ease),
+              border-color var(--t-2) var(--ease);
+}
+
+/* ---- the active row ------------------------------------------------------
+   A copper bar that grows out of nothing, rather than a background that
+   blinks on. It is the one place the brand is allowed to be decorative. */
+.nav-item { position: relative; }
+.nav-item::before {
+  content: ''; position: absolute; left: 0; top: 50%;
+  width: 3px; height: 0; border-radius: 0 2px 2px 0;
+  background: var(--brand); transform: translateY(-50%);
+  transition: height var(--t-3) var(--spring);
+}
+.nav-item[aria-current="page"]::before { height: 60%; }
+
+/* ---- meters --------------------------------------------------------------
+   Progress is the whole emotional payload of this app, so it gets a real
+   component rather than a number in a corner. The fill sweeps out on mount
+   with the porch light running across it. */
+.meter {
+  height: 6px; border-radius: var(--r-full); background: var(--sunk-2);
+  overflow: hidden; position: relative;
+}
+.meter-fill {
+  height: 100%; width: 0; border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand), var(--glow));
+  transition: width var(--t-5) var(--out);
+  position: relative;
+}
+/* the glint that runs across a fill once it has settled */
+.meter-fill::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent);
+  transform: translateX(-100%);
+  animation: sweep var(--t-6) var(--out) var(--t-5) 1;
+}
+.meter.done .meter-fill { background: linear-gradient(90deg, var(--pos), #2FA97A); }
+@keyframes sweep { to { transform: translateX(100%); } }
+
+.meter-row { display: grid; gap: 6px; }
+.meter-cap {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: var(--fs-xs); color: var(--ink-3);
+}
+.meter-cap b { font-family: var(--mono); color: var(--ink-2); font-size: var(--fs-sm); }
+
+/* ---- rings ---------------------------------------------------------------
+   The same information as a meter, where a card has a corner and not a row. */
+.ring { width: 38px; height: 38px; display: block; flex: none; }
+.ring circle { fill: none; stroke-width: 3.5; }
+.ring .ring-track { stroke: var(--sunk-2); }
+.ring .ring-fill {
+  stroke: var(--brand); stroke-linecap: round;
+  transform: rotate(-90deg); transform-origin: 50% 50%;
+  transition: stroke-dashoffset var(--t-5) var(--out);
+}
+.ring.done .ring-fill { stroke: var(--pos); }
+.ring-label {
+  font-family: var(--mono); font-size: 9.5px; fill: var(--ink-2);
+  text-anchor: middle; dominant-baseline: central;
+}
+
+/* ---- a thing getting ticked ---------------------------------------------
+   The check draws itself rather than appearing, because a line being drawn
+   reads as something you did and a shape appearing reads as a state change. */
+.tick-draw path {
+  stroke-dasharray: 22; stroke-dashoffset: 22;
+  animation: draw var(--t-3) var(--out) forwards;
+}
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+/* an item that has just been completed pulses its own edge, once */
+@keyframes settle {
+  0%   { box-shadow: 0 0 0 0 var(--brand-tint); }
+  40%  { box-shadow: 0 0 0 6px var(--brand-tint); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+}
+.just-done { animation: settle var(--t-6) var(--out) 1; }
+
+/* ---- counters ------------------------------------------------------------
+   A number that climbs is the cheapest honest reward in the whole app. */
+.counting { font-variant-numeric: tabular-nums; }
+
+/* ---- the three moments ---------------------------------------------------
+   One card, one line, a burst of the porch light, and then it is gone. It
+   fires once per campaign per milestone and is remembered, so nobody gets
+   congratulated twice for the same thing. */
+.cheer-layer {
+  position: fixed; inset: 0; z-index: 400; pointer-events: none;
+  display: grid; place-items: center;
+}
+.cheer-card {
+  background: var(--panel); border: 1px solid var(--brand-line);
+  border-radius: var(--r-4); padding: var(--s-6) var(--s-7);
+  box-shadow: var(--e-5), 0 0 0 6px var(--brand-wash);
+  text-align: center; max-width: 340px;
+  animation: cheerIn 520ms var(--spring) 1, cheerOut 360ms var(--ease) 2300ms forwards;
+}
+.cheer-card .cheer-mark {
+  width: 44px; height: 44px; margin: 0 auto var(--s-3);
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--brand-wash); color: var(--brand);
+}
+.cheer-card h3 { font-size: var(--fs-lg); letter-spacing: -.022em; }
+.cheer-card p { font-size: var(--fs-sm); color: var(--ink-2); margin-top: var(--s-2); line-height: 1.6; }
+@keyframes cheerIn  { from { opacity: 0; transform: scale(.88) translateY(8px); } }
+@keyframes cheerOut { to { opacity: 0; transform: scale(.97) translateY(-6px); } }
+
+.confetti {
+  position: absolute; width: 7px; height: 11px; border-radius: 1.5px;
+  will-change: transform, opacity;
+  animation: fall var(--dur, 1400ms) cubic-bezier(.2, .5, .5, 1) forwards;
+}
+@keyframes fall {
+  0%   { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); }
+}
+
+/* ---- reduced motion ------------------------------------------------------
+   Not "faster" — off. The JavaScript checks the same query and swaps the
+   celebration for a toast, so nothing important lives only in an animation. */
+@media (prefers-reduced-motion: reduce) {
+  .meter-fill::after, .confetti { display: none; }
+  .meter-fill, .ring .ring-fill { transition: none; }
+  .tick-draw path { animation: none; stroke-dashoffset: 0; }
+  .just-done { animation: none; }
+  .cheer-card { animation: none; }
+  .card.hover:hover, .opp:hover, .feed-item:hover { transform: none; }
+  .btn:active, .icon-btn:active, .subtab:active { transform: none; }
+}
