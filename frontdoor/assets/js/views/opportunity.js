@@ -87,14 +87,14 @@
 
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb2"><h3>Match</h3>' +
-            '<span class="cap">' + (matchedBy === 'model' ? 'Matched by Claude' : 'Matched on keywords') + '</span></div>' +
-            '<div id="match"></div>' +
+            '<span class="chip">' + (matchedBy === 'model' ? 'Matched by Claude' : 'Matched on keywords') + '</span></div>' +
+            '<div id="match" class="matchlist"></div>' +
           '</div>' +
 
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb2"><h3>Wins</h3>' +
-            '<span class="cap" id="pick-count"></span></div>' +
-            '<div class="grid" style="gap:var(--s-2)" id="wins"></div>' +
+            '<span class="chip chip-accent" id="pick-count"></span></div>' +
+            '<div class="grid optlist" style="gap:var(--s-2)" id="wins"></div>' +
           '</div>' +
 
           '<div class="row g2 wrap">' +
@@ -370,7 +370,7 @@
         '<p class="role-line">' + esc(c.company) + ' &middot; ' + esc(c.role) +
           (c.location ? ' &middot; ' + esc(c.location) : '') +
           (/^https?:\/\//i.test(c.postingUrl || '')
-            ? ' &middot; <a href="' + esc(c.postingUrl) + '" target="_blank" rel="noopener noreferrer">the posting \u2197</a>'
+            ? ' <a href="' + esc(c.postingUrl) + '" target="_blank" rel="noopener noreferrer">the posting \u2197</a>'
             : '') +
         '</p>' +
       '</div>' +
@@ -378,12 +378,12 @@
       '<div class="split-wide">' +
         '<div class="card p5">' +
           '<div class="row between wrap g2 mb4"><h3>Match</h3>' +
-            '<span class="cap">' + covered + ' of ' + match.length + '</span></div>' +
+            '<span class="chip">' + covered + ' of ' + match.length + '</span></div>' +
           matchRows() +
         '</div>' +
         '<div class="col g4">' +
           '<div class="card p5">' +
-            '<div class="row between wrap g2 mb3"><h3>Wins</h3><span class="cap">' + wins.length + '</span></div>' +
+            '<div class="row between wrap g2 mb3"><h3>Wins</h3><span class="chip">' + wins.length + '</span></div>' +
             (wins.length
               ? '<div class="leadwins">' + wins.map(function (w) {
                   return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';

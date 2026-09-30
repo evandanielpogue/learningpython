@@ -460,7 +460,7 @@ await group('Matching the listing against the resume', async (page) => {
     await page.waitForSelector('.matchrow', { timeout: 10000 });
     const rows = await page.locator('.matchrow').count();
     if (rows < 3) throw new Error(rows + ' requirements lined up');
-    const label = await page.locator('.cap', { hasText: 'Matched' }).textContent();
+    const label = await page.locator('.chip', { hasText: 'Matched' }).textContent();
     if (!/keywords/.test(label)) throw new Error('claims ' + label);
   });
   await step('every row says covered or not, and the bar agrees', async () => {
@@ -476,7 +476,7 @@ await group('Matching the listing against the resume', async (page) => {
     await page.waitForSelector('#listing', { timeout: 5000 });
     await page.click('#read');
     await page.waitForSelector('.matchrow', { timeout: 12000 });
-    const label = await page.locator('.cap', { hasText: 'Matched' }).textContent();
+    const label = await page.locator('.chip', { hasText: 'Matched' }).textContent();
     if (!/Claude/.test(label)) throw new Error('claims ' + label);
     const rows = await page.locator('.matchrow').count();
     if (rows !== 3) throw new Error(rows + ' rows from the model');

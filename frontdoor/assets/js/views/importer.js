@@ -172,12 +172,12 @@
           '</dl>' +
           '<p class="cap mb3" style="margin-top:var(--s-5)">Roles</p>' +
           (p.roles.length
-            ? '<div class="grid" style="gap:var(--s-2)" id="roles"></div>'
+            ? '<div class="grid optlist" style="gap:var(--s-2)" id="roles"></div>'
             : '<p class="hint">None found.</p>') +
         '</div>' +
 
         '<div class="card p6 mb4">' +
-          '<div class="row between wrap g2 mb3"><h3>Wins</h3><span class="cap">' + p.wins.length + '</span></div>' +
+          '<div class="row between wrap g2 mb3"><h3>Wins</h3><span class="chip">' + p.wins.length + '</span></div>' +
           (p.wins.length
             ? '<div class="leadwins">' + p.wins.map(function (w) {
                 return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
