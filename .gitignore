@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 frontdoor/test/vendor/
 frontdoor/test/fixtures/
+.claude/worktrees/
