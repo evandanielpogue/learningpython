@@ -1,5 +1,5 @@
 /* ==========================================================================
-   views/people.js — contacts: add, edit, rank, remove
+   views/people.js — people: add, edit, rank, remove
    ========================================================================== */
 (function (window, document) {
   'use strict';
@@ -25,7 +25,7 @@
     var v = Shell.mount({
       nav: 'people',
       crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'People' }],
-      actions: '<button class="btn btn-primary btn-sm" id="add-top">Add contact</button>',
+      actions: '<button class="btn btn-primary btn-sm" id="add-top">Add person</button>',
       html:
         '<div class="page-head"><h1>People</h1></div>' +
         UI.tipHTML('find-contacts', { q: 'hiring ' + c.role + ' at ' + c.company }) +
@@ -52,7 +52,7 @@
               '<p class="fc-why">' + esc(g.why) + '</p>' +
               '<p class="fc-found">' + esc(g.found) + '</p>' +
               (g.guessedEmail && g.email
-                ? '<p class="fc-guess">' + esc(g.email) + ' \u2014 guessed, not verified.</p>'
+                ? '<p class="fc-guess">' + esc(g.email) + ' \u2014 guessed</p>'
                 : '') +
               '<div class="row g2 mt3">' +
                 '<button class="btn btn-secondary btn-sm" data-take="' + g.id + '">Add</button>' +
@@ -95,7 +95,7 @@
         '<div class="lookup">' +
           UI.liMark(18) +
           '<input class="lookup-in" id="n-url" placeholder="linkedin.com/in/marcusreed" autocomplete="off" spellcheck="false">' +
-          '<button class="btn btn-secondary btn-sm" type="button" id="n-find">Find them</button>' +
+          '<button class="btn btn-secondary btn-sm" type="button" id="n-find">Find</button>' +
         '</div>' +
         '<p class="lookup-msg hide" id="n-msg"></p>' +
 
@@ -116,7 +116,7 @@
           '</div>' +
         '</details>' +
 
-        '<div class="row g2 wrap"><button class="btn btn-primary btn-sm" type="submit">Add contact</button>' +
+        '<div class="row g2 wrap"><button class="btn btn-primary btn-sm" type="submit">Add</button>' +
         '<button class="btn btn-ghost btn-sm" type="button" id="cancel-add">Cancel</button></div></form>';
     }
 
@@ -147,7 +147,7 @@
         manual.open = true;
         msg.classList.add('ok');
         msg.textContent = res.exact
-          ? 'Found ' + p.name + (p.title ? ', ' + p.title : '') + '. Check it over and add them.'
+          ? 'Found ' + p.name + (p.title ? ', ' + p.title : '') + '. Check it, then add.'
           : 'Only the name came back from that URL. Fill in the rest below.';
       }
 
@@ -168,24 +168,24 @@
             '<span class="avatar avatar-lg" style="background:var(' + p.colour + ')">' + esc(Store.initials(p.name)) + '</span>' +
             '<span class="grow"><h3 style="line-height:1.25">' + esc(p.name) + '</h3>' +
             '<p class="dimmer" style="font-size:var(--fs-sm)">' + esc(p.title || 'No title') + '</p></span>' +
-            '<button class="icon-btn" id="del" aria-label="Remove contact" title="Remove">✕</button>' +
+            '<button class="icon-btn" id="del" aria-label="Remove" title="Remove">✕</button>' +
           '</div>' +
           '<dl class="facts">' +
             (p.tenure ? '<div><dt>At ' + esc(c.company) + '</dt><dd>' + esc(p.tenure) + '</dd></div>' : '') +
             (p.prev ? '<div><dt>History</dt><dd>' + esc(p.prev) + '</dd></div>' : '') +
             '<div><dt>Mutuals</dt><dd>' + p.mutuals + '</dd></div>' +
             (p.email ? '<div><dt>Email</dt><dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.email) +
-              (p.guessedEmail ? '<em class="dd-guess">guessed from the company pattern, unverified</em>' : '') +
+              (p.guessedEmail ? '<em class="dd-guess">guessed</em>' : '') +
               '</dd></div>' : '') +
             (p.linkedin ? '<div><dt>' + UI.liMark(13) + ' LinkedIn</dt>' +
               '<dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.linkedin) + '</dd></div>' : '') +
           '</dl>' +
           '<hr class="divider" style="margin:var(--s-4) 0">' +
           (p.placeholder
-            ? '<p class="lookup-msg mb3">We know the seat, not the person. Paste their profile or type their name.</p>' +
+            ? '<p class="lookup-msg mb3">Seat only. Add a name.</p>' +
               '<div class="lookup mb3">' + UI.liMark(18) +
                 '<input class="lookup-in" id="d-url" placeholder="linkedin.com/in/..." autocomplete="off" spellcheck="false">' +
-                '<button class="btn btn-secondary btn-sm" type="button" id="d-find">Find them</button></div>'
+                '<button class="btn btn-secondary btn-sm" type="button" id="d-find">Find</button></div>'
             : '') +
           '<div class="grid cols-2 mb3">' +
             '<div class="field"><label for="d-name">Name</label>' +
@@ -200,7 +200,7 @@
           '<div class="field"><label for="d-notes">Your notes</label>' +
             '<textarea class="input" id="d-notes" placeholder="Anything worth remembering before you write.">' + esc(p.notes) + '</textarea></div>' +
           '<div class="row between mt4"><span class="hint" id="saved" style="opacity:0;transition:opacity var(--t-2)">Saved</span>' +
-          '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/research">See what they said <span class="arr">→</span></a></div>' +
+          '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/research">Research <span class="arr">→</span></a></div>' +
         '</div>';
 
       function patch(k, el) {
@@ -249,7 +249,7 @@
       });
 
       d.querySelector('#del').addEventListener('click', function () {
-        UI.confirm({ title: 'Remove ' + p.name + '?', body: 'Any step pointed at them loses its contact. You can add them back later.', confirm: 'Remove', danger: true })
+        UI.confirm({ title: 'Remove ' + p.name + '?', body: 'Their touches lose the person.', confirm: 'Remove', danger: true })
           .then(function (ok) {
             if (!ok) return;
             Store.removeContact(c.id, p.id);
@@ -307,7 +307,7 @@
       });
       found = null;
       adding = false; selected = p.id; paint();
-      UI.toast(name + ' added. ');
+      UI.toast(name + ' added.');
     });
 
     paint();

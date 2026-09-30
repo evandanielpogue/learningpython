@@ -63,7 +63,7 @@
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb4">' +
               '<p class="cap">Read from the listing</p>' +
-              '<button class="btn btn-ghost btn-sm" id="back">Paste a different one</button>' +
+              '<button class="btn btn-ghost btn-sm" id="back">Paste again</button>' +
             '</div>' +
             /* A reader that is right most of the time is still wrong
                sometimes, and a wrong company name follows you into every
@@ -81,7 +81,7 @@
             (match.length
               ? '<div class="matchbar"><div class="matchbar-fill" style="width:' +
                 Math.round((sc.covered / Math.max(1, sc.total)) * 100) + '%"></div></div>' +
-                '<p class="hint mt2">' + sc.covered + ' of ' + sc.total + ' things they asked for are answered by something on your résumé.</p>'
+                '<p class="hint mt2">' + sc.covered + ' of ' + sc.total + '</p>'
               : '') +
           '</div>' +
 
@@ -94,7 +94,6 @@
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb2"><h3>Wins</h3>' +
             '<span class="cap" id="pick-count"></span></div>' +
-            '<p class="dim mb5" id="pick-note" style="font-size:var(--fs-xs)"></p>' +
             '<div class="grid" style="gap:var(--s-2)" id="wins"></div>' +
           '</div>' +
 
@@ -129,12 +128,12 @@
       function grab() {
         if (!url) return;
         var link = url.value.trim();
-        if (!link) { pmsg.className = 'lookup-msg'; pmsg.textContent = 'Paste the link first.'; return; }
+        if (!link) { pmsg.className = 'lookup-msg'; pmsg.textContent = 'Paste a link.'; return; }
         postingUrl = link;
         get.disabled = true;
         get.textContent = 'Reading\u2026';
         pmsg.className = 'hint';
-        pmsg.textContent = 'Fetching the page. This takes a few seconds.';
+        pmsg.textContent = 'Reading\u2026';
         AI.fetchPosting(link).then(function (out) {
           ta.value = out.text;
           listing = out.text;
@@ -142,14 +141,14 @@
           pmsg.className = 'lookup-msg ok';
           var host = '';
           try { host = new URL(out.url).hostname.replace(/^www\./, ''); } catch (e) {}
-          pmsg.textContent = 'Read it' + (host ? ' from ' + host : '') + '. Check it looks right, then read it in.';
+          pmsg.textContent = 'Read' + (host ? ' from ' + host : '') + '.';
         }).catch(function (err) {
           pmsg.className = 'lookup-msg';
           pmsg.textContent = err.message + ' Paste the text below instead.';
           ta.focus();
         }).then(function () {
           get.disabled = false;
-          get.textContent = 'Read the link';
+          get.textContent = 'Read link';
         });
       }
       if (get && AI.ready()) {
@@ -226,7 +225,7 @@
 
       function paintMatch() {
         if (!match.length) {
-          matchEl.innerHTML = '<p class="hint">The listing had no requirement list we could pull apart, so there is nothing to line up against. The wins below are your strongest, in order.</p>';
+          matchEl.innerHTML = '<p class="hint">No requirements found.</p>';
           return;
         }
         matchEl.innerHTML = match.map(function (r) {
@@ -252,22 +251,11 @@
           return '<button class="opt" data-win="' + r.win.id + '" aria-pressed="' + on + '">' +
             '<span class="box"></span><span class="ot">' + esc(r.win.text) +
             '<em>' + (r.score
-              ? 'Matches the listing on ' + esc(r.hits.slice(0, 3).join(', '))
+              ? 'Matches ' + esc(r.hits.slice(0, 3).join(', '))
               : esc(r.win.where)) + '</em></span>' +
             '<span class="om">' + esc(r.win.metric) + '</span></button>';
         }).join('');
         v.querySelector('#pick-count').textContent = chosen.length + ' picked';
-        /* Nothing is locked: three is a suggestion, not a rule. But say what
-           happens either side of it rather than letting them find out on the
-           page. */
-        var note = v.querySelector('#pick-note');
-        note.textContent = !chosen.length
-          ? 'Pick at least one. It opens the first message.'
-          : chosen.length > 5
-            ? 'That is a lot to carry. Past five the page reads like a r\u00e9sum\u00e9 again, and Prep will ask you for a story behind every one.'
-            : chosen.length > SUGGEST
-              ? 'More than three is fine when they are genuinely different. Prep will want a story behind each.'
-              : '';
       }
       paintMatch();
       paintWins();
@@ -301,10 +289,10 @@
         if (!parsed.company) {
           var f = v.querySelector('#f-company');
           if (f) { f.classList.add('err'); f.focus(); }
-          UI.toast('Who is hiring? The name goes in every message.');
+          UI.toast('Who is hiring?');
           return;
         }
-        if (!chosen.length) { UI.toast('Pick at least one win to lead with.'); return; }
+        if (!chosen.length) { UI.toast('Pick at least one win.'); return; }
         var c = Store.createCampaign({
           listing: listing, parsed: parsed, winIds: chosen.slice(),
           story: '', postingUrl: postingUrl
@@ -312,7 +300,7 @@
         Store.setMatch(c.id, match);
         Store.buildAgenda(c.id);
         var gaps = Store.matchScore(c).gaps.length;
-        UI.toast(c.company + ' added. ' + (gaps ? gaps + ' gaps to talk through.' : 'Time to nail down your stories.'));
+        UI.toast(c.company + ' added.' + (gaps ? ' ' + gaps + (gaps === 1 ? ' gap.' : ' gaps.') : ''));
         Router.go('/c/' + c.id + '/prep');
       });
     }
@@ -339,7 +327,7 @@
               : '<span class="chip">Queued</span>';
     return '<button class="touch-row ' + cls + '" data-step="' + s.id + '" style="--pc:var(' + (p ? p.colour : '--line-3') + ')">' +
       '<span class="td">Day ' + s.day + '</span>' +
-      '<span class="tw">' + esc(p ? p.name : 'No contact') + '<em>' + esc(s.note) + '</em></span>' +
+      '<span class="tw">' + esc(p ? p.name : 'No person') + '<em>' + esc(s.note) + '</em></span>' +
       badge + '<span class="tc">' + esc(s.channel) + '</span></button>';
   }
 

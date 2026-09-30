@@ -31,36 +31,31 @@
     var cid = Shell.activeCampaignId();
     var items = [
       { group: 'Go to', icon: '◉', label: 'Overview', hint: 'G O', run: function () { Router.go('/'); } },
-      { group: 'Do', icon: '+', label: 'Add a company from a job listing', run: function () { Router.go('/new'); } }
+      { group: 'Do', icon: '+', label: 'Add a company', run: function () { Router.go('/new'); } }
     ];
     if (cid) {
       items.push(
-        { group: 'Go to', icon: '◆', label: 'Company summary', hint: 'G C', run: function () { Router.go('/c/' + cid); } },
-        { group: 'Go to', icon: '◍', label: 'Prep, the stories behind your wins', hint: 'G E', run: function () { Router.go('/c/' + cid + '/prep'); } },
-        { group: 'Go to', icon: '◎', label: 'Contacts', hint: 'G P', run: function () { Router.go('/c/' + cid + '/people'); } },
-        { group: 'Go to', icon: '◈', label: 'Research on the company and the people', hint: 'G R', run: function () { Router.go('/c/' + cid + '/research'); } },
-        { group: 'Go to', icon: '≡', label: 'The fourteen day sequence', hint: 'G S', run: function () { Router.go('/c/' + cid + '/sequence'); } },
-        { group: 'Go to', icon: '▤', label: 'Your public page', run: function () { Router.go('/c/' + cid + '/page'); } },
-        { group: 'Go to', icon: '◫', label: 'The interview brief', hint: 'G B', run: function () { Router.go('/c/' + cid + '/brief'); } }
+        { group: 'Go to', icon: '◆', label: 'Role', hint: 'G C', run: function () { Router.go('/c/' + cid); } },
+        { group: 'Go to', icon: '◍', label: 'Story', hint: 'G E', run: function () { Router.go('/c/' + cid + '/prep'); } },
+        { group: 'Go to', icon: '◎', label: 'People', hint: 'G P', run: function () { Router.go('/c/' + cid + '/people'); } },
+        { group: 'Go to', icon: '◈', label: 'Research', hint: 'G R', run: function () { Router.go('/c/' + cid + '/research'); } },
+        { group: 'Go to', icon: '≡', label: 'Outreach', hint: 'G S', run: function () { Router.go('/c/' + cid + '/sequence'); } },
+        { group: 'Go to', icon: '▤', label: 'Page', run: function () { Router.go('/c/' + cid + '/page'); } },
+        { group: 'Go to', icon: '◫', label: 'Interview', hint: 'G B', run: function () { Router.go('/c/' + cid + '/brief'); } }
       );
     }
     items.push(
-      { group: 'Go to', icon: '❏', label: 'Message templates', run: function () { Router.go('/templates'); } },
+      { group: 'Go to', icon: '❏', label: 'Templates', run: function () { Router.go('/templates'); } },
       { group: 'Go to', icon: '⚙', label: 'Settings', run: function () { Router.go('/settings'); } },
-      { group: 'Go to', icon: '◆', label: 'The brand: colours, icons, type', run: function () { Router.go('/brand'); } },
-      { group: 'Do', icon: '↑', label: 'Import a résumé or LinkedIn profile', run: function () { Router.go('/import'); } }
+      { group: 'Go to', icon: '◆', label: 'Brand', run: function () { Router.go('/brand'); } },
+      { group: 'Do', icon: '↑', label: 'Replace résumé', run: function () { Router.go('/import'); } }
     );
     if (cid) {
       items.push(
-        { group: 'Do', icon: '⧉', label: 'Copy the public page link', run: function () {
+        { group: 'Do', icon: '⧉', label: 'Copy page link', run: function () {
           var c = Store.campaign(cid);
           UI.copy('https://frontdoor.app/p/' + c.slug);
           UI.toast('Link copied.');
-        } },
-        { group: 'Do', icon: '◈', label: 'Simulate a page view', run: function () {
-          var c = Store.campaign(cid);
-          c.views += 1; c.lastView = 'just now'; Store.save();
-          UI.toast('Marcus opened your page. Just now.');
         } }
       );
     }

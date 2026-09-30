@@ -54,21 +54,6 @@
         'The people posting the role are the hiring manager and the recruiter, and a reply to ' +
         'their post lands better than anything sent through the portal.',
       cta: { label: 'Run that search', href: 'https://www.linkedin.com/search/results/content/?keywords=' }
-    },
-    'prep-specifics': {
-      title: 'Numbers beat adjectives',
-      body: 'Anything you would say out loud in an interview belongs here. ' +
-        'What broke, what you did, what it cost, how it ended. The number matters less than the fact you remember it.'
-    },
-    'research-where': {
-      title: 'Where the good lines come from',
-      body: 'Their last three posts, a podcast, the pricing page, the changelog, the careers page. ' +
-        'Anything they said in public this quarter is fair game and almost nobody bothers to read it.'
-    },
-    'sequence-touches': {
-      title: 'Two touches per person, then stop',
-      body: 'Three is where helpful turns into a problem. If two messages and a reply get you nothing, ' +
-        'the answer is no and the next company is worth more than the third message.'
     }
   };
 

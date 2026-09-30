@@ -23,7 +23,7 @@
   var VERSION = '2023-06-01';
 
   var MODELS = [
-    { id: 'claude-opus-5',   name: 'Opus 5',   note: 'Best at reading a messy resume' },
+    { id: 'claude-opus-5',   name: 'Opus 5',   note: 'Best at reading a messy résumé' },
     { id: 'claude-sonnet-5', name: 'Sonnet 5', note: 'Faster and cheaper, still good' },
     { id: 'claude-haiku-4-5', name: 'Haiku 4.5', note: 'Cheapest. Misses things.' }
   ];

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   views/page.js — the public page, the one thing you link to in a message.
+   views/page.js — the public page, the one thing you link to in a touch.
    Three layouts over the same content, because a hiring manager who skims
    and one who reads want different shapes.
    ========================================================================== */
@@ -10,9 +10,9 @@
   window.Views = window.Views || {};
 
   var LAYOUTS = [
-    { key: 'case',   name: 'The case',   sub: 'Portrait, a thesis, then the proof. Reads top to bottom.' },
-    { key: 'brief',  name: 'The brief',  sub: 'Two columns, everything above the fold. For skimmers.' },
-    { key: 'letter', name: 'The letter', sub: 'One narrow column addressed to a person. For a warm intro.' }
+    { key: 'case',   name: 'The case',   sub: '' },
+    { key: 'brief',  name: 'Columns',  sub: '' },
+    { key: 'letter', name: 'The letter', sub: '' }
   ];
 
   window.Views.page = function (params) {
@@ -98,7 +98,7 @@
         '<div class="pg-days">' + reqs.map(function (r, i) {
           return '<div><span>' + ([30, 60, 90][i] || '') + '</span><p>' + esc(r) + '</p></div>';
         }).join('') + '</div>' +
-        '<p class="pg-note">Taken from the listing. Write your own in Settings before you send this.</p></section>';
+        '</section>';
     }
 
     function sExp() {
@@ -179,7 +179,7 @@
             '<div class="laypick" id="lay">' + LAYOUTS.map(function (l) {
               return '<button class="lay' + (c.pageTemplate === l.key ? ' on' : '') + '" data-lay="' + l.key + '">' +
                 '<span class="lay-art lay-' + l.key + '"><i></i><i></i><i></i></span>' +
-                '<b>' + esc(l.name) + '</b><em>' + esc(l.sub) + '</em></button>';
+                '<b>' + esc(l.name) + '</b></button>';
             }).join('') + '</div>' +
           '</div>' +
           '<div class="card p4">' +
@@ -188,7 +188,7 @@
           '</div>' +
           '<div class="card p4">' +
             '<p class="cap mb2">Opens</p><h3 class="mono">' + c.views + '</h3>' +
-            (pf.photo ? '' : '<p class="hint mt3">No photo yet. A face on this page is worth more than another bullet. <a href="#/settings">Add one</a>.</p>') +
+            (pf.photo ? '' : '<p class="hint mt3">No photo. <a href="#/settings">Add one</a></p>') +
           '</div>' +
         '</div>' +
         '<div class="browser">' +
@@ -227,7 +227,6 @@
       Store.updateCampaign(c.id, { pageTemplate: el.dataset.lay });
       v.querySelectorAll('[data-lay]').forEach(function (b) { b.classList.toggle('on', b.dataset.lay === el.dataset.lay); });
       repaintPage();
-      UI.toast('Switched to ' + LAYOUTS.filter(function (l) { return l.key === el.dataset.lay; })[0].name.toLowerCase() + '.');
     });
 
     document.getElementById('copy-link').addEventListener('click', function () {

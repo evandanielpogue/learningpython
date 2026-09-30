@@ -1,5 +1,5 @@
 /* ==========================================================================
-   views/importer.js — read a resume once. Which wins matter is decided per
+   views/importer.js — read a résumé once. Which wins matter is decided per
    company, against that listing, so nothing is picked here.
    ========================================================================== */
 (function (window, document) {
@@ -25,7 +25,7 @@
           '<label class="drop" id="drop" for="file-in">' +
             '<span class="drop-ic">↑</span>' +
             '<b>Drop your r\u00e9sum\u00e9 here</b>' +
-            '<span class="hint">PDF, or plain text. Or click to choose a file.</span>' +
+            '<span class="hint">PDF or text.</span>' +
             '<input type="file" id="file-in" accept=".txt,.md,.rtf,.pdf,.doc,.docx,text/plain" hidden>' +
           '</label>' +
           '<p class="lookup-msg hide" id="file-msg"></p>' +
@@ -61,8 +61,7 @@
         if (!file) return;
         if (PDF.test(file.name) || file.type === 'application/pdf') return takePdf(file);
         if (!TEXTY.test(file.name) && !/^text\//.test(file.type)) {
-          say('We cannot read ' + (file.name.split('.').pop() || 'that').toUpperCase() +
-            ' in the browser. Open it, select all, and paste it below.');
+          say('Cannot read ' + (file.name.split('.').pop() || 'that').toUpperCase() + '. Paste it below.');
           ta.focus();
           return;
         }
@@ -71,7 +70,7 @@
           ta.value = String(fr.result).replace(/\u0000/g, '');
           pending = ta.value;
           check();
-          say('Read ' + file.name + '. Have a look, then read it in.', true);
+          say('Read ' + file.name + '.', true);
         };
         fr.onerror = function () { say('Could not open that file.'); };
         fr.readAsText(file);
@@ -86,19 +85,19 @@
         Doc.readPdf(file).then(function (text) {
           drop.classList.remove('busy');
           if (!text || text.replace(/\s/g, '').length < 40) {
-            say('That PDF has no text in it, only pictures of text. Paste it below instead.');
+            say('No text in that PDF. Paste it below.');
             ta.focus();
             return;
           }
           ta.value = text;
           pending = text;
           check();
-          say('Read ' + file.name + '. Check it reads properly, then read it in.', true);
+          say('Read ' + file.name + '.', true);
         }).catch(function (err) {
           drop.classList.remove('busy');
           say(err && err.message === 'offline'
-            ? 'The PDF reader could not load, so we are offline or it is blocked. Paste the text below instead.'
-            : 'Could not get the text out of that PDF. Paste it below instead.');
+            ? 'The PDF reader could not load. Paste the text below.'
+            : 'Could not read that PDF. Paste it below.');
           ta.focus();
         });
       }
@@ -122,7 +121,7 @@
       });
 
       go.addEventListener('click', function () {
-        var src = pending === Store.EXAMPLE_RESUME ? 'the example resume' : 'your resume';
+        var src = pending === Store.EXAMPLE_RESUME ? 'the example r\u00e9sum\u00e9' : 'your r\u00e9sum\u00e9';
         var text = ta.value;
 
         function land(p, how) {
@@ -141,7 +140,7 @@
         AI.readResume(text).then(function (data) {
           land(Store.fromModel(data, src), 'model');
         }).catch(function (err) {
-          /* a resume still has to get in, so fall back rather than stop */
+          /* a résumé still has to get in, so fall back rather than stop */
           UI.toast('Claude could not read it (' + err.message + '). Fell back to pattern matching.');
           land(Store.parseResume(text, src), 'pattern');
         });
@@ -163,7 +162,7 @@
             (p.readBy === 'model' ? 'Read by Claude' : 'Read by pattern matching') + '</span></div>' +
           '<p class="dim mb4" style="font-size:var(--fs-sm)">From ' + esc(p.source || 'your r\u00e9sum\u00e9') + '</p>' +
           (missing.length
-            ? '<p class="lookup-msg mb4">Could not find ' + esc(missing.join(', ')) + '. Paste more of it.</p>'
+            ? '<p class="lookup-msg mb4">Missing ' + esc(missing.join(', ')) + '.</p>'
             : '') +
           '<dl class="facts mb5">' +
             '<div><dt>Name</dt><dd>' + esc(p.name || '—') + '</dd></div>' +
@@ -183,7 +182,7 @@
             ? '<div class="leadwins">' + p.wins.map(function (w) {
                 return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
               }).join('') + '</div>'
-            : '<p class="hint">None with a number in them. "Grew ARR 41%" is a win; "responsible for growth" is not.</p>') +
+            : '<p class="hint">None with a number.</p>') +
         '</div>' +
 
         (Store.state.profile.stack.length

@@ -1,6 +1,6 @@
 /* ==========================================================================
    views/research.js — what the company and the people have said lately
-   Each item carries a ready line you can drop straight into a message.
+   Each item carries a ready line you can drop straight into a touch.
    ========================================================================== */
 (function (window, document) {
   'use strict';
@@ -17,11 +17,10 @@
     var v = Shell.mount({
       nav: 'research',
       crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Research' }],
-      actions: '<button class="btn btn-secondary btn-sm" id="add-find">Add something you found</button>' +
-               '<button class="btn btn-secondary btn-sm" id="refresh">Refresh</button>',
+      actions: '<button class="btn btn-secondary btn-sm" id="add-find">Add finding</button>' +
+               '<button class="btn btn-secondary btn-sm" id="refresh">Check again</button>',
       html:
         '<div class="page-head"><h1>Research</h1></div>' +
-        UI.tipHTML('research-where') +
         '<div class="subtabs" id="subtabs"></div>' +
         '<div id="feed"></div>'
     });
@@ -57,8 +56,7 @@
           ? '<div class="feed">' + c.research.map(function (o) { return item(o, null); }).join('') + '</div>'
           : '<div class="card"><div class="empty"><span class="art">\u25c8</span>' +
             '<h2>Nothing on ' + esc(c.company) + ' yet</h2>' +
-            '<p>Paste anything you come across: a post, a podcast line, a pricing change. One specific sentence is what separates a reply from a delete.</p>' +
-            '<button class="btn btn-primary btn-lg" id="add-empty">Add what you found <span class="arr">\u2192</span></button></div></div>';
+            '<button class="btn btn-primary btn-lg" id="add-empty">Add finding <span class="arr">\u2192</span></button></div></div>';
       } else if (tab === 'sources') {
         feed.innerHTML = sourcesHTML();
       } else {
@@ -67,8 +65,7 @@
           ? '<div class="feed">' + c.contacts.map(function (p) {
               return (p.activity || []).map(function (a) { return item(a, p.name + ', ' + (p.title || p.persona)); }).join('');
             }).join('') + '</div>'
-          : '<div class="card"><div class="empty"><span class="art">◎</span><h2>Nothing found for these people yet</h2>' +
-            '<p>We check public posts, comments and interviews. Someone who never posts will come back empty, which is itself worth knowing.</p></div></div>';
+          : '<div class="card"><div class="empty"><span class="art">◎</span><h2>Nothing on these people yet</h2></div></div>';
       }
     }
 
@@ -77,13 +74,7 @@
        a login say so: we send you and take a paste back rather than pretending
        to read a page we are not allowed to read. */
     function sourcesHTML() {
-      return '<div class="src-note card p5">' +
-          '<b>Two kinds of source, and they work differently.</b>' +
-          '<p>The open ones we can read for you when Claude is on. Glassdoor, Blind and ' +
-          'Indeed need a login and their terms do not allow automated collection, so those ' +
-          'open in a tab with the search built and you paste back what is worth keeping. ' +
-          'Whatever you paste gets split into items and feeds the brief.</p>' +
-        '</div>' +
+      return '' +
         Sources.groups().map(function (g) {
           return '<div class="card p5 mt4"><p class="cap mb3">' + esc(g.name) + '</p>' +
             '<div class="src-list">' + g.items.map(function (s) {
@@ -105,13 +96,11 @@
 
     var PASTE_COPY = {
       questions: { title: 'Interview questions you found',
-        hint: 'One per line. Numbering and bullets are fine — they get stripped. ' +
-              'Lines that are not questions are left out.' },
+        hint: 'One per line.' },
       customers: { title: 'What customers said',
-        hint: 'One review or one line per row. Anything that reads like a complaint is ' +
-              'tagged as a gripe, because that is the half you can sell against.' },
+        hint: 'One per line.' },
       notes:     { title: 'What you found',
-        hint: 'One thought per line. Long paragraphs are kept whole.' }
+        hint: 'One per line.' }
     };
 
     function pasteSheet(sid) {
@@ -150,7 +139,7 @@
             close();
             tab = 'company';
             paint();
-            UI.toast('Kept ' + items.length + '. They show up in the brief.');
+            UI.toast('Kept ' + items.length + '.');
           });
           setTimeout(function () { box.focus(); }, 60);
         }
@@ -181,7 +170,7 @@
             '<input class="input" id="r-title" placeholder="Moved SMB to a five seat minimum"></div>' +
           '<div class="field"><label for="r-detail">What it actually says</label>' +
             '<textarea class="input" id="r-detail" placeholder="Paste the post, or write what you took from it."></textarea></div>' +
-          '<div class="field"><label for="r-use">The sentence you would put in a message</label>' +
+          '<div class="field"><label for="r-use">The line you would use</label>' +
             '<input class="input" id="r-use" placeholder="The five seat floor turns a one call close into a two call close."></div>' +
           '<div class="row g2 wrap"><button class="btn btn-primary btn-sm" type="submit">Add it</button></div></form>',
         onMount: function (node, close) {
@@ -199,7 +188,7 @@
             close();
             tab = 'company';
             paint();
-            UI.toast('Added. Use it in a step when it fits.');
+            UI.toast('Added.');
           });
           setTimeout(function () { node.querySelector('#r-title').focus(); }, 60);
         }
@@ -214,7 +203,7 @@
     document.getElementById('add-find').addEventListener('click', addSheet);
     document.getElementById('refresh').addEventListener('click', function () {
       var b = this;
-      UI.busy(b, 900).then(function () { UI.toast('Nothing new since this morning.'); });
+      UI.busy(b, 900).then(function () { UI.toast('Checked.'); });
     });
 
     paint();

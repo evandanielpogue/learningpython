@@ -1,5 +1,5 @@
 /* ==========================================================================
-   views/templates.js — the message library. What you normally send to a
+   views/templates.js — the template library. What you normally send to a
    given kind of person at a given point in the sequence.
    ========================================================================== */
 (function (window, document) {
@@ -67,9 +67,9 @@
               Store.CHANNELS.map(function (ch) { return '<option' + (ch === t.channel ? ' selected' : '') + '>' + ch + '</option>'; }).join('') +
             '</select></div>' +
           '</div>' +
-          '<div class="field"><label for="t-body">Message</label>' +
+          '<div class="field"><label for="t-body">Text</label>' +
             '<textarea class="input" id="t-body" style="min-height:250px;font-family:var(--mono);font-size:13px;line-height:1.8">' + esc(t.body) + '</textarea>' +
-            '<p class="hint">Anything in braces is filled in from the company and the person when you pull this into a step.</p></div>' +
+            '</div>' +
           '<div class="row between">' +
             '<span class="hint" id="t-saved" style="opacity:0;transition:opacity var(--t-2)">Saved</span>' +
             '<button class="btn btn-danger btn-sm" id="t-del">Delete</button></div>' +
@@ -86,7 +86,7 @@
         });
       });
       box.querySelector('#t-del').addEventListener('click', function () {
-        UI.confirm({ title: 'Delete "' + t.name + '"?', body: 'Any step using it keeps the words, it just loses the link back here.', confirm: 'Delete', danger: true })
+        UI.confirm({ title: 'Delete "' + t.name + '"?', body: 'Touches using it keep the words.', confirm: 'Delete', danger: true })
           .then(function (ok) {
             if (!ok) return;
             Store.removeTemplate(t.id);
@@ -103,7 +103,7 @@
         body: '{first}, \n\n\n\nWorth fifteen minutes?' });
       selected = t.id; filter = 'All';
       paintFilters(); paintList();
-      UI.toast('New template. Give it a name.');
+      UI.toast('Template added.');
     });
 
     paintFilters();

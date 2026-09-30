@@ -2981,7 +2981,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     thin: [
       'Say a bit more.',
       'What else was going on?',
-      'Keep going. What happened next?'
+      'What happened next?'
     ],
     we: [
       'What part of that was you?',
@@ -3039,6 +3039,28 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   var HUH     = /^(what do you mean|what\?|huh|sorry\?|i do not follow|i don'?t follow|meaning\?|like what)/i;
   var YES     = /^(yes|yeah|yep|yup|that\'s right|that'?s right|correct|exactly|spot on|right|perfect|good|sounds right|ok|okay)\b/i;
   var NO      = /^(no|not quite|not really|nope|change|wrong|that\'s not|that'?s not)\b/i;
+
+  /* a bare yes, no or shrug is a reply to the coach, never part of a story */
+  Coach.isFiller = function (text) {
+    var t = String(text || '').trim();
+    if (!t) return true;
+    return /^(yes|yeah|yep|yup|correct|right|exactly|spot on|ok|okay|perfect|good|sounds right|that'?s right|no|nope|not quite|not really|i (do not|don'?t) know|not sure|no idea|dunno)[.!,\s]*(thanks|thank you)?[.!\s]*$/i.test(t);
+  };
+
+  /* what to bank when someone saves: the read-back they were shown if there
+     is one, otherwise their own words with the filler taken out */
+  Coach.bankable = function (history) {
+    history = history || [];
+    var readBack = null;
+    for (var i = history.length - 1; i >= 0; i--) {
+      var m = history[i];
+      if (m.role === 'assistant' && m.stage === 'confirm' && m.story) { readBack = m.story; break; }
+      if (m.role === 'user' && !Coach.isFiller(m.content) && i === history.length - 1) break;
+    }
+    if (readBack) return readBack;
+    return history.filter(function (m) { return m.role === 'user' && !Coach.isFiller(m.content); })
+      .map(function (m) { return m.content; }).join(' ');
+  };
 
   var DUNNO_REPLIES = {
     thin:     ['No worries. What do you remember?',
@@ -3100,7 +3122,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
   Coach.summary = function (answers) {
     /* someone who types the same thing three times gets it back once */
-    var all = dedupe(answers || []).join(' ').replace(/\s+/g, ' ').trim();
+    var all = dedupe((answers || []).filter(function (x) { return !Coach.isFiller(x); })).join(' ').replace(/\s+/g, ' ').trim();
     if (!all) return '';
     var sentences = all.split(/(?<=[.!?])\s+/)
       .map(function (x) { return x.trim(); })
@@ -3177,6 +3199,13 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     /* and a conversation that never ends is worse than one that ends early */
     if (asked.length >= 5) what = null;
 
+    /* a first answer that already carries a number, an obstacle and an
+       outcome needs no probe: read it back */
+    if (answers.length === 1) {
+      var first = Coach.readAnswer(last);
+      if (first.words >= 14 && first.hasNumber && first.hasObstacle && first.hasOutcome) what = null;
+    }
+
     /* "I don\'t know" is an answer, and pretending otherwise is what makes
        these things infuriating */
     if (DUNNO.test(last.trim())) {
@@ -3240,8 +3269,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       if (r.strength === 'none') {
         likely.push({
           question: Coach.asQuestion(r.text),
-          why: 'They asked for it and nothing on your résumé answers it. This one is coming.',
-          gap: r.note ? '' : 'You have not worked out what to say. Do it in Prep.',
+          why: 'They asked for it. Nothing on your résumé answers this.',
+          gap: r.note ? '' : 'You have not worked out what to say. Do it in Story.',
           answer: r.note || '',
           kind: 'gap', ref: r.id
         });
@@ -3332,7 +3361,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     }).length;
     if (unanswered > 2) {
       watch.unshift(unanswered + ' requirements have nothing behind them and no answer written. ' +
-                    'That is the interview, not a detail.');
+                    'That\'s the interview, not a detail.');
     }
 
     return {
@@ -3444,7 +3473,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     { id: 'tpl_rec', name: 'Check the req is actually moving', persona: 'Recruiter', stage: 'First touch', channel: 'Email', stock: true,
       body: "{first}, I applied for the {role} on Tuesday. Quick context: {win}.\n\nIs the team still interviewing for this one, or is it further along than the posting suggests?" },
     { id: 'tpl_hm', name: 'Open with what you noticed', persona: 'Hiring manager', stage: 'First touch', channel: 'Email', stock: true,
-      body: "{first}, {angle}\n\n{win}. [One sentence on what that actually took \u2014 the part a resume bullet leaves out.]\n\nI applied for the {role}.\n\nWorth fifteen minutes, or should I stay in the queue?" },
+      body: "{first}, {angle}\n\n{win}. [One sentence on what that actually took \u2014 the part a résumé bullet leaves out.]\n\nI applied for the {role}.\n\nWorth fifteen minutes, or should I stay in the queue?" },
     { id: 'tpl_hm2', name: 'Follow up with something new', persona: 'Hiring manager', stage: 'Follow up', channel: 'Email', stock: true,
       body: "{first}, [something you went and found out about {company} since you last wrote \u2014 a number, a friction, a thing they said].\n\n[Why it matters to the thing this role owns.]\n\nStill happy to trade fifteen minutes if useful." },
     { id: 'tpl_exec', name: 'Go one level up', persona: 'Skip level', stage: 'Escalation', channel: 'Email', stock: true,
@@ -4100,7 +4129,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       /* one per thing the listing wants that nothing on the resume answers */
       Store.matchScore(c).gaps.slice(0, 4).forEach(function (r) {
         items.push({ id: uid('ag'), kind: 'gap', ref: r.id,
-          label: r.text, ask: 'Nothing on your resume answers this', text: '', done: false });
+          label: r.text, ask: 'Nothing on your résumé answers this', text: '', done: false });
       });
 
       c.agenda = items;
@@ -4453,7 +4482,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     fromModel: function (data, source) {
       var out = blankProfile();
       out.imported = true;
-      out.source = source || 'your resume';
+      out.source = source || 'your résumé';
       out.name = data.name || '';
       out.email = data.email || '';
       out.phone = data.phone || '';
@@ -4777,7 +4806,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       var c = Store.campaign(cid); if (!c) return null;
       var last = c.steps.length ? c.steps[c.steps.length - 1].day : 0;
       var s = { id: uid('s'), day: last + 2, contact: c.contacts[0] ? c.contacts[0].id : null,
-                template: null, channel: 'Email', note: 'New step', status: 'queued',
+                template: null, channel: 'Email', note: 'New touch', status: 'queued',
                 subject: '', body: '' };
       c.steps.push(s);
       Store.sortSteps(cid);
@@ -5005,21 +5034,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         'The people posting the role are the hiring manager and the recruiter, and a reply to ' +
         'their post lands better than anything sent through the portal.',
       cta: { label: 'Run that search', href: 'https://www.linkedin.com/search/results/content/?keywords=' }
-    },
-    'prep-specifics': {
-      title: 'Numbers beat adjectives',
-      body: 'Anything you would say out loud in an interview belongs here. ' +
-        'What broke, what you did, what it cost, how it ended. The number matters less than the fact you remember it.'
-    },
-    'research-where': {
-      title: 'Where the good lines come from',
-      body: 'Their last three posts, a podcast, the pricing page, the changelog, the careers page. ' +
-        'Anything they said in public this quarter is fair game and almost nobody bothers to read it.'
-    },
-    'sequence-touches': {
-      title: 'Two touches per person, then stop',
-      body: 'Three is where helpful turns into a problem. If two messages and a reply get you nothing, ' +
-        'the answer is no and the next company is worth more than the third message.'
     }
   };
 
@@ -5627,7 +5641,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   var VERSION = '2023-06-01';
 
   var MODELS = [
-    { id: 'claude-opus-5',   name: 'Opus 5',   note: 'Best at reading a messy resume' },
+    { id: 'claude-opus-5',   name: 'Opus 5',   note: 'Best at reading a messy résumé' },
     { id: 'claude-sonnet-5', name: 'Sonnet 5', note: 'Faster and cheaper, still good' },
     { id: 'claude-haiku-4-5', name: 'Haiku 4.5', note: 'Cheapest. Misses things.' }
   ];
@@ -6294,11 +6308,11 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       '<div class="shell">' +
         '<button class="skip" id="skip" type="button">Skip to content</button>' +
         '<aside class="sidebar">' +
-          '<a class="brand" href="#/" title="Frontdoor — back to the overview">' + Icon.mark(24) + '<b>Frontdoor</b></a>' +
-          '<button class="side-search" id="side-search" title="Search and jump anywhere  (\u2318K)">' + Icon.svg('search', 15) + '<span>Search</span><kbd>⌘K</kbd></button>' +
+          '<a class="brand" href="#/">' + Icon.mark(24) + '<b>Frontdoor</b></a>' +
+          '<button class="side-search" id="side-search">' + Icon.svg('search', 15) + '<span>Search</span><kbd>⌘K</kbd></button>' +
           '<nav class="side-nav" id="side-nav" aria-label="Sections"></nav>' +
           '<div class="side-foot">' +
-            '<button class="user-btn" id="user-btn" title="' + esc(u.name) + ' — account, settings and sign out">' +
+            '<button class="user-btn" id="user-btn">' +
               '<span class="avatar avatar-sm" style="background:var(--p-recruiter)">' + esc(u.initials) + '</span>' +
               '<span class="grow"><span class="un">' + esc(u.name) + '</span>' +
               '<span class="ue">' + esc(u.email) + '</span></span>' +
@@ -6309,6 +6323,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         '<div class="main">' +
           '<header class="topbar"><div class="crumbs" id="crumbs"></div><div class="row g2" id="top-actions"></div></header>' +
           '<div id="stepbar"></div>' +
+          '<nav class="mobile-bar" id="mobile-bar" aria-label="Sections"></nav>' +
           '<main id="view" class="view-host" tabindex="-1"></main>' +
         '</div>' +
       '</div>';
@@ -6368,6 +6383,28 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       '<span class="switch-arr" aria-hidden="true">\u2304</span></button>';
   }
 
+  function paintMobile(c, activeKey) {
+    var mb = document.getElementById('mobile-bar');
+    if (!mb) return;
+    var tick = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" ' +
+      'stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+    var here = OF_STAGE[activeKey] || null;
+    var h = '<a class="mb-item" href="#/"' + (activeKey === 'home' ? ' aria-current="page"' : '') + '>' +
+      '<span class="mb-ico">' + Icon.svg('overview', 18) + '</span><span class="mb-lab">Overview</span></a>';
+    if (c) {
+      h += Store.phases(c).map(function (st) {
+        var cls = st.done ? ' step step-done' : st.now ? ' step step-now' : ' step';
+        return '<a class="mb-item' + cls + '" href="#' + st.href + '"' +
+          (st.key === here ? ' aria-current="page"' : '') + '>' +
+          '<span class="mb-ico">' + (st.done ? tick : String(st.n)) + '</span>' +
+          '<span class="mb-lab">' + esc(st.label) + '</span></a>';
+      }).join('');
+    }
+    h += '<a class="mb-item" href="#/settings"' + (activeKey === 'settings' ? ' aria-current="page"' : '') + '>' +
+      '<span class="mb-ico">' + Icon.svg('settings', 18) + '</span><span class="mb-lab">Settings</span></a>';
+    mb.innerHTML = h;
+  }
+
   function paintNav(activeKey) {
     var cid = activeCampaignId();
     var c = cid ? Store.campaign(cid) : null;
@@ -6396,6 +6433,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     var host = document.getElementById('side-nav');
     host.innerHTML = html;
     UI.animate(host);
+    paintMobile(c, activeKey);
 
     var sw = document.getElementById('co-switch');
     if (sw) sw.addEventListener('click', function () {
@@ -6635,11 +6673,12 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             Store.phases(c).map(function (st) {
               return '<i class="pdot' + (st.done ? ' on' : st.now ? ' here' : '') + '"></i>';
             }).join('') + '</span>' +
+          (next.done ? '' : '<a class="pcard-next linkish" href="#' + next.href + '">' + esc(next.label) + ' \u2192</a>') +
           (due ? '<span class="chip chip-accent">' + due + ' due</span>'
                : c.replies ? '<span class="chip chip-pos">' + c.replies + ' replied</span>'
                : '<span class="pcard-day">Day ' + c.day + '</span>') +
-          '<button class="icon-btn opp-x" data-drop="' + c.id + '" aria-label="Remove ' + esc(c.company) + '" ' +
-            'title="Remove this company">' + Icon.svg('close', 13) + '</button>' +
+          '<button class="icon-btn opp-x" data-drop="' + c.id + '" aria-label="' + (c.example ? 'Remove example ' : 'Remove ') + esc(c.company) + '" ' +
+            'title="' + (c.example ? 'Remove example' : 'Remove') + '">' + Icon.svg('close', 13) + '</button>' +
         '</div></div>';
     }
 
@@ -6718,9 +6757,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       var c = Store.campaign(el.dataset.drop);
       if (!c) return;
       UI.confirm({
-        title: 'Remove ' + c.company + '?',
-        body: 'The contacts, the sequence, the research and everything you worked out in prep go with it. This cannot be undone.',
-        confirm: 'Remove it', danger: true
+        title: (c.example ? 'Remove example ' : 'Remove ') + c.company + '?',
+        body: 'The people, the touches, the research and your stories go with it. This cannot be undone.',
+        confirm: c.example ? 'Remove example' : 'Remove', danger: true
       }).then(function (ok) {
         if (!ok) return;
         Store.removeCampaign(c.id);
@@ -6785,7 +6824,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         '<h3 class="mb3">Voice</h3>' +
         (pf.voice.traits.length
           ? '<div class="row wrap g2">' + pf.voice.traits.map(function (t) { return '<span class="chip chip-accent">' + esc(t) + '</span>'; }).join('') + '</div>'
-          : '<p class="hint">Read from your r\u00e9sum\u00e9.</p>') +
+          : '<p class="hint">None yet.</p>') +
       '</div>' +
 
       '<div class="card p5 mb4">' +
@@ -6838,7 +6877,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           var small;
           try { small = cv.toDataURL('image/jpeg', 0.82); } catch (e) { small = fr.result; }
           Store.setPhoto(small.length < String(fr.result).length ? small : fr.result);
-          UI.toast('Photo added. It shows up on your page.');
+          UI.toast('Photo added.');
           Views.settings();
         };
         img.onerror = function () { UI.toast('That did not look like an image.'); };
@@ -6860,7 +6899,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         }).join('') + '</select></div>';
 
       if (a.mode === 'off') {
-        box.innerHTML = '<p class="hint">Résumés get read by pattern matching, the story chat asks the same three questions every time, and the assistant does canned edits. Everything still works, it is just dumber.</p>';
+        box.innerHTML = '<p class="hint">No model. Pattern matching only.</p>';
         return;
       }
       if (a.mode === 'key') {
@@ -6869,8 +6908,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             '<input class="input mono" id="ai-key" type="password" autocomplete="off" spellcheck="false" ' +
             'placeholder="sk-ant-..." value="' + esc(a.key) + '"></div>' +
           models +
-          '<p class="warnbox mt3">This key is kept in this browser and sent straight to Anthropic from this page. ' +
-          'Anyone who can open this browser profile can read it, so use a key you can revoke, and do not ship this file to anyone with the key still in it.</p>' +
+          '<p class="warnbox mt3">Stored in this browser. Use a key you can revoke.</p>' +
           '<div class="row g2 wrap mt3"><button class="btn btn-secondary btn-sm" id="ai-test">Test it</button>' +
           '<span class="hint" id="ai-msg"></span></div>';
       } else {
@@ -6879,7 +6917,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             '<input class="input mono" id="ai-proxy" type="url" autocomplete="off" spellcheck="false" ' +
             'placeholder="https://your-server.example.com/claude" value="' + esc(a.proxy) + '"></div>' +
           models +
-          '<p class="hint mt3">Your server holds the key and forwards the body to /v1/messages. Nothing secret sits in the browser. This is the shape a real deployment takes. It must be https: your résumé goes over this connection.</p>' +
+          '<p class="hint mt3">Must be https.</p>' +
           '<div class="row g2 wrap mt3"><button class="btn btn-secondary btn-sm" id="ai-test">Test it</button>' +
           '<span class="hint" id="ai-msg"></span></div>';
       }
@@ -6924,7 +6962,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
     v.querySelector('#s-reimport').addEventListener('click', function () { Router.go('/import'); });
     v.querySelector('#s-reset').addEventListener('click', function () {
-      UI.confirm({ title: 'Clear all data?', body: 'Every company, the profile and the sign in all go. You will land back at the login screen.', confirm: 'Clear it', danger: true })
+      UI.confirm({ title: 'Clear all data?', body: 'Every company, your profile and your sign-in are deleted. This cannot be undone.', confirm: 'Clear', danger: true })
         .then(function (ok) { if (ok) { Store.reset(); Router.go('/login'); location.reload(); } });
     });
   };
@@ -7008,7 +7046,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb4">' +
               '<p class="cap">Read from the listing</p>' +
-              '<button class="btn btn-ghost btn-sm" id="back">Paste a different one</button>' +
+              '<button class="btn btn-ghost btn-sm" id="back">Paste again</button>' +
             '</div>' +
             /* A reader that is right most of the time is still wrong
                sometimes, and a wrong company name follows you into every
@@ -7026,7 +7064,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             (match.length
               ? '<div class="matchbar"><div class="matchbar-fill" style="width:' +
                 Math.round((sc.covered / Math.max(1, sc.total)) * 100) + '%"></div></div>' +
-                '<p class="hint mt2">' + sc.covered + ' of ' + sc.total + ' things they asked for are answered by something on your résumé.</p>'
+                '<p class="hint mt2">' + sc.covered + ' of ' + sc.total + '</p>'
               : '') +
           '</div>' +
 
@@ -7039,7 +7077,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb2"><h3>Wins</h3>' +
             '<span class="cap" id="pick-count"></span></div>' +
-            '<p class="dim mb5" id="pick-note" style="font-size:var(--fs-xs)"></p>' +
             '<div class="grid" style="gap:var(--s-2)" id="wins"></div>' +
           '</div>' +
 
@@ -7074,12 +7111,12 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       function grab() {
         if (!url) return;
         var link = url.value.trim();
-        if (!link) { pmsg.className = 'lookup-msg'; pmsg.textContent = 'Paste the link first.'; return; }
+        if (!link) { pmsg.className = 'lookup-msg'; pmsg.textContent = 'Paste a link.'; return; }
         postingUrl = link;
         get.disabled = true;
         get.textContent = 'Reading\u2026';
         pmsg.className = 'hint';
-        pmsg.textContent = 'Fetching the page. This takes a few seconds.';
+        pmsg.textContent = 'Reading\u2026';
         AI.fetchPosting(link).then(function (out) {
           ta.value = out.text;
           listing = out.text;
@@ -7087,14 +7124,14 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           pmsg.className = 'lookup-msg ok';
           var host = '';
           try { host = new URL(out.url).hostname.replace(/^www\./, ''); } catch (e) {}
-          pmsg.textContent = 'Read it' + (host ? ' from ' + host : '') + '. Check it looks right, then read it in.';
+          pmsg.textContent = 'Read' + (host ? ' from ' + host : '') + '.';
         }).catch(function (err) {
           pmsg.className = 'lookup-msg';
           pmsg.textContent = err.message + ' Paste the text below instead.';
           ta.focus();
         }).then(function () {
           get.disabled = false;
-          get.textContent = 'Read the link';
+          get.textContent = 'Read link';
         });
       }
       if (get && AI.ready()) {
@@ -7171,7 +7208,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
       function paintMatch() {
         if (!match.length) {
-          matchEl.innerHTML = '<p class="hint">The listing had no requirement list we could pull apart, so there is nothing to line up against. The wins below are your strongest, in order.</p>';
+          matchEl.innerHTML = '<p class="hint">No requirements found.</p>';
           return;
         }
         matchEl.innerHTML = match.map(function (r) {
@@ -7197,22 +7234,11 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           return '<button class="opt" data-win="' + r.win.id + '" aria-pressed="' + on + '">' +
             '<span class="box"></span><span class="ot">' + esc(r.win.text) +
             '<em>' + (r.score
-              ? 'Matches the listing on ' + esc(r.hits.slice(0, 3).join(', '))
+              ? 'Matches ' + esc(r.hits.slice(0, 3).join(', '))
               : esc(r.win.where)) + '</em></span>' +
             '<span class="om">' + esc(r.win.metric) + '</span></button>';
         }).join('');
         v.querySelector('#pick-count').textContent = chosen.length + ' picked';
-        /* Nothing is locked: three is a suggestion, not a rule. But say what
-           happens either side of it rather than letting them find out on the
-           page. */
-        var note = v.querySelector('#pick-note');
-        note.textContent = !chosen.length
-          ? 'Pick at least one. It opens the first message.'
-          : chosen.length > 5
-            ? 'That is a lot to carry. Past five the page reads like a r\u00e9sum\u00e9 again, and Prep will ask you for a story behind every one.'
-            : chosen.length > SUGGEST
-              ? 'More than three is fine when they are genuinely different. Prep will want a story behind each.'
-              : '';
       }
       paintMatch();
       paintWins();
@@ -7246,10 +7272,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         if (!parsed.company) {
           var f = v.querySelector('#f-company');
           if (f) { f.classList.add('err'); f.focus(); }
-          UI.toast('Who is hiring? The name goes in every message.');
+          UI.toast('Who is hiring?');
           return;
         }
-        if (!chosen.length) { UI.toast('Pick at least one win to lead with.'); return; }
+        if (!chosen.length) { UI.toast('Pick at least one win.'); return; }
         var c = Store.createCampaign({
           listing: listing, parsed: parsed, winIds: chosen.slice(),
           story: '', postingUrl: postingUrl
@@ -7257,7 +7283,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         Store.setMatch(c.id, match);
         Store.buildAgenda(c.id);
         var gaps = Store.matchScore(c).gaps.length;
-        UI.toast(c.company + ' added. ' + (gaps ? gaps + ' gaps to talk through.' : 'Time to nail down your stories.'));
+        UI.toast(c.company + ' added.' + (gaps ? ' ' + gaps + (gaps === 1 ? ' gap.' : ' gaps.') : ''));
         Router.go('/c/' + c.id + '/prep');
       });
     }
@@ -7284,7 +7310,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
               : '<span class="chip">Queued</span>';
     return '<button class="touch-row ' + cls + '" data-step="' + s.id + '" style="--pc:var(' + (p ? p.colour : '--line-3') + ')">' +
       '<span class="td">Day ' + s.day + '</span>' +
-      '<span class="tw">' + esc(p ? p.name : 'No contact') + '<em>' + esc(s.note) + '</em></span>' +
+      '<span class="tw">' + esc(p ? p.name : 'No person') + '<em>' + esc(s.note) + '</em></span>' +
       badge + '<span class="tc">' + esc(s.channel) + '</span></button>';
   }
 
@@ -7371,7 +7397,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 ;
 /* assets/js/views/importer.js */
 /* ==========================================================================
-   views/importer.js — read a resume once. Which wins matter is decided per
+   views/importer.js — read a résumé once. Which wins matter is decided per
    company, against that listing, so nothing is picked here.
    ========================================================================== */
 (function (window, document) {
@@ -7397,7 +7423,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '<label class="drop" id="drop" for="file-in">' +
             '<span class="drop-ic">↑</span>' +
             '<b>Drop your r\u00e9sum\u00e9 here</b>' +
-            '<span class="hint">PDF, or plain text. Or click to choose a file.</span>' +
+            '<span class="hint">PDF or text.</span>' +
             '<input type="file" id="file-in" accept=".txt,.md,.rtf,.pdf,.doc,.docx,text/plain" hidden>' +
           '</label>' +
           '<p class="lookup-msg hide" id="file-msg"></p>' +
@@ -7433,8 +7459,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         if (!file) return;
         if (PDF.test(file.name) || file.type === 'application/pdf') return takePdf(file);
         if (!TEXTY.test(file.name) && !/^text\//.test(file.type)) {
-          say('We cannot read ' + (file.name.split('.').pop() || 'that').toUpperCase() +
-            ' in the browser. Open it, select all, and paste it below.');
+          say('Cannot read ' + (file.name.split('.').pop() || 'that').toUpperCase() + '. Paste it below.');
           ta.focus();
           return;
         }
@@ -7443,7 +7468,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           ta.value = String(fr.result).replace(/\u0000/g, '');
           pending = ta.value;
           check();
-          say('Read ' + file.name + '. Have a look, then read it in.', true);
+          say('Read ' + file.name + '.', true);
         };
         fr.onerror = function () { say('Could not open that file.'); };
         fr.readAsText(file);
@@ -7458,19 +7483,19 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         Doc.readPdf(file).then(function (text) {
           drop.classList.remove('busy');
           if (!text || text.replace(/\s/g, '').length < 40) {
-            say('That PDF has no text in it, only pictures of text. Paste it below instead.');
+            say('No text in that PDF. Paste it below.');
             ta.focus();
             return;
           }
           ta.value = text;
           pending = text;
           check();
-          say('Read ' + file.name + '. Check it reads properly, then read it in.', true);
+          say('Read ' + file.name + '.', true);
         }).catch(function (err) {
           drop.classList.remove('busy');
           say(err && err.message === 'offline'
-            ? 'The PDF reader could not load, so we are offline or it is blocked. Paste the text below instead.'
-            : 'Could not get the text out of that PDF. Paste it below instead.');
+            ? 'The PDF reader could not load. Paste the text below.'
+            : 'Could not read that PDF. Paste it below.');
           ta.focus();
         });
       }
@@ -7494,7 +7519,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       });
 
       go.addEventListener('click', function () {
-        var src = pending === Store.EXAMPLE_RESUME ? 'the example resume' : 'your resume';
+        var src = pending === Store.EXAMPLE_RESUME ? 'the example r\u00e9sum\u00e9' : 'your r\u00e9sum\u00e9';
         var text = ta.value;
 
         function land(p, how) {
@@ -7513,7 +7538,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         AI.readResume(text).then(function (data) {
           land(Store.fromModel(data, src), 'model');
         }).catch(function (err) {
-          /* a resume still has to get in, so fall back rather than stop */
+          /* a résumé still has to get in, so fall back rather than stop */
           UI.toast('Claude could not read it (' + err.message + '). Fell back to pattern matching.');
           land(Store.parseResume(text, src), 'pattern');
         });
@@ -7535,7 +7560,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             (p.readBy === 'model' ? 'Read by Claude' : 'Read by pattern matching') + '</span></div>' +
           '<p class="dim mb4" style="font-size:var(--fs-sm)">From ' + esc(p.source || 'your r\u00e9sum\u00e9') + '</p>' +
           (missing.length
-            ? '<p class="lookup-msg mb4">Could not find ' + esc(missing.join(', ')) + '. Paste more of it.</p>'
+            ? '<p class="lookup-msg mb4">Missing ' + esc(missing.join(', ')) + '.</p>'
             : '') +
           '<dl class="facts mb5">' +
             '<div><dt>Name</dt><dd>' + esc(p.name || '—') + '</dd></div>' +
@@ -7555,7 +7580,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             ? '<div class="leadwins">' + p.wins.map(function (w) {
                 return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
               }).join('') + '</div>'
-            : '<p class="hint">None with a number in them. "Grew ARR 41%" is a win; "responsible for growth" is not.</p>') +
+            : '<p class="hint">None with a number.</p>') +
         '</div>' +
 
         (Store.state.profile.stack.length
@@ -7622,8 +7647,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
    Two jobs, worked one item at a time: get the story behind each win you are
    leading with, and find something real to say about the things the listing
-   asked for that your resume does not answer. What comes out goes on the page
-   and into the messages.
+   asked for that your résumé does not answer. What comes out goes on the page
+   and into the touches.
    ========================================================================== */
 (function (window, document) {
   'use strict';
@@ -7667,12 +7692,11 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       actions: '<span class="chip" id="prep-chip"></span>' +
                '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/page">Page</a>',
       html: '<div class="page-head"><h1>Story</h1></div>' +
-            UI.tipHTML('prep-specifics') +
             (agenda.length
               ? '<div class="prep"><div id="agenda"></div><div id="talk"></div></div>'
               : '<div class="card"><div class="empty"><span class="art">◈</span>' +
-                '<h2>Nothing to work on yet</h2><p>Add a company from a listing and the things worth nailing down show up here.</p>' +
-                '<a class="btn btn-primary btn-lg" href="#/new">Add a company <span class="arr">→</span></a></div></div>')
+                '<h2>Add a company first</h2>' +
+                '<a class="btn btn-primary btn-lg" href="#/new">Add <span class="arr">→</span></a></div></div>')
     });
     if (!agenda.length) return;
 
@@ -7696,7 +7720,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
               '<span class="ag-label">' + esc(a.label) + '</span></span></button>';
           }).join('') + '</div>' +
           (pr.done === pr.total
-            ? '<a class="btn btn-primary btn-sm mt4" href="#/c/' + c.id + '/sequence">Go and write it <span class="arr">→</span></a>'
+            ? '<a class="btn btn-primary btn-sm mt4" href="#/c/' + c.id + '/sequence">Outreach <span class="arr">→</span></a>'
             : '') +
         '</div>' +
         (Store.stories(c).length
@@ -7859,7 +7883,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           if (out.complete && out.story) {
             Store.answerAgenda(c.id, a.id, out.story);
             paintAgenda();
-            say('ai', 'Saved. Pick the next one on the left.');
+            say('ai', 'Saved.');
+            landed();
+            setTimeout(function () { if (openId === mine) advance(a.id); }, 900);
           }
         }).catch(function (err) {
           if (openId === mine && b.isConnected) b.textContent = 'That did not go through: ' + err.message;
@@ -7878,16 +7904,13 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         var pr = Store.agendaProgress(c);
         if (pr.total && pr.done >= pr.total) {
           UI.cheerOnce(c.id, 'agenda', {
-            title: 'That is all of it',
-            line: 'Every number has a story behind it and every gap has an answer. ' +
-                  'The messages and the page write themselves from here.'
+            title: 'Story done'
           });
         }
       }
 
       v.querySelector('#save-it').addEventListener('click', function () {
-        var said = history.filter(function (m) { return m.role === 'user'; })
-          .map(function (m) { return m.content; }).join(' ');
+        var said = Coach.bankable(history);
         if (!said) { UI.toast('Say something first.'); return; }
         var id = item().id;
         Store.answerAgenda(c.id, id, said);
@@ -7915,7 +7938,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 ;
 /* assets/js/views/people.js */
 /* ==========================================================================
-   views/people.js — contacts: add, edit, rank, remove
+   views/people.js — people: add, edit, rank, remove
    ========================================================================== */
 (function (window, document) {
   'use strict';
@@ -7941,7 +7964,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     var v = Shell.mount({
       nav: 'people',
       crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'People' }],
-      actions: '<button class="btn btn-primary btn-sm" id="add-top">Add contact</button>',
+      actions: '<button class="btn btn-primary btn-sm" id="add-top">Add person</button>',
       html:
         '<div class="page-head"><h1>People</h1></div>' +
         UI.tipHTML('find-contacts', { q: 'hiring ' + c.role + ' at ' + c.company }) +
@@ -7968,7 +7991,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
               '<p class="fc-why">' + esc(g.why) + '</p>' +
               '<p class="fc-found">' + esc(g.found) + '</p>' +
               (g.guessedEmail && g.email
-                ? '<p class="fc-guess">' + esc(g.email) + ' \u2014 guessed, not verified.</p>'
+                ? '<p class="fc-guess">' + esc(g.email) + ' \u2014 guessed</p>'
                 : '') +
               '<div class="row g2 mt3">' +
                 '<button class="btn btn-secondary btn-sm" data-take="' + g.id + '">Add</button>' +
@@ -8011,7 +8034,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         '<div class="lookup">' +
           UI.liMark(18) +
           '<input class="lookup-in" id="n-url" placeholder="linkedin.com/in/marcusreed" autocomplete="off" spellcheck="false">' +
-          '<button class="btn btn-secondary btn-sm" type="button" id="n-find">Find them</button>' +
+          '<button class="btn btn-secondary btn-sm" type="button" id="n-find">Find</button>' +
         '</div>' +
         '<p class="lookup-msg hide" id="n-msg"></p>' +
 
@@ -8032,7 +8055,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '</div>' +
         '</details>' +
 
-        '<div class="row g2 wrap"><button class="btn btn-primary btn-sm" type="submit">Add contact</button>' +
+        '<div class="row g2 wrap"><button class="btn btn-primary btn-sm" type="submit">Add</button>' +
         '<button class="btn btn-ghost btn-sm" type="button" id="cancel-add">Cancel</button></div></form>';
     }
 
@@ -8063,7 +8086,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         manual.open = true;
         msg.classList.add('ok');
         msg.textContent = res.exact
-          ? 'Found ' + p.name + (p.title ? ', ' + p.title : '') + '. Check it over and add them.'
+          ? 'Found ' + p.name + (p.title ? ', ' + p.title : '') + '. Check it, then add.'
           : 'Only the name came back from that URL. Fill in the rest below.';
       }
 
@@ -8084,24 +8107,24 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             '<span class="avatar avatar-lg" style="background:var(' + p.colour + ')">' + esc(Store.initials(p.name)) + '</span>' +
             '<span class="grow"><h3 style="line-height:1.25">' + esc(p.name) + '</h3>' +
             '<p class="dimmer" style="font-size:var(--fs-sm)">' + esc(p.title || 'No title') + '</p></span>' +
-            '<button class="icon-btn" id="del" aria-label="Remove contact" title="Remove">✕</button>' +
+            '<button class="icon-btn" id="del" aria-label="Remove" title="Remove">✕</button>' +
           '</div>' +
           '<dl class="facts">' +
             (p.tenure ? '<div><dt>At ' + esc(c.company) + '</dt><dd>' + esc(p.tenure) + '</dd></div>' : '') +
             (p.prev ? '<div><dt>History</dt><dd>' + esc(p.prev) + '</dd></div>' : '') +
             '<div><dt>Mutuals</dt><dd>' + p.mutuals + '</dd></div>' +
             (p.email ? '<div><dt>Email</dt><dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.email) +
-              (p.guessedEmail ? '<em class="dd-guess">guessed from the company pattern, unverified</em>' : '') +
+              (p.guessedEmail ? '<em class="dd-guess">guessed</em>' : '') +
               '</dd></div>' : '') +
             (p.linkedin ? '<div><dt>' + UI.liMark(13) + ' LinkedIn</dt>' +
               '<dd class="mono" style="font-size:var(--fs-sm)">' + esc(p.linkedin) + '</dd></div>' : '') +
           '</dl>' +
           '<hr class="divider" style="margin:var(--s-4) 0">' +
           (p.placeholder
-            ? '<p class="lookup-msg mb3">We know the seat, not the person. Paste their profile or type their name.</p>' +
+            ? '<p class="lookup-msg mb3">Seat only. Add a name.</p>' +
               '<div class="lookup mb3">' + UI.liMark(18) +
                 '<input class="lookup-in" id="d-url" placeholder="linkedin.com/in/..." autocomplete="off" spellcheck="false">' +
-                '<button class="btn btn-secondary btn-sm" type="button" id="d-find">Find them</button></div>'
+                '<button class="btn btn-secondary btn-sm" type="button" id="d-find">Find</button></div>'
             : '') +
           '<div class="grid cols-2 mb3">' +
             '<div class="field"><label for="d-name">Name</label>' +
@@ -8116,7 +8139,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '<div class="field"><label for="d-notes">Your notes</label>' +
             '<textarea class="input" id="d-notes" placeholder="Anything worth remembering before you write.">' + esc(p.notes) + '</textarea></div>' +
           '<div class="row between mt4"><span class="hint" id="saved" style="opacity:0;transition:opacity var(--t-2)">Saved</span>' +
-          '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/research">See what they said <span class="arr">→</span></a></div>' +
+          '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/research">Research <span class="arr">→</span></a></div>' +
         '</div>';
 
       function patch(k, el) {
@@ -8165,7 +8188,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       });
 
       d.querySelector('#del').addEventListener('click', function () {
-        UI.confirm({ title: 'Remove ' + p.name + '?', body: 'Any step pointed at them loses its contact. You can add them back later.', confirm: 'Remove', danger: true })
+        UI.confirm({ title: 'Remove ' + p.name + '?', body: 'Their touches lose the person.', confirm: 'Remove', danger: true })
           .then(function (ok) {
             if (!ok) return;
             Store.removeContact(c.id, p.id);
@@ -8223,7 +8246,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       });
       found = null;
       adding = false; selected = p.id; paint();
-      UI.toast(name + ' added. ');
+      UI.toast(name + ' added.');
     });
 
     paint();
@@ -8234,7 +8257,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 /* assets/js/views/research.js */
 /* ==========================================================================
    views/research.js — what the company and the people have said lately
-   Each item carries a ready line you can drop straight into a message.
+   Each item carries a ready line you can drop straight into a touch.
    ========================================================================== */
 (function (window, document) {
   'use strict';
@@ -8251,11 +8274,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     var v = Shell.mount({
       nav: 'research',
       crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Research' }],
-      actions: '<button class="btn btn-secondary btn-sm" id="add-find">Add something you found</button>' +
-               '<button class="btn btn-secondary btn-sm" id="refresh">Refresh</button>',
+      actions: '<button class="btn btn-secondary btn-sm" id="add-find">Add finding</button>' +
+               '<button class="btn btn-secondary btn-sm" id="refresh">Check again</button>',
       html:
         '<div class="page-head"><h1>Research</h1></div>' +
-        UI.tipHTML('research-where') +
         '<div class="subtabs" id="subtabs"></div>' +
         '<div id="feed"></div>'
     });
@@ -8291,8 +8313,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           ? '<div class="feed">' + c.research.map(function (o) { return item(o, null); }).join('') + '</div>'
           : '<div class="card"><div class="empty"><span class="art">\u25c8</span>' +
             '<h2>Nothing on ' + esc(c.company) + ' yet</h2>' +
-            '<p>Paste anything you come across: a post, a podcast line, a pricing change. One specific sentence is what separates a reply from a delete.</p>' +
-            '<button class="btn btn-primary btn-lg" id="add-empty">Add what you found <span class="arr">\u2192</span></button></div></div>';
+            '<button class="btn btn-primary btn-lg" id="add-empty">Add finding <span class="arr">\u2192</span></button></div></div>';
       } else if (tab === 'sources') {
         feed.innerHTML = sourcesHTML();
       } else {
@@ -8301,8 +8322,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           ? '<div class="feed">' + c.contacts.map(function (p) {
               return (p.activity || []).map(function (a) { return item(a, p.name + ', ' + (p.title || p.persona)); }).join('');
             }).join('') + '</div>'
-          : '<div class="card"><div class="empty"><span class="art">◎</span><h2>Nothing found for these people yet</h2>' +
-            '<p>We check public posts, comments and interviews. Someone who never posts will come back empty, which is itself worth knowing.</p></div></div>';
+          : '<div class="card"><div class="empty"><span class="art">◎</span><h2>Nothing on these people yet</h2></div></div>';
       }
     }
 
@@ -8311,13 +8331,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
        a login say so: we send you and take a paste back rather than pretending
        to read a page we are not allowed to read. */
     function sourcesHTML() {
-      return '<div class="src-note card p5">' +
-          '<b>Two kinds of source, and they work differently.</b>' +
-          '<p>The open ones we can read for you when Claude is on. Glassdoor, Blind and ' +
-          'Indeed need a login and their terms do not allow automated collection, so those ' +
-          'open in a tab with the search built and you paste back what is worth keeping. ' +
-          'Whatever you paste gets split into items and feeds the brief.</p>' +
-        '</div>' +
+      return '' +
         Sources.groups().map(function (g) {
           return '<div class="card p5 mt4"><p class="cap mb3">' + esc(g.name) + '</p>' +
             '<div class="src-list">' + g.items.map(function (s) {
@@ -8339,13 +8353,11 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
     var PASTE_COPY = {
       questions: { title: 'Interview questions you found',
-        hint: 'One per line. Numbering and bullets are fine — they get stripped. ' +
-              'Lines that are not questions are left out.' },
+        hint: 'One per line.' },
       customers: { title: 'What customers said',
-        hint: 'One review or one line per row. Anything that reads like a complaint is ' +
-              'tagged as a gripe, because that is the half you can sell against.' },
+        hint: 'One per line.' },
       notes:     { title: 'What you found',
-        hint: 'One thought per line. Long paragraphs are kept whole.' }
+        hint: 'One per line.' }
     };
 
     function pasteSheet(sid) {
@@ -8384,7 +8396,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             close();
             tab = 'company';
             paint();
-            UI.toast('Kept ' + items.length + '. They show up in the brief.');
+            UI.toast('Kept ' + items.length + '.');
           });
           setTimeout(function () { box.focus(); }, 60);
         }
@@ -8415,7 +8427,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             '<input class="input" id="r-title" placeholder="Moved SMB to a five seat minimum"></div>' +
           '<div class="field"><label for="r-detail">What it actually says</label>' +
             '<textarea class="input" id="r-detail" placeholder="Paste the post, or write what you took from it."></textarea></div>' +
-          '<div class="field"><label for="r-use">The sentence you would put in a message</label>' +
+          '<div class="field"><label for="r-use">The line you would use</label>' +
             '<input class="input" id="r-use" placeholder="The five seat floor turns a one call close into a two call close."></div>' +
           '<div class="row g2 wrap"><button class="btn btn-primary btn-sm" type="submit">Add it</button></div></form>',
         onMount: function (node, close) {
@@ -8433,7 +8445,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             close();
             tab = 'company';
             paint();
-            UI.toast('Added. Use it in a step when it fits.');
+            UI.toast('Added.');
           });
           setTimeout(function () { node.querySelector('#r-title').focus(); }, 60);
         }
@@ -8448,7 +8460,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     document.getElementById('add-find').addEventListener('click', addSheet);
     document.getElementById('refresh').addEventListener('click', function () {
       var b = this;
-      UI.busy(b, 900).then(function () { UI.toast('Nothing new since this morning.'); });
+      UI.busy(b, 900).then(function () { UI.toast('Checked.'); });
     });
 
     paint();
@@ -8459,8 +8471,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 /* assets/js/views/sequence.js */
 /* ==========================================================================
    views/sequence.js — the sequence builder
-   Step rail on the left with wait-day connectors, editor on the right.
-   One message per step, written to one person. No variants, because you
+   Touch rail on the left with wait-day connectors, editor on the right.
+   One text per touch, written to one person. No variants, because you
    cannot A/B test a single email to a single human being.
    ========================================================================== */
 (function (window, document) {
@@ -8513,6 +8525,10 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     if (!c) return Router.go('/', true);
     Store.touch(c.id);
     Store.materialise(c.id);
+    /* Due is counted from the day the company was added, so it is worked out
+       when the screen opens rather than trusted from the last visit */
+    Store.refreshDue(c);
+    Store.save();
     if (!c.steps.some(function (s) { return s.id === c.activeStep; })) {
       c.activeStep = c.steps[0] ? c.steps[0].id : null;
     }
@@ -8531,7 +8547,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       actions: '<span class="chip" id="cap-chip"></span>' +
                '<button class="btn btn-secondary btn-sm" id="preview">Preview</button>',
       html: '<div class="page-head"><h1>Outreach</h1></div>' +
-            UI.tipHTML('sequence-touches') +
             '<div id="seq-mount"></div>'
     });
 
@@ -8539,18 +8554,13 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     function emptyHTML() {
       if (!c.contacts.length) {
         return '<div class="card" style="overflow:hidden"><div class="empty">' +
-          '<span class="art">\u25ce</span><h2>Add someone first</h2>' +
-          '<p>A sequence is who you are writing to and when. Add the people we found for ' +
-          esc(c.company) + ' and the fourteen days build themselves around them.</p>' +
-          '<a class="btn btn-primary btn-lg" href="#/c/' + c.id + '/people">Add contacts <span class="arr">\u2192</span></a>' +
+          '<span class="art">\u25ce</span><h2>Add people first</h2>' +
+          '<a class="btn btn-primary btn-lg" href="#/c/' + c.id + '/people">Add people <span class="arr">\u2192</span></a>' +
           '</div></div>';
       }
       return '<div class="card" style="overflow:hidden"><div class="empty">' +
-        '<span class="art">\u2261</span><h2>Build the fourteen days</h2>' +
-        '<p>Ten touches across the ' + c.contacts.length + ' ' +
-        (c.contacts.length === 1 ? 'person' : 'people') + ' on your list, each starting from the template you normally send ' +
-        'them at that point. Change anything after.</p>' +
-        '<button class="btn btn-primary btn-lg" id="build">Build it <span class="arr">\u2192</span></button>' +
+        '<span class="art">\u2261</span><h2>Build the sequence</h2>' +
+        '<button class="btn btn-primary btn-lg" id="build">Build <span class="arr">\u2192</span></button>' +
         '</div></div>';
     }
 
@@ -8579,34 +8589,35 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '<span class="sc-top"><span class="sc-n">' + (i + 1) + '</span>' +
             '<span class="sc-ch">' + chIcon(s.channel) + ' ' + esc(s.channel) + '</span>' +
             '<span class="sc-dot ' + dot + '"></span></span>' +
-          '<span class="sc-who">' + esc(p ? p.name : 'No contact') + '</span>' +
+          '<span class="sc-who">' + esc(p ? p.name : 'No person') + '</span>' +
           '<span class="sc-note">' + esc(s.note) + '</span>' +
           '<span class="sc-foot"><span class="sc-day">Day ' + s.day + '</span>' +
             (t ? '<span class="sc-tpl">' + esc(t.stage) + '</span>' : '') +
           '</span></button>';
       });
-      out += '<button class="addrow mt3" id="add-step">+ Add a step</button>';
+      out += '<button class="addrow mt3" id="add-step">+ Add a touch</button>';
       return out;
     }
 
     /* ---------------- editor ---------------- */
     function editorHTML() {
       var s = step();
-      if (!s) return '<div class="card p6"><p class="dim">No steps yet. Add one on the left.</p></div>';
+      if (!s) return '<div class="card p6"><p class="dim">No touches yet.</p></div>';
       var p = contactOf(s);
       var t = Store.template(s.template);
       var body = Store.bodyFor(c, s);
+      var left = s.status === 'sent' ? 0 : Store.unresolved(body).length;
 
       return '<div class="card editor">' +
         '<div class="ed-head">' +
           '<div class="row g3 grow" style="min-width:0">' +
             (p ? '<span class="avatar avatar-md" style="background:var(' + p.colour + ')">' + esc(Store.initials(p.name)) + '</span>' : '<span class="avatar avatar-md" style="background:var(--line-3)">—</span>') +
-            '<span class="grow" style="min-width:0"><b style="font-size:var(--fs-md)">' + esc(p ? p.name : 'No contact yet') + '</b>' +
+            '<span class="grow" style="min-width:0"><b style="font-size:var(--fs-md)">' + esc(p ? p.name : 'No person yet') + '</b>' +
             '<p class="dimmer" style="font-size:var(--fs-sm)">' + esc(p ? p.title : 'Pick who this goes to') + '</p></span>' +
           '</div>' +
           '<div class="row g2">' +
-            '<button class="icon-btn" id="dupe" title="Duplicate step" aria-label="Duplicate step">⧉</button>' +
-            '<button class="icon-btn" id="drop" title="Delete step" aria-label="Delete step">✕</button>' +
+            '<button class="icon-btn" id="dupe" title="Duplicate touch" aria-label="Duplicate touch">⧉</button>' +
+            '<button class="icon-btn" id="drop" title="Delete touch" aria-label="Delete touch">✕</button>' +
           '</div>' +
         '</div>' +
 
@@ -8623,7 +8634,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
         '<div class="ed-tplbar">' +
           (t ? '<span class="tplmark"><b>' + esc(t.name) + '</b><em>' + esc(t.stage) + ' · ' + esc(t.persona) + '</em></span>'
-             : '<span class="tplmark tplmark-off"><b>Written from scratch</b><em>Or start from something you already send</em></span>') +
+             : '<span class="tplmark tplmark-off"><b>Written from scratch</b></span>') +
           '<button class="btn btn-secondary btn-sm" id="pick-tpl">' + (t ? 'Use a different template' : 'Use a template') + '</button>' +
         '</div>' +
 
@@ -8631,8 +8642,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           (hasSubject(s)
             ? '<input class="subject" id="subject" placeholder="Subject line, lowercase, about them" value="' + esc(s.subject || '') + '">'
             : '') +
-          '<textarea class="bodytext" id="body" spellcheck="false" aria-label="Message" placeholder="Write it, or pull in a template above.">' + esc(body) + '</textarea>' +
-          '<div class="ed-count"><span class="hint" id="words"></span></div>' +
+          '<textarea class="bodytext" id="body" spellcheck="false" aria-label="Text" placeholder="Write it, or use a template.">' + esc(body) + '</textarea>' +
+          '<div class="ed-count"><span class="hint" id="words"></span> <span class="hint" id="holes"></span></div>' +
         '</div>' +
 
         '<div class="ed-foot">' +
@@ -8642,16 +8653,19 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           (s.status === 'sent'
             ? '<button class="btn btn-secondary btn-sm" id="reply">They replied</button>'
             : '') +
-          '<button class="btn btn-primary btn-sm" id="mark"' +
-            (s.status === 'sent' || s.status === 'replied' ? ' disabled' : '') + '>' +
-            (s.status === 'replied' ? 'Replied' : s.status === 'sent' ? 'Sent' : 'Mark sent') + '</button>' +
+          (s.status === 'replied'
+            ? '<a class="btn btn-primary btn-sm" id="book" href="#/c/' + c.id + '/brief">Book the interview</a>'
+            : '<span class="chip chip-warn' + (left ? '' : ' hide') + '" id="mark-why">' + leftText(left) + '</span>' +
+              '<button class="btn btn-primary btn-sm" id="mark"' +
+              (s.status === 'sent' || left ? ' disabled' : '') + '>' +
+              (s.status === 'sent' ? 'Sent' : 'Mark sent') + '</button>') +
         '</div>' +
       '</div>' +
 
       '<div class="grid cols-2 mt4">' +
         '<div class="card p5 col g3" id="ctx"></div>' +
         '<div class="card assist-card">' +
-          '<div class="assist-head"><b>Change something</b><span class="hint">Edits the draft in place</span></div>' +
+          '<div class="assist-head"><b>Change something</b></div>' +
           '<div class="assist-log" id="log"></div>' +
           '<div class="assist-sug" id="sug"></div>' +
           '<form class="assist-in" id="assist-form">' +
@@ -8663,7 +8677,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 
     function ctxHTML() {
       var s = step(), p = contactOf(s);
-      if (!p) return '<p class="cap">Context</p><p class="dim" style="font-size:var(--fs-sm)">Pick a contact and anything they said recently shows up here.</p>';
+      if (!p) return '<p class="cap">Context</p><p class="dim" style="font-size:var(--fs-sm)">Pick a person.</p>';
       var acts = (p.activity || []).slice(0, 2);
       return '<p class="cap">Said lately</p>' +
         (acts.length
@@ -8671,7 +8685,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
               return '<div class="mini-act"><p>' + esc(a.text) + '</p>' +
                 '<button class="btn btn-ghost btn-sm" data-insert="' + esc(a.use) + '">Drop this in</button></div>';
             }).join('')
-          : '<p class="hint">Nothing public found for them yet. Worth knowing on its own.</p>') +
+          : '<p class="hint">Nothing public yet.</p>') +
         (p.ask ? '<p class="hint">You want: ' + esc(p.ask) + '</p>' : '') +
         '<a class="hint" href="#/c/' + c.id + '/research">All research →</a>';
     }
@@ -8697,7 +8711,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             });
             close();
             paintAll();
-            UI.toast('Pulled in "' + t.name + '". Names already filled in.');
+            UI.toast('Added "' + t.name + '".');
           });
         },
         html: '<div class="tplpick">' + list.map(function (t) {
@@ -8723,7 +8737,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         chip.className = 'chip' + (over ? ' chip-warn' : '');
         chip.innerHTML = over
           ? '<b>' + over + '</b> over two touches'
-          : '<b>' + c.steps.length + '</b> steps · <b>' + lastDay() + '</b> days';
+          : '<b>' + c.steps.length + '</b> touches · <b>' + lastDay() + '</b> days';
       }
     }
     function lastDay() { return c.steps.length ? c.steps[c.steps.length - 1].day : 0; }
@@ -8734,6 +8748,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       if (ctx) ctx.innerHTML = ctxHTML();
       wire();
       words();
+      holes();
       grow();
     }
     function paintAll() {
@@ -8746,7 +8761,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         if (build) build.addEventListener('click', function () {
           var made = Store.buildSequence(c.id);
           paintAll();
-          UI.toast(made.length + ' touches over ' + made[made.length - 1].day + ' days. Edit any of them.');
+          UI.toast(made.length + ' touches over ' + made[made.length - 1].day + ' days.');
         });
         return;
       }
@@ -8754,6 +8769,21 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         mount.innerHTML = '<div class="builder"><div class="rail" id="rail"></div><div id="editor"></div></div>';
       }
       paintRail(); paintEditor();
+    }
+
+    function leftText(n) { return n + ' placeholder' + (n === 1 ? '' : 's') + ' left'; }
+
+    /* an unresolved [bracket] blocks Mark sent, and says which ones */
+    function holes() {
+      var b = v.querySelector('#body'); if (!b) return;
+      var s = step();
+      var found = Store.unresolved(b.value);
+      var el = v.querySelector('#holes');
+      if (el) el.textContent = found.length ? 'Fill in: ' + found.join(' ') : '';
+      var why = v.querySelector('#mark-why');
+      if (why) { why.textContent = leftText(found.length); why.classList.toggle('hide', !found.length); }
+      var mark = v.querySelector('#mark');
+      if (mark && s) mark.disabled = !!found.length || s.status === 'sent' || s.status === 'replied';
     }
 
     function words() {
@@ -8780,7 +8810,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           subject: subject ? subject.value : (s.subject || '')
         });
       }
-      if (body) body.addEventListener('input', function () { words(); grow(); persist(); });
+      if (body) body.addEventListener('input', function () { words(); holes(); grow(); persist(); });
       if (subject) subject.addEventListener('input', persist);
 
       v.querySelectorAll('[data-f]').forEach(function (el) {
@@ -8800,38 +8830,42 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         el.addEventListener('click', function () {
           if (!body) return;
           body.value = el.dataset.insert + '\n\n' + body.value;
-          words(); grow(); persist(); body.focus();
-          UI.toast('Added to the top. Edit it so it sounds like you.');
+          words(); holes(); grow(); persist(); body.focus();
+          UI.toast('Added.');
         });
       });
 
       var dupe = v.querySelector('#dupe');
       if (dupe) dupe.addEventListener('click', function () {
         var copy = Store.duplicateStep(c.id, s.id);
-        if (copy) { c.activeStep = copy.id; Store.save(); paintAll(); UI.toast('Step duplicated.'); }
+        if (copy) { c.activeStep = copy.id; Store.save(); paintAll(); UI.toast('Touch duplicated.'); }
       });
       var drop = v.querySelector('#drop');
       if (drop) drop.addEventListener('click', function () {
-        UI.confirm({ title: 'Delete this step?', body: 'It comes out of the sequence. The contact stays.', confirm: 'Delete', danger: true })
+        UI.confirm({ title: 'Delete this touch?', body: 'The person stays.', confirm: 'Delete', danger: true })
           .then(function (ok) {
             if (!ok) return;
             Store.removeStep(c.id, s.id);
             c.activeStep = c.steps[0] ? c.steps[0].id : null; Store.save();
-            paintAll(); UI.toast('Step deleted.');
+            paintAll(); UI.toast('Touch deleted.');
           });
       });
       var mark = v.querySelector('#mark');
       if (mark) mark.addEventListener('click', function () {
         if (s.status === 'sent' || s.status === 'replied') { UI.toast('Already logged.'); return; }
+        if (Store.unresolved(body ? body.value : Store.bodyFor(c, s)).length) return;
+        persist();
         Store.updateStep(c.id, s.id, { status: 'sent' });
+        /* on to the next touch that needs sending */
+        var nxt = c.steps.filter(function (x) { return x.id !== s.id && x.status === 'due'; })[0] ||
+                  c.steps.filter(function (x) { return x.id !== s.id && x.status === 'queued'; })[0];
+        if (nxt) { c.activeStep = nxt.id; Store.save(); }
         paintAll();
         /* the third moment: every planned touch has actually gone out */
         var out = c.steps.filter(function (x) { return x.status === 'sent' || x.status === 'replied'; }).length;
         if (c.steps.length && out >= c.steps.length) {
           UI.cheerOnce(c.id, 'sent', {
-            title: 'All of it is out',
-            line: 'Every touch you planned for ' + c.company + ' has gone. ' +
-                  'Nothing else to write — now it is on them.'
+            title: 'All touches sent'
           });
         } else {
           UI.toast('Logged.');
@@ -8847,9 +8881,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         if (dropped) UI.toast(dropped + ' later touch' + (dropped === 1 ? '' : 'es') + ' to ' +
           (contactOf(s) ? contactOf(s).name.split(' ')[0] : 'them') + ' dropped.');
         var first = UI.cheerOnce(c.id, 'reply', {
-          title: 'Somebody wrote back',
-          line: 'That is the whole point of the fourteen days. Reply today, ' +
-                'while you are still the person who sent something specific.'
+          title: 'Reply logged'
         });
         if (!first) UI.toast('Reply logged.');
       });
@@ -8864,7 +8896,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           body: body ? body.value : ''
         });
         Store.updateStep(c.id, s.id, { template: t.id });
-        paintAll(); UI.toast('Saved to your library as "' + t.name + '".');
+        paintAll(); UI.toast('Saved as "' + t.name + '".');
       });
 
       /* assistant */
@@ -8881,7 +8913,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         if (!node || !node.isConnected || !body.isConnected) return;
         node.textContent = reply;
         body.value = text;
-        words(); grow(); persist();
+        words(); holes(); grow(); persist();
         body.classList.remove('flash'); void body.offsetWidth; body.classList.add('flash');
       }
       function ask(text) {
@@ -8936,7 +8968,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     UI.on(v, 'click', '#add-step', function () {
       var s = Store.addStep(c.id);
       c.activeStep = s.id; Store.save(); paintAll();
-      UI.toast('Step added. Set the day and who it goes to.');
+      UI.toast('Touch added.');
     });
 
     document.getElementById('preview').addEventListener('click', function () {
@@ -8966,7 +8998,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 ;
 /* assets/js/views/templates.js */
 /* ==========================================================================
-   views/templates.js — the message library. What you normally send to a
+   views/templates.js — the template library. What you normally send to a
    given kind of person at a given point in the sequence.
    ========================================================================== */
 (function (window, document) {
@@ -9034,9 +9066,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
               Store.CHANNELS.map(function (ch) { return '<option' + (ch === t.channel ? ' selected' : '') + '>' + ch + '</option>'; }).join('') +
             '</select></div>' +
           '</div>' +
-          '<div class="field"><label for="t-body">Message</label>' +
+          '<div class="field"><label for="t-body">Text</label>' +
             '<textarea class="input" id="t-body" style="min-height:250px;font-family:var(--mono);font-size:13px;line-height:1.8">' + esc(t.body) + '</textarea>' +
-            '<p class="hint">Anything in braces is filled in from the company and the person when you pull this into a step.</p></div>' +
+            '</div>' +
           '<div class="row between">' +
             '<span class="hint" id="t-saved" style="opacity:0;transition:opacity var(--t-2)">Saved</span>' +
             '<button class="btn btn-danger btn-sm" id="t-del">Delete</button></div>' +
@@ -9053,7 +9085,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         });
       });
       box.querySelector('#t-del').addEventListener('click', function () {
-        UI.confirm({ title: 'Delete "' + t.name + '"?', body: 'Any step using it keeps the words, it just loses the link back here.', confirm: 'Delete', danger: true })
+        UI.confirm({ title: 'Delete "' + t.name + '"?', body: 'Touches using it keep the words.', confirm: 'Delete', danger: true })
           .then(function (ok) {
             if (!ok) return;
             Store.removeTemplate(t.id);
@@ -9070,7 +9102,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         body: '{first}, \n\n\n\nWorth fifteen minutes?' });
       selected = t.id; filter = 'All';
       paintFilters(); paintList();
-      UI.toast('New template. Give it a name.');
+      UI.toast('Template added.');
     });
 
     paintFilters();
@@ -9081,7 +9113,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 ;
 /* assets/js/views/page.js */
 /* ==========================================================================
-   views/page.js — the public page, the one thing you link to in a message.
+   views/page.js — the public page, the one thing you link to in a touch.
    Three layouts over the same content, because a hiring manager who skims
    and one who reads want different shapes.
    ========================================================================== */
@@ -9092,9 +9124,9 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   window.Views = window.Views || {};
 
   var LAYOUTS = [
-    { key: 'case',   name: 'The case',   sub: 'Portrait, a thesis, then the proof. Reads top to bottom.' },
-    { key: 'brief',  name: 'The brief',  sub: 'Two columns, everything above the fold. For skimmers.' },
-    { key: 'letter', name: 'The letter', sub: 'One narrow column addressed to a person. For a warm intro.' }
+    { key: 'case',   name: 'The case',   sub: '' },
+    { key: 'brief',  name: 'Columns',  sub: '' },
+    { key: 'letter', name: 'The letter', sub: '' }
   ];
 
   window.Views.page = function (params) {
@@ -9180,7 +9212,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         '<div class="pg-days">' + reqs.map(function (r, i) {
           return '<div><span>' + ([30, 60, 90][i] || '') + '</span><p>' + esc(r) + '</p></div>';
         }).join('') + '</div>' +
-        '<p class="pg-note">Taken from the listing. Write your own in Settings before you send this.</p></section>';
+        '</section>';
     }
 
     function sExp() {
@@ -9261,7 +9293,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             '<div class="laypick" id="lay">' + LAYOUTS.map(function (l) {
               return '<button class="lay' + (c.pageTemplate === l.key ? ' on' : '') + '" data-lay="' + l.key + '">' +
                 '<span class="lay-art lay-' + l.key + '"><i></i><i></i><i></i></span>' +
-                '<b>' + esc(l.name) + '</b><em>' + esc(l.sub) + '</em></button>';
+                '<b>' + esc(l.name) + '</b></button>';
             }).join('') + '</div>' +
           '</div>' +
           '<div class="card p4">' +
@@ -9270,7 +9302,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '</div>' +
           '<div class="card p4">' +
             '<p class="cap mb2">Opens</p><h3 class="mono">' + c.views + '</h3>' +
-            (pf.photo ? '' : '<p class="hint mt3">No photo yet. A face on this page is worth more than another bullet. <a href="#/settings">Add one</a>.</p>') +
+            (pf.photo ? '' : '<p class="hint mt3">No photo. <a href="#/settings">Add one</a></p>') +
           '</div>' +
         '</div>' +
         '<div class="browser">' +
@@ -9309,7 +9341,6 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       Store.updateCampaign(c.id, { pageTemplate: el.dataset.lay });
       v.querySelectorAll('[data-lay]').forEach(function (b) { b.classList.toggle('on', b.dataset.lay === el.dataset.lay); });
       repaintPage();
-      UI.toast('Switched to ' + LAYOUTS.filter(function (l) { return l.key === el.dataset.lay; })[0].name.toLowerCase() + '.');
     });
 
     document.getElementById('copy-link').addEventListener('click', function () {
@@ -9321,7 +9352,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 ;
 /* assets/js/views/brief.js */
 /* ==========================================================================
-   views/brief.js — the interview brief.
+   views/brief.js — the interview.
 
    Everything this company campaign has accumulated, on one page, for the
    thirty minutes before you walk in: what you said you would lead with and
@@ -9360,15 +9391,14 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           '<p class="bf-where">' + esc(w.win.where) + '</p>' +
           (w.story
             ? '<p class="bf-story">' + esc(w.story) + '</p>'
-            : '<p class="bf-todo">No story behind this yet. ' +
-              '<a href="#/c/' + c.id + '/prep">Work it out in Prep</a> before someone asks.</p>') +
+            : '<p class="bf-todo"><a href="#/c/' + c.id + '/prep">Add a story</a></p>') +
         '</div>';
       }).join('') + '</div>';
     }
 
     /* ---------------- the match, with your answers ---------------- */
     function matchHTML() {
-      if (!b.match.length) return '<p class="dim">No requirements were parsed out of the listing.</p>';
+      if (!b.match.length) return '<p class="dim">No requirements found.</p>';
       return '<div class="bf-match">' + b.match.map(function (m) {
         return '<div class="bf-row ' + m.strength + '">' +
           '<span class="mr-dot"></span>' +
@@ -9381,8 +9411,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
             (m.answer
               ? '<p class="bf-answer"><em>You will say:</em> ' + esc(m.answer) + '</p>'
               : m.strength === 'none'
-                ? '<p class="bf-todo">Nothing answers this and you have not worked out what to say. ' +
-                  '<a href="#/c/' + c.id + '/prep">Do that first.</a></p>'
+                ? '<p class="bf-todo"><a href="#/c/' + c.id + '/prep">Add an answer</a></p>'
                 : '') +
           '</div></div>';
       }).join('') + '</div>';
@@ -9403,7 +9432,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
               ? '<span class="chip' + (t.some(function (x) { return x.replied; }) ? ' chip-pos' : '') + '">' +
                 t.length + ' touch' + (t.length === 1 ? '' : 'es') +
                 (t.some(function (x) { return x.replied; }) ? ', replied' : '') + '</span>'
-              : '<span class="chip">not contacted</span>') +
+              : '<span class="chip">no touches</span>') +
           '</div>' +
           (t.length
             ? '<ul class="bf-touches">' + t.map(function (x) {
@@ -9422,8 +9451,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     /* ---------------- what the company said ---------------- */
     function researchHTML() {
       if (!b.research.length) {
-        return '<p class="dim">Nothing gathered. <a href="#/c/' + c.id + '/research">Add what you have found</a> — ' +
-          'one specific thing they said is worth more than a page of company history.</p>';
+        return '<p class="dim"><a href="#/c/' + c.id + '/research">Add finding</a></p>';
       }
       return '<ul class="bf-research">' + b.research.map(function (r) {
         return '<li><b>' + esc(r.title) + '</b>' +
@@ -9437,9 +9465,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       var q = c.questions;
       if (!q || !(q.likely || []).length) {
         return '<div class="bf-empty">' +
-          '<p>Nothing to work from yet — paste the listing on the company screen ' +
-          'and pick the wins you are leading with.</p>' +
-          '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '">Go back to ' + esc(c.company) + '</a></div>';
+          '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '">Role</a></div>';
       }
       return '<div class="bf-qs">' + (q.likely || []).map(function (x) {
         return '<div class="bf-q">' +
@@ -9460,7 +9486,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
           }).join('') + '</ul>'
         : '') +
       '<button class="btn btn-secondary btn-sm mt3" id="gen-q">' +
-        (AI.ready() ? 'Work them out with Claude' : 'Work them out again') + '</button>';
+        (AI.ready() ? 'Redo with Claude' : 'Redo') + '</button>';
     }
 
     /* ---------------- the dashboard ---------------- */
@@ -9535,23 +9561,23 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
       if (busy) return;
       busy = true;
       el.disabled = true;
-      el.textContent = 'Working them out…';
+      el.textContent = 'Working…';
       if (!AI.ready()) {
         Store.setQuestions(c.id, Store.questionsLocally(c));
         busy = false;
         paintQ();
-        UI.toast('From the listing and your gaps. Claude does this properly.');
+        UI.toast('Done.');
         return;
       }
       AI.interviewPrep(c).then(function (q) {
         q.source = 'claude';
         Store.setQuestions(c.id, q);
         paintQ();
-        UI.toast((q.likely || []).length + ' questions, with what you already have to answer them.');
+        UI.toast((q.likely || []).length + ' questions.');
       }).catch(function (err) {
         Store.setQuestions(c.id, Store.questionsLocally(c));
         paintQ();
-        UI.toast('Claude could not (' + err.message + '). Fell back to the listing.');
+        UI.toast('Claude could not (' + err.message + ').');
       }).then(function () { busy = false; });
     });
 
@@ -9559,7 +9585,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     v.querySelector('#booked').addEventListener('click', function () {
       Store.setBooked(c.id, !c.booked);
       if (c.booked) {
-        UI.cheerOnce(c.id, 'booked', { title: 'Interview booked', line: 'Everything on this page is for that room.' });
+        UI.cheerOnce(c.id, 'booked', { title: 'Interview booked' });
       }
       Views.brief(params);
     });
@@ -9735,36 +9761,31 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     var cid = Shell.activeCampaignId();
     var items = [
       { group: 'Go to', icon: '◉', label: 'Overview', hint: 'G O', run: function () { Router.go('/'); } },
-      { group: 'Do', icon: '+', label: 'Add a company from a job listing', run: function () { Router.go('/new'); } }
+      { group: 'Do', icon: '+', label: 'Add a company', run: function () { Router.go('/new'); } }
     ];
     if (cid) {
       items.push(
-        { group: 'Go to', icon: '◆', label: 'Company summary', hint: 'G C', run: function () { Router.go('/c/' + cid); } },
-        { group: 'Go to', icon: '◍', label: 'Prep, the stories behind your wins', hint: 'G E', run: function () { Router.go('/c/' + cid + '/prep'); } },
-        { group: 'Go to', icon: '◎', label: 'Contacts', hint: 'G P', run: function () { Router.go('/c/' + cid + '/people'); } },
-        { group: 'Go to', icon: '◈', label: 'Research on the company and the people', hint: 'G R', run: function () { Router.go('/c/' + cid + '/research'); } },
-        { group: 'Go to', icon: '≡', label: 'The fourteen day sequence', hint: 'G S', run: function () { Router.go('/c/' + cid + '/sequence'); } },
-        { group: 'Go to', icon: '▤', label: 'Your public page', run: function () { Router.go('/c/' + cid + '/page'); } },
-        { group: 'Go to', icon: '◫', label: 'The interview brief', hint: 'G B', run: function () { Router.go('/c/' + cid + '/brief'); } }
+        { group: 'Go to', icon: '◆', label: 'Role', hint: 'G C', run: function () { Router.go('/c/' + cid); } },
+        { group: 'Go to', icon: '◍', label: 'Story', hint: 'G E', run: function () { Router.go('/c/' + cid + '/prep'); } },
+        { group: 'Go to', icon: '◎', label: 'People', hint: 'G P', run: function () { Router.go('/c/' + cid + '/people'); } },
+        { group: 'Go to', icon: '◈', label: 'Research', hint: 'G R', run: function () { Router.go('/c/' + cid + '/research'); } },
+        { group: 'Go to', icon: '≡', label: 'Outreach', hint: 'G S', run: function () { Router.go('/c/' + cid + '/sequence'); } },
+        { group: 'Go to', icon: '▤', label: 'Page', run: function () { Router.go('/c/' + cid + '/page'); } },
+        { group: 'Go to', icon: '◫', label: 'Interview', hint: 'G B', run: function () { Router.go('/c/' + cid + '/brief'); } }
       );
     }
     items.push(
-      { group: 'Go to', icon: '❏', label: 'Message templates', run: function () { Router.go('/templates'); } },
+      { group: 'Go to', icon: '❏', label: 'Templates', run: function () { Router.go('/templates'); } },
       { group: 'Go to', icon: '⚙', label: 'Settings', run: function () { Router.go('/settings'); } },
-      { group: 'Go to', icon: '◆', label: 'The brand: colours, icons, type', run: function () { Router.go('/brand'); } },
-      { group: 'Do', icon: '↑', label: 'Import a résumé or LinkedIn profile', run: function () { Router.go('/import'); } }
+      { group: 'Go to', icon: '◆', label: 'Brand', run: function () { Router.go('/brand'); } },
+      { group: 'Do', icon: '↑', label: 'Replace résumé', run: function () { Router.go('/import'); } }
     );
     if (cid) {
       items.push(
-        { group: 'Do', icon: '⧉', label: 'Copy the public page link', run: function () {
+        { group: 'Do', icon: '⧉', label: 'Copy page link', run: function () {
           var c = Store.campaign(cid);
           UI.copy('https://frontdoor.app/p/' + c.slug);
           UI.toast('Link copied.');
-        } },
-        { group: 'Do', icon: '◈', label: 'Simulate a page view', run: function () {
-          var c = Store.campaign(cid);
-          c.views += 1; c.lastView = 'just now'; Store.save();
-          UI.toast('Marcus opened your page. Just now.');
         } }
       );
     }

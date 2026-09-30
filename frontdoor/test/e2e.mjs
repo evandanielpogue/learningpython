@@ -401,7 +401,7 @@ await group('Reading the posting from its link', async (page) => {
     await page.waitForSelector('#post-get:not([disabled])', { timeout: 5000 });
     await page.fill('#post-url', 'https://jobs.example.com/ae');
     await page.click('#post-get');
-    await page.waitForFunction(() => /Read it/.test(document.querySelector('#post-msg').textContent), { timeout: 15000 });
+    await page.waitForFunction(() => /^Read( from|\.)/.test(document.querySelector('#post-msg').textContent), { timeout: 15000 });
     const text = await page.inputValue('#listing');
     if (!/Mid-Market Account Executive/.test(text)) throw new Error('listing not filled: ' + text.slice(0, 60));
     if (!(await page.locator('#post-msg.ok').count())) throw new Error('not flagged as a success');
@@ -693,7 +693,7 @@ await group('The interview brief', async (page) => {
     const todo = await page.locator('.bf-win .bf-todo').count();
     if (!todo) throw new Error('missing stories are not called out');
     const t = await page.locator('.bf-win .bf-todo').first().textContent();
-    if (!/Prep/.test(t)) throw new Error('no route back to prep');
+    if (!/story/i.test(t)) throw new Error('no route back to the story');
   });
   await step('a prep answer reaches the brief', async () => {
     const id = await page.evaluate(() => {
@@ -1711,7 +1711,7 @@ await group('Titles and the way it talks', async (page) => {
   await step('it does not reach for a phrase nobody uses', async () => {
     const lines = await spoken();
     /* things that read fine written down and sound absurd out loud */
-    const affected = /\b(what broke|over a drink|nothing goes that cleanly|interrogat|invitation|kind of number|the version you would)\b/i;
+    const affected = /\b(what broke|over a drink|nothing goes that cleanly|interrogat|invitation|kind of number|the version you would|keep going|early days|this one is coming)\b/i;
     const bad = lines.filter(l => affected.test(l));
     if (bad.length) throw new Error(bad.join(' | '));
   });
@@ -2224,7 +2224,7 @@ await group('Cold start, all the way through', async (page) => {
     const picked = await page.locator('.opt[aria-pressed="true"]').count();
     if (picked !== 3) throw new Error(picked + ' picked');
     const why = await page.locator('.opt[aria-pressed="true"] em').first().textContent();
-    if (!/Matches the listing/.test(why)) throw new Error('not matched: ' + why);
+    if (!/^Matches /.test(why)) throw new Error('not matched: ' + why);
   });
   await step('the company is created with nobody on it yet', async () => {
     await page.click('#create');
@@ -2383,7 +2383,7 @@ await group('Add a company from a listing', async (page) => {
     const on = await page.locator('.opt[aria-pressed="true"]').count();
     if (on !== 3) throw new Error(on + ' picked');
     const why = await page.locator('.opt[aria-pressed="true"] em').first().textContent();
-    if (!/Matches the listing/.test(why)) throw new Error('no match reason: ' + why);
+    if (!/^Matches /.test(why)) throw new Error('no match reason: ' + why);
   });
 
   await step('three is a suggestion, not a cap', async () => {
@@ -2405,19 +2405,12 @@ await group('Add a company from a listing', async (page) => {
       throw new Error('the count does not follow: ' + await page.locator('#pick-count').textContent());
   });
 
-  await step('going past three says what it costs rather than blocking it', async () => {
-    const note = await page.locator('#pick-note').textContent();
-    if (!note.trim()) throw new Error('no word of warning at all');
-    if (!/story|r\u00e9sum\u00e9/i.test(note)) throw new Error('unhelpful note: ' + note);
-  });
-
-  await step('dropping back under three clears the note', async () => {
+  await step('picking wins is not narrated', async () => {
+    if (await page.locator('#pick-note').count()) throw new Error('a note under the wins is back');
     for (let i = 0; i < 3; i++) {
       await page.locator('.opt[aria-pressed="true"]').last().click();
       await page.waitForTimeout(60);
     }
-    const note = (await page.locator('#pick-note').textContent()).trim();
-    if (note) throw new Error('still nagging at three: ' + note);
   });
 
   await step('a win can be swapped', async () => {
@@ -2694,6 +2687,232 @@ await group('Sequence builder', async (page) => {
     await page.waitForTimeout(300);
     const t1 = await page.evaluate(() => Store.state.templates.length);
     if (t1 !== t0 + 1) throw new Error('not saved');
+  });
+});
+
+/* ------------------------------------------- one name, and what it does -- */
+await group('Naming, the coach and the sequence', async (page) => {
+  await signIn(page);
+  const FULL = 'I rewrote the discovery script myself and the reps pushed back at first, ' +
+    'but the cycle went from 70 days down to 41 by Q3 and the book closed at $1.2M.';
+
+  await step('one name for each thing, on every screen', async () => {
+    const bad = [];
+    for (const r of ['', 'c/c_acme', 'c/c_acme/prep', 'c/c_acme/people', 'c/c_acme/research',
+                     'c/c_acme/sequence', 'c/c_acme/page', 'c/c_acme/brief', 'templates', 'settings']) {
+      await page.goto(BASE + '#/' + r, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(220);
+      const t = await page.evaluate(() => document.body.innerText);
+      if (/\bcontacts?\b/i.test(t)) bad.push('#/' + r + ' says contact');
+      if (/\bresume\b/i.test(t)) bad.push('#/' + r + ' says resume');
+      if (/simulate a view/i.test(t)) bad.push('#/' + r + ' simulates a view');
+      if (r.endsWith('sequence') && /\bsteps?\b/i.test(t.replace(/Skip to content/, ''))) bad.push('#/' + r + ' says step');
+    }
+    if (bad.length) throw new Error(bad.join(' | '));
+  });
+
+  await step('the coach lines that were wrong in voice are gone', async () => {
+    const out = await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      const q = Coach.questions(c, { wins: Store.campaignWins(c) });
+      const all = [].concat(q.likely.map(x => x.why + ' ' + x.gap), q.watch).join(' | ');
+      const lines = [];
+      ['thin', 'we', 'obstacle', 'number', 'outcome', 'vague', 'learned'].forEach(w => {
+        for (let i = 0; i < 12; i++) lines.push(Coach.probe(w, 'k' + i));
+      });
+      return { all, lines: lines.join(' | ') };
+    });
+    if (/This one is coming|keep going|early days/i.test(out.all + out.lines)) throw new Error('vague line is back');
+    if (/That is the interview/.test(out.all)) throw new Error('stiff line is back');
+  });
+
+  await step('a complete first answer goes straight to the read-back', async () => {
+    const out = await page.evaluate((text) => {
+      const c = Store.campaign('c_acme');
+      const a = Store.buildAgenda(c.id)[0];
+      return Coach.turn(a, [{ role: 'assistant', content: 'x', stage: 'open' },
+                            { role: 'user', content: text }], { win: Store.campaignWins(c)[0] });
+    }, FULL);
+    if (out.stage !== 'confirm') throw new Error('asked another question: ' + out.bubbles.join(' / '));
+    if (!/\?$/.test(out.bubbles[0].trim())) throw new Error('did not ask: ' + out.bubbles[0]);
+  });
+
+  await step('an answer with no obstacle still gets a probe', async () => {
+    const out = await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      const a = Store.buildAgenda(c.id)[0];
+      return Coach.turn(a, [{ role: 'assistant', content: 'x', stage: 'open' },
+                            { role: 'user', content: 'I ran the pod for two quarters.' }], {});
+    });
+    if (out.stage === 'confirm') throw new Error('read back a thin answer');
+  });
+
+  await step('confirming banks the read-back, never the word yes', async () => {
+    await page.evaluate(() => { const c = Store.campaign('c_acme'); c.agenda = []; Store.buildAgenda('c_acme'); });
+    await page.goto(BASE + '#/c/c_acme/prep', { waitUntil: 'networkidle' });
+    await waitAi(page, 1);
+    const first = await page.locator('.agitem.on .ag-label').textContent();
+    const said = await answer(page, FULL, 2);
+    if (!/\?$/.test(said)) throw new Error('no read-back: ' + said);
+    await answer(page, 'yes', 3);
+    await page.waitForTimeout(1600);
+    const banked = await page.evaluate(() => Store.stories(Store.campaign('c_acme')).map(s => s.text));
+    if (!banked.length) throw new Error('nothing banked');
+    if (banked.some(t => /\byes\b/i.test(t))) throw new Error('filler in the story: ' + banked.join(' | '));
+    if (!banked.some(t => /discovery script/.test(t))) throw new Error('not the read-back: ' + banked.join(' | '));
+    const now = await page.locator('.agitem.on .ag-label').textContent();
+    if (now === first) throw new Error('the next item did not open after a confirmed story');
+  });
+
+  await step('Save banks what was said without the filler, and opens the next item', async () => {
+    await page.waitForTimeout(600);
+    const before = await page.locator('.agitem.on .ag-label').textContent();
+    await answer(page, 'I ran the SMB pod for two quarters during the reorg and we hit plan.', 2);
+    await page.fill('#ask-q', 'yes');
+    await page.locator('#ask-form button[type=submit]').click();
+    await page.waitForTimeout(900);
+    await page.click('#save-it');
+    await page.waitForTimeout(500);
+    const banked = await page.evaluate(() => Store.stories(Store.campaign('c_acme')).map(s => s.text));
+    if (banked.some(t => /\byes\b/i.test(t))) throw new Error('filler in the story: ' + banked.join(' | '));
+    if (!banked.some(t => /SMB pod/.test(t))) throw new Error('not banked');
+    const now = await page.locator('.agitem.on .ag-label').textContent();
+    if (now === before) throw new Error('the next item did not open after Save');
+  });
+
+  await step('a placeholder blocks Mark sent and says why', async () => {
+    await page.goto(BASE + '#/c/c_acme/sequence', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.stepcard', { timeout: 5000 });
+    const due = await page.evaluate(() => Store.campaign('c_acme').steps.filter(s => s.status === 'due')[0].id);
+    await page.locator('.stepcard[data-step="' + due + '"]').click();
+    await page.waitForTimeout(240);
+    await page.fill('#body', 'Marcus,\n\n[One sentence on what that took.] [The number.]\n\nWorth fifteen minutes?');
+    if (!(await page.locator('#mark').isDisabled())) throw new Error('Mark sent is live with brackets left');
+    const why = (await page.locator('#mark-why').textContent()).trim();
+    if (!/2 placeholders left/.test(why)) throw new Error('reason reads "' + why + '"');
+    if (!(await page.locator('#mark-why').isVisible())) throw new Error('the reason is hidden');
+    await page.fill('#body', 'Marcus,\n\nThe cycle went from 70 days to 41.\n\nWorth fifteen minutes?');
+    if (await page.locator('#mark').isDisabled()) throw new Error('still blocked with nothing left');
+    if (await page.locator('#mark-why').isVisible()) throw new Error('the reason stayed');
+  });
+
+  await step('Mark sent moves to the next touch', async () => {
+    const before = await page.evaluate(() => Store.campaign('c_acme').activeStep);
+    await page.click('#mark');
+    await page.waitForTimeout(400);
+    const out = await page.evaluate((id) => {
+      const c = Store.campaign('c_acme');
+      return { now: c.activeStep, was: c.steps.filter(s => s.id === id)[0].status };
+    }, before);
+    if (out.was !== 'sent') throw new Error('not sent: ' + out.was);
+    if (out.now === before) throw new Error('the selection stayed on the sent touch');
+  });
+
+  await step('the sequence screen works out what is due from the day', async () => {
+    await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      c.createdAt = Date.now() - 20 * 86400000;
+      c.steps.forEach(s => { if (s.status === 'due') s.status = 'queued'; });
+      Store.save();
+    });
+    await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
+    await page.goto(BASE + '#/c/c_acme/sequence', { waitUntil: 'networkidle' });
+    const out = await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      return { left: c.steps.filter(s => s.status === 'queued' && s.day <= c.day).length,
+               due: c.steps.filter(s => s.status === 'due').length };
+    });
+    if (out.left) throw new Error(out.left + ' touches are past their day and still queued');
+    if (!out.due) throw new Error('nothing is due twenty days in');
+  });
+
+  await step('a reply offers the interview and drops that person\'s later touches', async () => {
+    const t = await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      const s = c.steps.filter(x => x.status === 'sent' && x.contact &&
+        c.steps.some(y => y.contact === x.contact && y.day > x.day && /^(queued|due)$/.test(y.status)))[0];
+      return s ? { id: s.id, contact: s.contact, day: s.day } : null;
+    });
+    if (!t) throw new Error('no sent touch with later touches to test with');
+    await page.locator('.stepcard[data-step="' + t.id + '"]').click();
+    await page.waitForTimeout(240);
+    await page.click('#reply');
+    await page.waitForTimeout(500);
+    const book = page.locator('.ed-foot a', { hasText: 'Book the interview' });
+    if ((await book.count()) !== 1) throw new Error('no Book the interview in the footer');
+    if (!/#\/c\/c_acme\/brief$/.test(await book.getAttribute('href'))) throw new Error('wrong link');
+    const later = await page.evaluate((t) => Store.campaign('c_acme').steps
+      .filter(y => y.contact === t.contact && y.day > t.day && y.id !== t.id).map(y => y.status), t);
+    if (later.some(x => x !== 'skipped' && x !== 'sent' && x !== 'replied'))
+      throw new Error('later touches still live: ' + later.join(','));
+    if (!later.includes('skipped')) throw new Error('nothing was skipped: ' + later.join(','));
+  });
+
+  await step('a suggested seat stays a placeholder until it has a name', async () => {
+    await page.evaluate(() => { const c = Store.campaign('c_acme'); c.suggested = Store.suggestFor(c.company, c.role); Store.save(); });
+    await page.goto(BASE + '#/c/c_acme/people', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.foundcard', { timeout: 5000 });
+    const n0 = await page.evaluate(() => Store.realPeople(Store.campaign('c_acme')).length);
+    await page.locator('[data-take]').first().click();
+    await page.waitForTimeout(300);
+    const n1 = await page.evaluate(() => Store.realPeople(Store.campaign('c_acme')).length);
+    if (n1 !== n0) throw new Error('a seat counted as a person: ' + n0 + ' -> ' + n1);
+    if (!(await page.locator('.rr-tag-warn').count())) throw new Error('the seat is not marked');
+    await page.fill('#d-name', 'Dana Whitfield');
+    await page.locator('#d-name').dispatchEvent('change');
+    await page.waitForTimeout(300);
+    const n2 = await page.evaluate(() => Store.realPeople(Store.campaign('c_acme')).length);
+    if (n2 !== n0 + 1) throw new Error('a named person did not count: ' + n2);
+  });
+
+  await step('the Suggested cards use Add and Skip', async () => {
+    await page.evaluate(() => { const c = Store.campaign('c_acme'); c.suggested = Store.suggestFor(c.company, c.role); Store.save(); });
+    await page.goto(BASE + '#/c/c_acme/people', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.foundcard', { timeout: 5000 });
+    const add = page.locator('[data-take]').first();
+    const skip = page.locator('[data-skip]').first();
+    if ((await add.textContent()).trim() !== 'Add' || !(await add.getAttribute('class')).includes('btn-secondary')) throw new Error('Add is not secondary');
+    if ((await skip.textContent()).trim() !== 'Skip' || !(await skip.getAttribute('class')).includes('btn-ghost')) throw new Error('Skip is not ghost');
+  });
+
+  await step('every board card links to its next step', async () => {
+    await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.pcard', { timeout: 5000 });
+    const out = await page.evaluate(() => [...document.querySelectorAll('.pcard')].map(k => {
+      const id = k.querySelector('.pcard-id').getAttribute('href').replace('#/c/', '');
+      const na = Store.nextAction(Store.campaign(id));
+      const a = k.querySelector('.pcard-next');
+      return { na, text: a && a.textContent.trim(), href: a && a.getAttribute('href') };
+    }));
+    out.forEach(o => {
+      if (o.na.done) return;
+      if (!o.text) throw new Error('no next-step link');
+      if (o.text.indexOf(o.na.label) !== 0) throw new Error('says "' + o.text + '", next is ' + o.na.label);
+      if (o.href !== '#' + o.na.href) throw new Error('goes to ' + o.href + ', next is ' + o.na.href);
+    });
+  });
+
+  await step('an example card offers to remove the example', async () => {
+    const ex = await page.evaluate(() => !!Store.campaign('c_acme').example);
+    if (!ex) return;
+    if (!(await page.locator('.pcard .chip', { hasText: 'Example' }).count())) throw new Error('no Example chip');
+    await page.locator('.pcard [data-drop]').first().click();
+    await page.waitForSelector('.modal', { timeout: 3000 });
+    const t = await page.evaluate(() => document.body.innerText);
+    if (!/Remove example \w+\?/.test(t)) throw new Error('confirm does not name the example');
+    await page.keyboard.press('Escape');
+  });
+
+  await step('the phone bar carries the sections', async () => {
+    await page.goto(BASE + '#/c/c_acme/people', { waitUntil: 'networkidle' });
+    const out = await page.evaluate(() => ({
+      n: document.querySelectorAll('#mobile-bar .mb-item').length,
+      here: [...document.querySelectorAll('#mobile-bar [aria-current="page"] .mb-lab')].map(x => x.textContent),
+      labs: [...document.querySelectorAll('#mobile-bar .mb-lab')].map(x => x.textContent)
+    }));
+    if (out.n !== 7) throw new Error(out.n + ' items: ' + out.labs.join(','));
+    if (out.here.join() !== 'People') throw new Error('current is ' + out.here.join());
+    if (out.labs[0] !== 'Overview' || out.labs[6] !== 'Settings') throw new Error(out.labs.join(','));
   });
 });
 

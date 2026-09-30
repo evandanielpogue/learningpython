@@ -1,7 +1,7 @@
 /* ==========================================================================
    views/sequence.js — the sequence builder
-   Step rail on the left with wait-day connectors, editor on the right.
-   One message per step, written to one person. No variants, because you
+   Touch rail on the left with wait-day connectors, editor on the right.
+   One text per touch, written to one person. No variants, because you
    cannot A/B test a single email to a single human being.
    ========================================================================== */
 (function (window, document) {
@@ -54,6 +54,10 @@
     if (!c) return Router.go('/', true);
     Store.touch(c.id);
     Store.materialise(c.id);
+    /* Due is counted from the day the company was added, so it is worked out
+       when the screen opens rather than trusted from the last visit */
+    Store.refreshDue(c);
+    Store.save();
     if (!c.steps.some(function (s) { return s.id === c.activeStep; })) {
       c.activeStep = c.steps[0] ? c.steps[0].id : null;
     }
@@ -72,7 +76,6 @@
       actions: '<span class="chip" id="cap-chip"></span>' +
                '<button class="btn btn-secondary btn-sm" id="preview">Preview</button>',
       html: '<div class="page-head"><h1>Outreach</h1></div>' +
-            UI.tipHTML('sequence-touches') +
             '<div id="seq-mount"></div>'
     });
 
@@ -80,18 +83,13 @@
     function emptyHTML() {
       if (!c.contacts.length) {
         return '<div class="card" style="overflow:hidden"><div class="empty">' +
-          '<span class="art">\u25ce</span><h2>Add someone first</h2>' +
-          '<p>A sequence is who you are writing to and when. Add the people we found for ' +
-          esc(c.company) + ' and the fourteen days build themselves around them.</p>' +
-          '<a class="btn btn-primary btn-lg" href="#/c/' + c.id + '/people">Add contacts <span class="arr">\u2192</span></a>' +
+          '<span class="art">\u25ce</span><h2>Add people first</h2>' +
+          '<a class="btn btn-primary btn-lg" href="#/c/' + c.id + '/people">Add people <span class="arr">\u2192</span></a>' +
           '</div></div>';
       }
       return '<div class="card" style="overflow:hidden"><div class="empty">' +
-        '<span class="art">\u2261</span><h2>Build the fourteen days</h2>' +
-        '<p>Ten touches across the ' + c.contacts.length + ' ' +
-        (c.contacts.length === 1 ? 'person' : 'people') + ' on your list, each starting from the template you normally send ' +
-        'them at that point. Change anything after.</p>' +
-        '<button class="btn btn-primary btn-lg" id="build">Build it <span class="arr">\u2192</span></button>' +
+        '<span class="art">\u2261</span><h2>Build the sequence</h2>' +
+        '<button class="btn btn-primary btn-lg" id="build">Build <span class="arr">\u2192</span></button>' +
         '</div></div>';
     }
 
@@ -120,34 +118,35 @@
           '<span class="sc-top"><span class="sc-n">' + (i + 1) + '</span>' +
             '<span class="sc-ch">' + chIcon(s.channel) + ' ' + esc(s.channel) + '</span>' +
             '<span class="sc-dot ' + dot + '"></span></span>' +
-          '<span class="sc-who">' + esc(p ? p.name : 'No contact') + '</span>' +
+          '<span class="sc-who">' + esc(p ? p.name : 'No person') + '</span>' +
           '<span class="sc-note">' + esc(s.note) + '</span>' +
           '<span class="sc-foot"><span class="sc-day">Day ' + s.day + '</span>' +
             (t ? '<span class="sc-tpl">' + esc(t.stage) + '</span>' : '') +
           '</span></button>';
       });
-      out += '<button class="addrow mt3" id="add-step">+ Add a step</button>';
+      out += '<button class="addrow mt3" id="add-step">+ Add a touch</button>';
       return out;
     }
 
     /* ---------------- editor ---------------- */
     function editorHTML() {
       var s = step();
-      if (!s) return '<div class="card p6"><p class="dim">No steps yet. Add one on the left.</p></div>';
+      if (!s) return '<div class="card p6"><p class="dim">No touches yet.</p></div>';
       var p = contactOf(s);
       var t = Store.template(s.template);
       var body = Store.bodyFor(c, s);
+      var left = s.status === 'sent' ? 0 : Store.unresolved(body).length;
 
       return '<div class="card editor">' +
         '<div class="ed-head">' +
           '<div class="row g3 grow" style="min-width:0">' +
             (p ? '<span class="avatar avatar-md" style="background:var(' + p.colour + ')">' + esc(Store.initials(p.name)) + '</span>' : '<span class="avatar avatar-md" style="background:var(--line-3)">—</span>') +
-            '<span class="grow" style="min-width:0"><b style="font-size:var(--fs-md)">' + esc(p ? p.name : 'No contact yet') + '</b>' +
+            '<span class="grow" style="min-width:0"><b style="font-size:var(--fs-md)">' + esc(p ? p.name : 'No person yet') + '</b>' +
             '<p class="dimmer" style="font-size:var(--fs-sm)">' + esc(p ? p.title : 'Pick who this goes to') + '</p></span>' +
           '</div>' +
           '<div class="row g2">' +
-            '<button class="icon-btn" id="dupe" title="Duplicate step" aria-label="Duplicate step">⧉</button>' +
-            '<button class="icon-btn" id="drop" title="Delete step" aria-label="Delete step">✕</button>' +
+            '<button class="icon-btn" id="dupe" title="Duplicate touch" aria-label="Duplicate touch">⧉</button>' +
+            '<button class="icon-btn" id="drop" title="Delete touch" aria-label="Delete touch">✕</button>' +
           '</div>' +
         '</div>' +
 
@@ -164,7 +163,7 @@
 
         '<div class="ed-tplbar">' +
           (t ? '<span class="tplmark"><b>' + esc(t.name) + '</b><em>' + esc(t.stage) + ' · ' + esc(t.persona) + '</em></span>'
-             : '<span class="tplmark tplmark-off"><b>Written from scratch</b><em>Or start from something you already send</em></span>') +
+             : '<span class="tplmark tplmark-off"><b>Written from scratch</b></span>') +
           '<button class="btn btn-secondary btn-sm" id="pick-tpl">' + (t ? 'Use a different template' : 'Use a template') + '</button>' +
         '</div>' +
 
@@ -172,8 +171,8 @@
           (hasSubject(s)
             ? '<input class="subject" id="subject" placeholder="Subject line, lowercase, about them" value="' + esc(s.subject || '') + '">'
             : '') +
-          '<textarea class="bodytext" id="body" spellcheck="false" aria-label="Message" placeholder="Write it, or pull in a template above.">' + esc(body) + '</textarea>' +
-          '<div class="ed-count"><span class="hint" id="words"></span></div>' +
+          '<textarea class="bodytext" id="body" spellcheck="false" aria-label="Text" placeholder="Write it, or use a template.">' + esc(body) + '</textarea>' +
+          '<div class="ed-count"><span class="hint" id="words"></span> <span class="hint" id="holes"></span></div>' +
         '</div>' +
 
         '<div class="ed-foot">' +
@@ -183,16 +182,19 @@
           (s.status === 'sent'
             ? '<button class="btn btn-secondary btn-sm" id="reply">They replied</button>'
             : '') +
-          '<button class="btn btn-primary btn-sm" id="mark"' +
-            (s.status === 'sent' || s.status === 'replied' ? ' disabled' : '') + '>' +
-            (s.status === 'replied' ? 'Replied' : s.status === 'sent' ? 'Sent' : 'Mark sent') + '</button>' +
+          (s.status === 'replied'
+            ? '<a class="btn btn-primary btn-sm" id="book" href="#/c/' + c.id + '/brief">Book the interview</a>'
+            : '<span class="chip chip-warn' + (left ? '' : ' hide') + '" id="mark-why">' + leftText(left) + '</span>' +
+              '<button class="btn btn-primary btn-sm" id="mark"' +
+              (s.status === 'sent' || left ? ' disabled' : '') + '>' +
+              (s.status === 'sent' ? 'Sent' : 'Mark sent') + '</button>') +
         '</div>' +
       '</div>' +
 
       '<div class="grid cols-2 mt4">' +
         '<div class="card p5 col g3" id="ctx"></div>' +
         '<div class="card assist-card">' +
-          '<div class="assist-head"><b>Change something</b><span class="hint">Edits the draft in place</span></div>' +
+          '<div class="assist-head"><b>Change something</b></div>' +
           '<div class="assist-log" id="log"></div>' +
           '<div class="assist-sug" id="sug"></div>' +
           '<form class="assist-in" id="assist-form">' +
@@ -204,7 +206,7 @@
 
     function ctxHTML() {
       var s = step(), p = contactOf(s);
-      if (!p) return '<p class="cap">Context</p><p class="dim" style="font-size:var(--fs-sm)">Pick a contact and anything they said recently shows up here.</p>';
+      if (!p) return '<p class="cap">Context</p><p class="dim" style="font-size:var(--fs-sm)">Pick a person.</p>';
       var acts = (p.activity || []).slice(0, 2);
       return '<p class="cap">Said lately</p>' +
         (acts.length
@@ -212,7 +214,7 @@
               return '<div class="mini-act"><p>' + esc(a.text) + '</p>' +
                 '<button class="btn btn-ghost btn-sm" data-insert="' + esc(a.use) + '">Drop this in</button></div>';
             }).join('')
-          : '<p class="hint">Nothing public found for them yet. Worth knowing on its own.</p>') +
+          : '<p class="hint">Nothing public yet.</p>') +
         (p.ask ? '<p class="hint">You want: ' + esc(p.ask) + '</p>' : '') +
         '<a class="hint" href="#/c/' + c.id + '/research">All research →</a>';
     }
@@ -238,7 +240,7 @@
             });
             close();
             paintAll();
-            UI.toast('Pulled in "' + t.name + '". Names already filled in.');
+            UI.toast('Added "' + t.name + '".');
           });
         },
         html: '<div class="tplpick">' + list.map(function (t) {
@@ -264,7 +266,7 @@
         chip.className = 'chip' + (over ? ' chip-warn' : '');
         chip.innerHTML = over
           ? '<b>' + over + '</b> over two touches'
-          : '<b>' + c.steps.length + '</b> steps · <b>' + lastDay() + '</b> days';
+          : '<b>' + c.steps.length + '</b> touches · <b>' + lastDay() + '</b> days';
       }
     }
     function lastDay() { return c.steps.length ? c.steps[c.steps.length - 1].day : 0; }
@@ -275,6 +277,7 @@
       if (ctx) ctx.innerHTML = ctxHTML();
       wire();
       words();
+      holes();
       grow();
     }
     function paintAll() {
@@ -287,7 +290,7 @@
         if (build) build.addEventListener('click', function () {
           var made = Store.buildSequence(c.id);
           paintAll();
-          UI.toast(made.length + ' touches over ' + made[made.length - 1].day + ' days. Edit any of them.');
+          UI.toast(made.length + ' touches over ' + made[made.length - 1].day + ' days.');
         });
         return;
       }
@@ -295,6 +298,21 @@
         mount.innerHTML = '<div class="builder"><div class="rail" id="rail"></div><div id="editor"></div></div>';
       }
       paintRail(); paintEditor();
+    }
+
+    function leftText(n) { return n + ' placeholder' + (n === 1 ? '' : 's') + ' left'; }
+
+    /* an unresolved [bracket] blocks Mark sent, and says which ones */
+    function holes() {
+      var b = v.querySelector('#body'); if (!b) return;
+      var s = step();
+      var found = Store.unresolved(b.value);
+      var el = v.querySelector('#holes');
+      if (el) el.textContent = found.length ? 'Fill in: ' + found.join(' ') : '';
+      var why = v.querySelector('#mark-why');
+      if (why) { why.textContent = leftText(found.length); why.classList.toggle('hide', !found.length); }
+      var mark = v.querySelector('#mark');
+      if (mark && s) mark.disabled = !!found.length || s.status === 'sent' || s.status === 'replied';
     }
 
     function words() {
@@ -321,7 +339,7 @@
           subject: subject ? subject.value : (s.subject || '')
         });
       }
-      if (body) body.addEventListener('input', function () { words(); grow(); persist(); });
+      if (body) body.addEventListener('input', function () { words(); holes(); grow(); persist(); });
       if (subject) subject.addEventListener('input', persist);
 
       v.querySelectorAll('[data-f]').forEach(function (el) {
@@ -341,38 +359,42 @@
         el.addEventListener('click', function () {
           if (!body) return;
           body.value = el.dataset.insert + '\n\n' + body.value;
-          words(); grow(); persist(); body.focus();
-          UI.toast('Added to the top. Edit it so it sounds like you.');
+          words(); holes(); grow(); persist(); body.focus();
+          UI.toast('Added.');
         });
       });
 
       var dupe = v.querySelector('#dupe');
       if (dupe) dupe.addEventListener('click', function () {
         var copy = Store.duplicateStep(c.id, s.id);
-        if (copy) { c.activeStep = copy.id; Store.save(); paintAll(); UI.toast('Step duplicated.'); }
+        if (copy) { c.activeStep = copy.id; Store.save(); paintAll(); UI.toast('Touch duplicated.'); }
       });
       var drop = v.querySelector('#drop');
       if (drop) drop.addEventListener('click', function () {
-        UI.confirm({ title: 'Delete this step?', body: 'It comes out of the sequence. The contact stays.', confirm: 'Delete', danger: true })
+        UI.confirm({ title: 'Delete this touch?', body: 'The person stays.', confirm: 'Delete', danger: true })
           .then(function (ok) {
             if (!ok) return;
             Store.removeStep(c.id, s.id);
             c.activeStep = c.steps[0] ? c.steps[0].id : null; Store.save();
-            paintAll(); UI.toast('Step deleted.');
+            paintAll(); UI.toast('Touch deleted.');
           });
       });
       var mark = v.querySelector('#mark');
       if (mark) mark.addEventListener('click', function () {
         if (s.status === 'sent' || s.status === 'replied') { UI.toast('Already logged.'); return; }
+        if (Store.unresolved(body ? body.value : Store.bodyFor(c, s)).length) return;
+        persist();
         Store.updateStep(c.id, s.id, { status: 'sent' });
+        /* on to the next touch that needs sending */
+        var nxt = c.steps.filter(function (x) { return x.id !== s.id && x.status === 'due'; })[0] ||
+                  c.steps.filter(function (x) { return x.id !== s.id && x.status === 'queued'; })[0];
+        if (nxt) { c.activeStep = nxt.id; Store.save(); }
         paintAll();
         /* the third moment: every planned touch has actually gone out */
         var out = c.steps.filter(function (x) { return x.status === 'sent' || x.status === 'replied'; }).length;
         if (c.steps.length && out >= c.steps.length) {
           UI.cheerOnce(c.id, 'sent', {
-            title: 'All of it is out',
-            line: 'Every touch you planned for ' + c.company + ' has gone. ' +
-                  'Nothing else to write — now it is on them.'
+            title: 'All touches sent'
           });
         } else {
           UI.toast('Logged.');
@@ -388,9 +410,7 @@
         if (dropped) UI.toast(dropped + ' later touch' + (dropped === 1 ? '' : 'es') + ' to ' +
           (contactOf(s) ? contactOf(s).name.split(' ')[0] : 'them') + ' dropped.');
         var first = UI.cheerOnce(c.id, 'reply', {
-          title: 'Somebody wrote back',
-          line: 'That is the whole point of the fourteen days. Reply today, ' +
-                'while you are still the person who sent something specific.'
+          title: 'Reply logged'
         });
         if (!first) UI.toast('Reply logged.');
       });
@@ -405,7 +425,7 @@
           body: body ? body.value : ''
         });
         Store.updateStep(c.id, s.id, { template: t.id });
-        paintAll(); UI.toast('Saved to your library as "' + t.name + '".');
+        paintAll(); UI.toast('Saved as "' + t.name + '".');
       });
 
       /* assistant */
@@ -422,7 +442,7 @@
         if (!node || !node.isConnected || !body.isConnected) return;
         node.textContent = reply;
         body.value = text;
-        words(); grow(); persist();
+        words(); holes(); grow(); persist();
         body.classList.remove('flash'); void body.offsetWidth; body.classList.add('flash');
       }
       function ask(text) {
@@ -477,7 +497,7 @@
     UI.on(v, 'click', '#add-step', function () {
       var s = Store.addStep(c.id);
       c.activeStep = s.id; Store.save(); paintAll();
-      UI.toast('Step added. Set the day and who it goes to.');
+      UI.toast('Touch added.');
     });
 
     document.getElementById('preview').addEventListener('click', function () {
