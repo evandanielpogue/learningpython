@@ -93,7 +93,7 @@
 }
 .ring.done .ring-fill { stroke: var(--pos); }
 .ring-label {
-  font-family: var(--mono); font-size: 9.5px; fill: var(--ink-2);
+  font-family: var(--mono); font-size: var(--fs-2xs); fill: var(--ink-2);
   text-anchor: middle; dominant-baseline: central;
 }
 
@@ -202,14 +202,14 @@
   font-size: var(--fs-xs); color: var(--ink-3);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.switch-arr { color: var(--ink-3); font-size: 13px; line-height: 1; }
+.switch-arr { color: var(--ink-3); font-size: var(--fs-sm); line-height: 1; }
 
 /* ---- a step ---- */
 .nav-item.step { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: var(--s-3); }
 .step-mark {
   width: 20px; height: 20px; border-radius: var(--r-full);
   display: grid; place-items: center; flex: none;
-  font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+  font-family: var(--mono); font-size: var(--fs-2xs); font-weight: 500;
   border: 1.5px solid var(--line-3); color: var(--ink-3);
   transition: background var(--t-2) var(--ease), border-color var(--t-2) var(--ease),
               color var(--t-2) var(--ease);
@@ -262,7 +262,7 @@
 }
 .track-slim .tnode { grid-template-columns: auto auto; grid-auto-flow: column;
   display: grid; align-items: center; gap: var(--s-2); justify-items: start; }
-.track-slim .tdot { width: 21px; height: 21px; font-size: 10px; }
+.track-slim .tdot { width: 21px; height: 21px; font-size: var(--fs-2xs); }
 .track-slim .tlab { font-size: var(--fs-xs); }
 .track-slim .tline { margin-top: 0; }
 /* the screen you are actually on, as opposed to the step you are up to */
@@ -309,7 +309,7 @@
 }
 .bcol-n {
   width: 18px; height: 18px; border-radius: var(--r-full); flex: none;
-  display: grid; place-items: center; font-family: var(--mono); font-size: 10px;
+  display: grid; place-items: center; font-family: var(--mono); font-size: var(--fs-2xs);
   background: var(--panel); border: 1px solid var(--line-2); color: var(--ink-3);
 }
 .bcol-name {
@@ -317,7 +317,7 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .bcol-count {
-  margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--ink-3);
+  margin-left: auto; font-family: var(--mono); font-size: var(--fs-2xs); color: var(--ink-3);
 }
 .bcol-body { display: grid; gap: var(--s-2); }
 .bcol-none { display: block; height: 52px; }
@@ -352,10 +352,10 @@
 .pdot.on { background: var(--pos); }
 .pdot.here { background: var(--brand); transform: scale(1.35); }
 .pcard-day {
-  font-family: var(--mono); font-size: 9.5px; text-transform: uppercase;
+  font-family: var(--mono); font-size: var(--fs-2xs); text-transform: uppercase;
   letter-spacing: .06em; color: var(--ink-4);
 }
-.pcard-foot .chip { font-size: 10px; padding: 2px 6px; }
+.pcard-foot .chip { font-size: var(--fs-2xs); padding: 2px 6px; }
 .pcard .opp-x { margin-left: auto; }
 
 @media (max-width: 1100px) {
@@ -366,4 +366,9 @@
   .board { grid-template-columns: minmax(0, 1fr); }
   .bcol-empty { display: none; }
   .bcol { min-height: 0; }
+}
+
+@media (max-width: 640px) {
+  .stepbar { flex-direction: column; align-items: stretch; }
+  .stepbar-next { align-self: flex-start; }
 }

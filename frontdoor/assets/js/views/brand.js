@@ -21,17 +21,16 @@
       items: [
         ['--brand', 'Porch', 'links, focus, the active row'],
         ['--brand-deep', 'Porch deep', 'hover and pressed'],
-        ['--brand-wash', 'Porch wash', 'tips, active fills'],
+        ['--brand-wash', 'Porch wash', 'selected and active fills'],
         ['--glow', 'Glow', 'graphic only, never text'],
         ['--info', 'Threshold', 'neutral information, demoted'],
         ['--solid', 'Door', 'primary buttons']
       ] },
-    { group: 'Ink and surface', note: 'Four inks, three lines. If a fifth is needed the layout is wrong.',
+    { group: 'Ink and surface', note: 'Three inks, three lines. If a fifth is needed the layout is wrong.',
       items: [
         ['--ink', 'Ink', 'headings and body'],
         ['--ink-2', 'Ink 2', 'secondary text'],
         ['--ink-3', 'Ink 3', 'labels, captions'],
-        ['--ink-4', 'Ink 4', 'the quietest ink that is still text'],
         ['--ink-faint', 'Faint', 'separators and dots, never text'],
         ['--bg', 'Canvas', 'the app behind the cards'],
         ['--panel', 'Panel', 'cards, inputs, sheets']
@@ -46,7 +45,7 @@
       items: [
         ['--p-peer', 'Peer', 'least to lose by helping'],
         ['--p-recruiter', 'Recruiter', 'owns the req'],
-        ['--p-manager', 'Hiring manager', 'owns the number'],
+        ['--p-manager', 'Hiring manager', 'owns the number, slate blue'],
         ['--p-exec', 'Skip level', 'one above them'],
         ['--p-tie', 'Shared tie', 'already knows you']
       ] }
@@ -67,6 +66,9 @@
       return ('0' + Number(n).toString(16)).slice(-2);
     }).join('').toUpperCase();
   }
+
+  var SCALE = [['--fs-2xs', '10.5'], ['--fs-xs', '11.5'], ['--fs-sm', '12.5'], ['--fs-base', '13.75'],
+               ['--fs-md', '15'], ['--fs-lg', '17'], ['--fs-xl', '21'], ['--fs-2xl', '27'], ['--fs-3xl', '34']];
 
   var ICONS = ['overview', 'company', 'prep', 'contacts', 'research', 'sequence', 'page',
                'templates', 'settings', 'search', 'email', 'call', 'reply', 'ats', 'text',
@@ -123,7 +125,15 @@
         '<p class="dim mb5" style="font-size:var(--fs-sm)">Instrument Sans for everything you read, JetBrains Mono for anything you would copy: numbers, ids, drafts, keys.</p>' +
         '<p style="font-size:var(--fs-3xl);letter-spacing:-.035em;font-weight:680;line-height:1.1">Five people, ten touches</p>' +
         '<p style="font-size:var(--fs-lg);color:var(--ink-2);margin-top:var(--s-3)">One company at a time, worked properly.</p>' +
-        '<p class="mono mt4" style="font-size:13px;color:var(--ink-2)">112% · $1.2M · 30→70 · day 3 of 14</p>' +
+        '<p class="mono mt4" style="font-size:var(--fs-sm);color:var(--ink-2)">112% · $1.2M · 30→70 · day 3 of 14</p>' +
+      '</div>' +
+
+      '<div class="card p6 mt4">' +
+        '<h3 class="mb4">Type scale</h3>' +
+        '<div class="typescale">' + SCALE.map(function (t) {
+          return '<div class="ts-row"><span class="ts-tok mono">' + esc(t[0]) + ' · ' + esc(t[1]) + '</span>' +
+            '<span style="font-size:var(' + t[0] + ')">Five people, ten touches</span></div>';
+        }).join('') + '</div>' +
       '</div>';
 
     Shell.mount({ nav: '', crumbs: [{ label: 'The brand' }], html: html });

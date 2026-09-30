@@ -33,7 +33,7 @@
   --ink:           #0F1214;
   --ink-2:         #4A4E58;   /* 8.3:1 on white, 6.9:1 on the heaviest well */
   --ink-3:         #5A5F6A;   /* 6.4:1 / 5.3:1 */
-  --ink-4:         #61666F;   /* 5.8:1 / 4.8:1 — the quietest ink that is still text */
+  --ink-4:         var(--ink-3);   /* retired: one quiet ink, alias kept so nothing breaks */
   --ink-faint:     #B0B4BD;   /* NEVER text. Separators, dots, strike-through rules. */
   --ink-inv:       #FFFFFF;
 
@@ -86,7 +86,7 @@
      Five people, five hues, all dark enough to take white initials. */
   --p-peer:        #14785C;   /* the one with least to lose  */
   --p-recruiter:   #6B4FC4;   /* the one who owns the req    */
-  --p-manager:     #0D6E88;   /* the one who owns the number */
+  --p-manager:     #2F5FA8;   /* the one who owns the number — slate blue, 6.3:1 with white */
   --p-exec:        #3B4B8F;   /* the one above them          */
   --p-tie:         #B03F63;   /* the one who already knows you */
 
@@ -121,6 +121,7 @@
   --ui:   'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
+  --fs-2xs:  10.5px;
   --fs-xs:   11.5px;
   --fs-sm:   12.5px;
   --fs-base: 13.75px;
