@@ -1986,23 +1986,197 @@ await group('The five steps', async (page) => {
     if (here.trim() !== 'People') throw new Error('Research sits under "' + here + '"');
   });
 
-  await step('a track node goes straight to that step', async () => {
+  await step('the board has a column per step, in order', async () => {
     await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
-    await page.waitForSelector('.opp .tnode', { timeout: 5000 });
-    const href = await page.locator('.opp').first().locator('.tnode').nth(3).getAttribute('href');
-    if (!/\/sequence$/.test(href)) throw new Error('the fourth node goes to ' + href);
+    await page.waitForSelector('.bcol', { timeout: 5000 });
+    const names = await page.locator('.bcol-name').allTextContents();
+    const want = await page.evaluate(() => Store.PHASES.map(p => p.label));
+    if (names.join(',') !== want.join(',')) throw new Error(names.join(',') + ' vs ' + want.join(','));
   });
 
-  await step('the pipeline fits the window at phone width', async () => {
+  await step('a card opens its company, and says what is next', async () => {
+    const out = await page.evaluate(() => {
+      const card = [...document.querySelectorAll('.pcard')].find(k => /Acme/.test(k.textContent));
+      const a = card.querySelector('.pcard-id');
+      return { href: a.getAttribute('href'), title: a.getAttribute('title') };
+    });
+    if (out.href !== '#/c/c_acme') throw new Error('goes to ' + out.href);
+    const want = await page.evaluate(() => (Store.nextAction(Store.campaign('c_acme')) || {}).label);
+    if (want && out.title.indexOf(want) === -1) throw new Error('hover says "' + out.title + '"');
+  });
+
+  await step('the board fits the window at phone width', async () => {
     await page.setViewportSize({ width: 390, height: 800 });
     await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
     await page.waitForTimeout(400);
     const over = await page.evaluate(() =>
       document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (over > 0) throw new Error('overflows by ' + over + 'px');
-    const nodes = await page.locator('.opp').first().locator('.tnode').count();
-    if (nodes !== 5) throw new Error('only ' + nodes + ' steps drawn narrow');
+    if (!(await page.locator('.pcard').count())) throw new Error('no companies drawn narrow');
     await page.setViewportSize({ width: 1280, height: 900 });
+  });
+});
+
+/* ------------------------------------------------ reading a job posting -- */
+const LISTINGS = [
+  { name: 'LinkedIn', want: { company: 'HubSpot', role: /Account Executive/i, location: /Cambridge|MA/ }, text:
+`Enterprise Account Executive
+HubSpot · Cambridge, MA · Hybrid
+Posted 3 days ago · Over 100 applicants
+
+About the job
+HubSpot is looking for an Enterprise Account Executive to join our growing sales team.
+
+What we're looking for
+- 5+ years of closing experience in SaaS
+- Track record of carrying and hitting a $1M+ quota
+- Experience selling to marketing and RevOps buyers
+- Comfortable running a full cycle from first call to close` },
+
+  { name: 'Prose one-liner', want: { company: 'Northwind Systems', role: /Enterprise Account Executive/i, location: /Chicago/ }, text:
+`Northwind Systems is hiring an Enterprise Account Executive in Chicago.
+
+Requirements:
+- 7+ years SaaS sales
+- Own a $2M annual number
+- Run full cycle from first call to close` },
+
+  { name: 'Company first (Greenhouse)', want: { company: 'HubSpot', role: /Account Executive/i, location: /Cambridge|MA/ }, text:
+`HubSpot
+Account Executive, Mid-Market
+Cambridge, MA
+
+Who you are
+You have 3+ years of quota carrying software sales experience.
+You are comfortable with a high volume of activity.
+You have experience selling into mid-market accounts.` },
+
+  { name: 'Indeed', want: { company: 'Stripe', role: /Account Executive/i, location: /Chicago|IL/ }, text:
+`Account Executive
+Stripe
+Chicago, IL 60601
+$140,000 - $210,000 a year
+Full-time
+
+Full job description
+
+About the role
+Stripe is looking for an Account Executive to help grow our mid-market business.
+
+Qualifications
+5+ years of full cycle sales experience
+Experience with MEDDPICC or a similar qualification framework
+Proven track record of exceeding quota` },
+
+  { name: 'Labelled fields', want: { company: 'Acme Robotics', role: /Solutions Engineer/i, location: /Remote/i }, text:
+`Job Title: Senior Solutions Engineer
+Company: Acme Robotics
+Location: Remote (US)
+Department: Sales Engineering
+
+Responsibilities
+• Partner with Account Executives on technical discovery
+• Build and deliver demos
+
+Requirements
+• 4+ years in a pre-sales role
+• Strong Python and SQL` },
+
+  { name: 'Careers page with pipes', want: { company: 'Brightline', role: /Account Executive/i, location: /Austin|TX/ }, text:
+`Mid-Market Account Executive
+Sales | Austin, TX | Full-time
+
+Brightline is changing how teams buy software.
+
+What you'll need
+You have 4+ years of SaaS closing experience.
+You have sold into mid-market organisations before.
+You know how to run a multi-threaded evaluation.` },
+
+  { name: 'All caps header', want: { company: 'Cobalt', role: /Account Executive/i, location: /New York|NY/ }, text:
+`COBALT
+ENTERPRISE ACCOUNT EXECUTIVE
+NEW YORK, NY
+
+ABOUT THE ROLE
+We need someone who can own a $2.5M number.
+
+WHAT YOU BRING
+- 6+ years enterprise SaaS
+- Experience with Salesforce and Gong` },
+
+  { name: 'Join us prose', want: { company: 'Loom', role: /Sales Manager/i, location: /Remote/i }, text:
+`Join Loom as a Sales Manager
+
+We're remote-first and growing fast.
+
+You'll need at least 5 years of experience leading a team of account executives.
+You must be comfortable forecasting to the board.` },
+
+  { name: 'Abbreviated title in prose', want: { company: 'Brightline', role: /Mid-Market AE/i, location: /Austin|TX/ }, text:
+`Brightline is hiring an Mid-Market AE in Austin, TX.
+
+Requirements:
+- 5+ years SaaS sales
+- Carry a quota` },
+{ name: 'Bullet is never the title', want: { company: 'Vanta', role: /Sales Development Representative/i }, text:
+`Vanta
+Sales Development Representative
+
+What you'll need
+- 2+ years in a sales role
+- Comfortable on the phone` }
+];
+
+await group('Reading a posting people actually paste', async (page) => {
+  await signIn(page);
+
+  for (const f of LISTINGS) {
+    await step('it reads a ' + f.name.toLowerCase() + ' posting', async () => {
+      const p = await page.evaluate((t) => Store.parseListing(t), f.text);
+      const bad = [];
+      for (const [k, want] of Object.entries(f.want)) {
+        const got = p[k] || '';
+        const ok = want instanceof RegExp ? want.test(got) : got === want;
+        if (!ok) bad.push(k + ' = "' + got + '"');
+      }
+      if (!p.requirements.length) bad.push('nothing asked for came out');
+      if (bad.length) throw new Error(bad.join('; '));
+    });
+  }
+
+  await step('it leaves a field blank rather than inventing one', async () => {
+    const p = await page.evaluate(() => Store.parseListing('Some notes I pasted by mistake.\nNothing useful in here at all.'));
+    if (/company/i.test(p.company)) throw new Error('made up a name: ' + p.company);
+    if (p.company) throw new Error('claimed the company is "' + p.company + '"');
+  });
+
+  await step('a requirement never comes back as the job title', async () => {
+    const roles = await page.evaluate((all) => all.map(t => Store.parseListing(t).role),
+      LISTINGS.map(f => f.text));
+    const bad = roles.filter(r => /^[-–—•*]\s|^\d+[.)]\s|^\d+\+? years/i.test(r));
+    if (bad.length) throw new Error('title reads "' + bad[0] + '"');
+  });
+
+  await step('you can correct what it read before the company is created', async () => {
+    await page.goto(BASE + '#/new', { waitUntil: 'networkidle' });
+    await page.waitForSelector('#listing', { timeout: 5000 });
+    await page.fill('#listing', 'Some notes I pasted by mistake.\nRequirements:\n- 5+ years of something');
+    await page.click('#read');
+    await page.waitForSelector('#f-company', { timeout: 8000 });
+    /* nothing was found, so it must not pretend otherwise */
+    if (await page.locator('#f-company').inputValue()) throw new Error('prefilled a company it never found');
+    await page.click('#create');
+    await page.waitForTimeout(300);
+    if (!(await page.locator('#f-company.err').count())) throw new Error('let a nameless company through');
+    await page.fill('#f-company', 'Northwind');
+    await page.fill('#f-role', 'Account Executive');
+    await page.click('#create');
+    await page.waitForTimeout(600);
+    const made = await page.evaluate(() => Store.campaigns()[0]);
+    if (made.company !== 'Northwind') throw new Error('kept "' + made.company + '"');
+    if (made.role !== 'Account Executive') throw new Error('role is "' + made.role + '"');
+    await page.evaluate((id) => Store.removeCampaign(id), made.id);
   });
 });
 
@@ -2143,26 +2317,31 @@ await group('Cold start, all the way through', async (page) => {
 await group('Overview', async (page) => {
   await signIn(page);
   await step('lists the companies, not one campaign', async () => {
-    await page.waitForSelector('.opp', { timeout: 5000 });
-    const n = await page.locator('.opp').count();
-    if (n < 1) throw new Error('no opportunity rows');
-    if (!(await page.locator('.opp-co').first().textContent()).includes('Acme')) throw new Error('Acme missing');
+    await page.waitForSelector('.pcard', { timeout: 5000 });
+    const n = await page.locator('.pcard').count();
+    if (n < 1) throw new Error('no companies on the board');
+    const names = await page.locator('.pcard-id b').allTextContents();
+    if (!names.some(t => t.includes('Acme'))) throw new Error('Acme missing: ' + names.join(','));
   });
   await step('each company shows its own progress', async () => {
-    const n = await page.locator('.opp').first().locator('.tnode').count();
-    if (n !== 5) throw new Error(n + ' steps drawn');
-    const marked = await page.evaluate(() => {
-      const card = document.querySelector('.opp');
-      return {
-        done: card.querySelectorAll('.tnode.t-done').length,
-        now: card.querySelectorAll('.tnode.t-now').length
-      };
+    const dots = await page.locator('.pcard').first().locator('.pdot').count();
+    if (dots !== 5) throw new Error(dots + ' dots on the card');
+    const here = await page.evaluate(() =>
+      document.querySelector('.pcard').querySelectorAll('.pdot.here').length);
+    if (here > 1) throw new Error(here + ' dots claim to be the current step');
+  });
+  await step('a company sits in the column of the step it is on', async () => {
+    const out = await page.evaluate(() => {
+      const card = [...document.querySelectorAll('.pcard')]
+        .find(k => /Acme/.test(k.textContent));
+      const col = card.closest('.bcol').querySelector('.bcol-name').textContent.trim();
+      const now = Store.phaseNow(Store.campaign('c_acme'));
+      return { col, want: now ? now.label : 'Interview' };
     });
-    if (marked.now > 1) throw new Error(marked.now + ' steps claim to be the current one');
-    if (marked.done + marked.now === 0) throw new Error('no step is marked at all');
+    if (out.col !== out.want) throw new Error('Acme is under ' + out.col + ', should be ' + out.want);
   });
   await step('a company opens its own summary', async () => {
-    await page.click('.opp-id');
+    await page.locator('.pcard-id').first().click();
     await page.waitForSelector('.task', { timeout: 5000 });
     if (!(await page.locator('h1').first().textContent()).includes('Acme')) throw new Error('not the Acme summary');
   });
@@ -2198,9 +2377,10 @@ await group('Add a company from a listing', async (page) => {
     await page.waitForSelector('#wins', { timeout: 8000 });
   });
   await step('role and company come out of the text', async () => {
-    const txt = await page.locator('.card').first().textContent();
-    if (!txt.includes('Acme')) throw new Error('company not parsed: ' + txt.slice(0, 80));
-    if (!/Account Executive/i.test(txt)) throw new Error('role not parsed');
+    const co = await page.locator('#f-company').inputValue();
+    const role = await page.locator('#f-role').inputValue();
+    if (!/Acme/.test(co)) throw new Error('company read as "' + co + '"');
+    if (!/Account Executive/i.test(role)) throw new Error('role read as "' + role + '"');
   });
   await step('three wins are suggested, matched to the listing', async () => {
     const on = await page.locator('.opt[aria-pressed="true"]').count();
@@ -2298,8 +2478,8 @@ await group('Add a company from a listing', async (page) => {
   });
   await step('both companies show on the overview', async () => {
     await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
-    await page.waitForSelector('.opp', { timeout: 5000 });
-    if ((await page.locator('.opp').count()) !== 2) throw new Error('overview did not update');
+    await page.waitForSelector('.pcard', { timeout: 5000 });
+    if ((await page.locator('.pcard').count()) !== 2) throw new Error('the board did not update');
   });
 });
 

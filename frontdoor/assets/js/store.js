@@ -398,43 +398,218 @@
     /* Read a pasted listing. Crude on purpose: it is a stand in for the
        parse that would happen server side, and it has to fail gracefully
        on whatever someone actually pastes. */
+    /* ---- reading a job posting -------------------------------------------
+       People paste whatever the site gave them: LinkedIn's "Role / Company ·
+       Place", Greenhouse with the company first, Indeed with a salary line in
+       the middle, a careers page with pipes, a labelled form, or one sentence
+       of prose. The old reader assumed line one was the title and line two was
+       "Company · Place", which is one shape out of eight.
+
+       Nothing here guesses wildly: when a field cannot be found it is left
+       empty and the screen asks for it, because a wrong company name is worse
+       than a blank one. -------------------------------------------------- */
+
     parseListing: function (text) {
-      var raw = String(text || '').trim();
+      var raw = String(text || '').replace(/\r/g, '').trim();
       var lines = raw.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
       var out = { role: '', company: '', location: '', req: '', requirements: [], facts: [] };
       if (!lines.length) return out;
 
-      /* only split on a separator with space around it, so a hyphenated
-         title like "Mid-Market Account Executive" survives intact */
-      out.role = lines[0].replace(/\s+[-–|·]\s+.*$/, '').slice(0, 70);
+      /* ---- words that make a line a job title ---- */
+      var ROLE = new RegExp('\\b(account executive|sales|engineer|developer|designer|manager|' +
+        'director|analyst|specialist|representative|consultant|architect|scientist|coordinator|' +
+        'associate|partner|officer|lead|head of|vp|vice president|president|founder|recruiter|' +
+        'marketer|controller|accountant|technician|administrator|strategist|producer|editor|' +
+        'writer|counsel|advisor|planner|buyer|supervisor|principal|intern|nurse|teacher|' +
+        'attorney|paralegal|solutions|success|support|operations|product|program|project|' +
+        'ae|sdr|bdr|csm|pm|cto|ceo|cfo|coo|cro|cmo)\\b', 'i');
 
-      /* line two is usually "Company · Place · Req 123", or the company sits
-         after an "at" somewhere in the first paragraph */
-      var meta = (lines[1] || '').split(/\s*[·|]\s*/);
-      if (meta.length > 1) {
-        out.company = meta[0].slice(0, 40);
-        out.location = (meta[1] || '').slice(0, 40);
+      /* chrome the sites wrap a posting in, which is never a title or a name */
+      var CHROME = new RegExp('^(apply( now)?|share|save( job)?|back to .*|jobs?|careers?|home|' +
+        'menu|search|sign in|log ?in|easy apply|show more|see more|posted.*|' +
+        'full[- ]?time|part[- ]?time|contract|internship|permanent|temporary|' +
+        '\\d[\\d,]*\\+? applicants?|over \\d[\\d,]* applicants?|' +
+        '[\\d,]+ (second|minute|hour|day|week|month)s? ago|' +
+        '\\$[\\d,]+.*(a year|per year|annually|/yr|- ?\\$[\\d,]+).*|' +
+        'full job description|equal opportunity.*|department.*)$', 'i');
+
+      /* headings that introduce the things they are asking for */
+      var REQ_HEAD = new RegExp('^(requirements?|qualifications?|minimum qualifications?|' +
+        'basic qualifications?|preferred qualifications?|what you.{0,14}(need|bring|have)|' +
+        'who you are|about you|we.{0,4}re looking for|what we.{0,4}re looking for|' +
+        'must haves?|you have|you.{0,4}ll need|skills( and experience)?|experience)\\b\\s*:?\\s*$', 'i');
+
+      /* any other heading ends the list */
+      var SECTION = new RegExp('^(about|responsibilities|what you.{0,14}do|the role|' +
+        'benefits?|perks?|compensation|salary|pay|why|our|how to apply|interview|' +
+        'nice to have|bonus points|equal opportunity|we offer)\\b', 'i');
+
+      var LOC = new RegExp('\\b(remote|hybrid|on-?site|in[- ]office)\\b', 'i');
+      /* "You have 3+ years" opens like a company sentence and is not one */
+      var PRONOUN = /^(you|we|they|it|this|that|our|your|their|the|there|here|i)$/i;
+      var CITY_RE = /\b([A-Z][A-Za-z.\-']+(?:\s+[A-Z][A-Za-z.\-']+)?,\s*(?:[A-Z]{2}\b|[A-Z][a-z]+))/;
+      /* "Account Executive, Mid-Market" has the shape of "Cambridge, MA" and
+         is not a place, so anything with a job word in it is refused */
+      function CITY(t) {
+        var g = new RegExp(CITY_RE.source, 'g'), hit;
+        while ((hit = g.exec(String(t || '')))) {
+          if (!ROLE.test(hit[1])) return hit;
+        }
+        return null;
+      }
+
+      function clean(s) {
+        return String(s || '').replace(/\s+/g, ' ').replace(/[\s.,;:|·—–-]+$/, '').trim();
+      }
+      /* SHOUTED LINES come back as Shouted Lines; anything else is left alone */
+      function unshout(s) {
+        if (!s || s !== s.toUpperCase() || !/[A-Z]{3}/.test(s)) return s;
+        return s.toLowerCase().replace(/\b[a-z]/g, function (m) { return m.toUpperCase(); });
+      }
+      function labelled(name) {
+        var m = raw.match(new RegExp('^\\s*(?:' + name + ')\\s*[:\\-]\\s*(.+)$', 'im'));
+        return m ? clean(m[1]) : '';
+      }
+      function isTitle(l) {
+        if (!l || l.length < 3 || l.length > 80) return false;
+        /* a bullet is a requirement, however many job words it contains */
+        if (/^([-–—•*·▪●○]\s|\d+[.)]\s)/.test(l)) return false;
+        if (CHROME.test(l) || REQ_HEAD.test(l) || SECTION.test(l)) return false;
+        if (/[.!?]$/.test(l)) return false;              /* a sentence, not a title */
+        if (l.split(/\s+/).length > 11) return false;
+        return ROLE.test(l);
+      }
+
+      /* ---- the role ---- */
+      out.role = labelled('(?:job\\s*)?title|position|role');
+      if (!out.role) {
+        /* "… is hiring an Enterprise Account Executive in Chicago" */
+        var pro = raw.match(new RegExp('\\b(?:hiring|seeking|looking for|recruiting|' +
+          'join .{1,40} as)\\s+(?:an?|our next|a new)?\\s*([A-Z][^.,;\\n]{2,60}?)' +
+          '(?=\\s+(?:in|at|to|who|based|for|on)\\b|[.,;\\n]|$)', 'i'));
+        if (pro && ROLE.test(pro[1])) out.role = clean(pro[1]);
+      }
+      if (!out.role) {
+        for (var i = 0; i < Math.min(lines.length, 12); i++) {
+          /* a title line may still carry "· Company · Place" after it */
+          var head = lines[i].split(/\s+[·|]\s+|\s+[—–]\s+/)[0].trim();
+          if (isTitle(head)) { out.role = clean(head); break; }
+        }
+      }
+      out.role = unshout(out.role).slice(0, 70);
+
+      /* ---- the company ---- */
+      out.company = labelled('company|employer|organi[sz]ation');
+      if (!out.company) {
+        var m = raw.match(/^\s*([A-Z][A-Za-z0-9&.,'\-]*(?:\s+[A-Z][A-Za-z0-9&.,'\-]*){0,3})\s+(?:is|are)\s+(?:hiring|looking|seeking|searching|growing)/m);
+        if (m) out.company = clean(m[1]);
+        if (!out.company) {
+          /* the sentence a posting opens its "about" with: "Brightline is
+             changing how teams buy software" */
+          var ab2 = raw.match(/^\s*([A-Z][A-Za-z0-9&.'\-]*(?:\s+[A-Z][A-Za-z0-9&.'\-]*){0,2})\s+(?:is|are|was|were|helps?|makes?|builds?|powers?|serves?|sells?)\s+[a-z]/m);
+          if (ab2 && !ROLE.test(ab2[1]) && !CHROME.test(ab2[1]) && !PRONOUN.test(ab2[1])) {
+            out.company = clean(ab2[1]);
+          }
+        }
       }
       if (!out.company) {
-        var at = raw.match(/\bat\s+([A-Z][A-Za-z0-9&.\- ]{1,28})\b/);
-        if (at) out.company = at[1].trim();
+        var j = raw.match(/\b[Jj]oin\s+([A-Z][A-Za-z0-9&.'\-]*(?:\s+[A-Z][A-Za-z0-9&.'\-]*){0,2})\b/);
+        if (j) out.company = clean(j[1]);
       }
-      if (!out.company) out.company = 'The company';
-      var req = raw.match(/\breq(?:uisition)?\.?\s*#?\s*([A-Za-z0-9-]{2,12})/i);
-      if (req) out.req = req[1];
+      if (!out.company && out.role) {
+        /* "Enterprise Account Executive at HubSpot" */
+        var at = raw.match(new RegExp('\\bat\\s+([A-Z][A-Za-z0-9&.\'\\-]*(?:\\s+[A-Z][A-Za-z0-9&.\'\\-]*){0,2})\\b'));
+        if (at && !LOC.test(at[1]) && !CITY(at[1] + ', XX')) out.company = clean(at[1]);
+      }
+      if (!out.company) {
+        var ab = raw.match(/^\s*about\s+(?!the\b|us\b|this\b|our\b)([A-Z][A-Za-z0-9&.'\-]*(?:\s+[A-Z][A-Za-z0-9&.'\-]*){0,2})\s*$/im);
+        if (ab) out.company = clean(ab[1]);
+      }
+      if (!out.company) {
+        /* a "Role · Company · Place" or "Company · Place" strip near the top */
+        for (var k = 0; k < Math.min(lines.length, 6) && !out.company; k++) {
+          var parts = lines[k].split(/\s*[·|]\s*/).map(clean).filter(Boolean);
+          if (parts.length < 2) continue;
+          for (var q = 0; q < parts.length; q++) {
+            var pt = parts[q];
+            if (!pt || pt === out.role) continue;
+            if (LOC.test(pt) || CITY(pt) || CHROME.test(pt)) continue;
+            if (ROLE.test(pt)) continue;
+            if (!/^[A-Z]/.test(pt) || pt.split(/\s+/).length > 4) continue;
+            out.company = pt; break;
+          }
+        }
+      }
+      if (!out.company) {
+        /* a short standalone name sitting next to the title line */
+        var at3 = lines.indexOf(lines.filter(isTitle)[0]);
+        [at3 - 1, at3 + 1, 0].forEach(function (n) {
+          if (out.company || n < 0 || n >= lines.length) return;
+          var l = clean(lines[n].split(/\s*[·|]\s*/)[0]);
+          if (!l || l.length > 40 || l === out.role) return;
+          if (CHROME.test(l) || REQ_HEAD.test(l) || SECTION.test(l)) return;
+          if (ROLE.test(l) || LOC.test(l) || CITY(l)) return;
+          if (/[.!?,]$/.test(l) || l.split(/\s+/).length > 4) return;
+          if (!/^[A-Z0-9]/.test(l)) return;
+          out.company = l;
+        });
+      }
+      out.company = unshout(out.company).slice(0, 40);
+
+      /* ---- where ---- */
+      out.location = labelled('location|based in|office');
       if (!out.location) {
-        var loc = raw.match(/\b(remote|hybrid|on ?site|[A-Z][a-z]+,\s?[A-Z]{2})\b/);
-        if (loc) out.location = loc[1];
+        var city = CITY(raw);
+        if (city) out.location = clean(city[1]);
+      }
+      if (!out.location) {
+        var inl = raw.match(/\bin\s+([A-Z][A-Za-z\-']+(?:\s+[A-Z][A-Za-z\-']+)?)(?=[.,;\n]|\s+(?:and|or)\b|$)/);
+        if (inl && !ROLE.test(inl[1])) out.location = clean(inl[1]);
+      }
+      if (!out.location) {
+        var l2 = raw.match(LOC);
+        if (l2) out.location = clean(l2[1]);
+      } else if (LOC.test(raw) && !LOC.test(out.location)) {
+        out.location += ', ' + raw.match(LOC)[1].toLowerCase();
+      }
+      out.location = out.location.slice(0, 40);
+
+      var reqid = raw.match(/\breq(?:uisition)?\.?\s*#?\s*([A-Za-z0-9-]{2,12})/i);
+      if (reqid) out.req = reqid[1];
+
+      /* ---- what they are asking for ------------------------------------
+         Bullets when there are bullets, the lines under a "Requirements"
+         heading when there are not, and failing both, the sentences that
+         read like a requirement. */
+      function add(t) {
+        var b = clean(String(t).replace(/^[-–—•*·▪●○]\s*/, '').replace(/^\d+[.)]\s*/, ''));
+        if (b.length < 8 || out.requirements.length >= 8) return;
+        if (REQ_HEAD.test(b) || SECTION.test(b)) return;
+        if (out.requirements.indexOf(b) > -1) return;
+        out.requirements.push(b.length > 84 ? b.slice(0, 80).replace(/\s\S*$/, '') + '…' : b);
       }
 
       lines.forEach(function (l) {
-        if (/^[-–•*]\s+/.test(l)) {
-          var b = l.replace(/^[-–•*]\s+/, '').replace(/\.$/, '');
-          if (b.length > 4 && out.requirements.length < 8) {
-            out.requirements.push(b.length > 84 ? b.slice(0, 80).replace(/\s\S*$/, '') + '\u2026' : b);
-          }
-        }
+        if (/^([-–—•*·▪●○]\s+|\d+[.)]\s+)/.test(l)) add(l);
       });
+
+      if (!out.requirements.length) {
+        var on = false;
+        lines.forEach(function (l) {
+          if (REQ_HEAD.test(l)) { on = true; return; }
+          if (on && SECTION.test(l)) { on = false; return; }
+          if (on) add(l);
+        });
+      }
+
+      if (!out.requirements.length) {
+        var HINT = new RegExp('\\b(\\d+\\+?\\s*years?|experience|must|proficien|familiar|' +
+          'track record|ability to|quota|comfortable|you have|you.{0,4}ll|we need|' +
+          'looking for someone|strong)\\b', 'i');
+        raw.split(/(?<=[.!?])\s+|\n/).forEach(function (sn) {
+          if (HINT.test(sn)) add(sn);
+        });
+      }
 
       [[/\byears?\b/i, 'Years of experience called out'],
        [/\bquota\b/i, 'Carries a number'],

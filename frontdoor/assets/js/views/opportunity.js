@@ -64,11 +64,21 @@
         body =
           '<div class="card p6 mb4">' +
             '<div class="row between wrap g3 mb4">' +
-              '<div><p class="cap mb1">The role</p><h3>' + esc(parsed.role || 'Untitled role') + '</h3>' +
-                '<p class="dim" style="font-size:var(--fs-sm)">' + esc(parsed.company) +
-                (parsed.location ? ' · ' + esc(parsed.location) : '') +
-                (parsed.req ? ' · Req ' + esc(parsed.req) : '') + '</p></div>' +
+              '<p class="cap">Read from the listing</p>' +
               '<button class="btn btn-ghost btn-sm" id="back">Paste a different one</button>' +
+            '</div>' +
+            /* A reader that is right most of the time is still wrong
+               sometimes, and a wrong company name follows you into every
+               message. So these are fields, not statements. */
+            '<div class="grid cols-3 mb4">' +
+              '<label class="field"><span>Company</span>' +
+                '<input class="input" id="f-company" value="' + esc(parsed.company) + '"' +
+                (parsed.company ? '' : ' placeholder="Who is hiring?"') + '></label>' +
+              '<label class="field"><span>Role</span>' +
+                '<input class="input" id="f-role" value="' + esc(parsed.role) + '"' +
+                (parsed.role ? '' : ' placeholder="What is the job called?"') + '></label>' +
+              '<label class="field"><span>Where</span>' +
+                '<input class="input" id="f-location" value="' + esc(parsed.location) + '" placeholder="City, or remote"></label>' +
             '</div>' +
             (match.length
               ? '<div class="matchbar"><div class="matchbar-fill" style="width:' +
@@ -272,7 +282,29 @@
       });
 
       v.querySelector('#back').addEventListener('click', function () { stage = 1; paint(); });
+      function typed(id) {
+        var el = v.querySelector(id);
+        return el ? el.value.trim() : '';
+      }
+      ['#f-company', '#f-role', '#f-location'].forEach(function (id) {
+        var el = v.querySelector(id);
+        if (el) el.addEventListener('input', function () {
+          parsed.company = typed('#f-company');
+          parsed.role = typed('#f-role');
+          parsed.location = typed('#f-location');
+        });
+      });
+
       v.querySelector('#create').addEventListener('click', function () {
+        parsed.company = typed('#f-company');
+        parsed.role = typed('#f-role');
+        parsed.location = typed('#f-location');
+        if (!parsed.company) {
+          var f = v.querySelector('#f-company');
+          if (f) { f.classList.add('err'); f.focus(); }
+          UI.toast('Who is hiring? The name goes in every message.');
+          return;
+        }
         if (!chosen.length) { UI.toast('Pick at least one win to lead with.'); return; }
         var c = Store.createCampaign({
           listing: listing, parsed: parsed, winIds: chosen.slice(),

@@ -285,3 +285,85 @@
   .track-slim .tlab { display: none; }
   .track-slim .t-here .tlab { display: block; }
 }
+
+/* ==========================================================================
+   The board
+
+   One pipeline, five columns, every company in the step it is actually on.
+   A column is a step; a card is a company; the whole thing answers "what is
+   stuck and what is nearly out the door" without reading a word.
+   ========================================================================== */
+.board {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--s-3); align-items: start;
+}
+.bcol {
+  display: grid; gap: var(--s-2); align-content: start; min-width: 0;
+  background: var(--sunk); border: 1px solid var(--line);
+  border-radius: var(--r-3); padding: var(--s-3); min-height: 132px;
+}
+.bcol-empty { background: transparent; border-style: dashed; }
+.bcol-head {
+  display: flex; align-items: center; gap: var(--s-2);
+  padding: 0 var(--s-1) var(--s-1);
+}
+.bcol-n {
+  width: 18px; height: 18px; border-radius: var(--r-full); flex: none;
+  display: grid; place-items: center; font-family: var(--mono); font-size: 10px;
+  background: var(--panel); border: 1px solid var(--line-2); color: var(--ink-3);
+}
+.bcol-name {
+  font-size: var(--fs-sm); font-weight: 620; letter-spacing: -.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.bcol-count {
+  margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--ink-3);
+}
+.bcol-body { display: grid; gap: var(--s-2); }
+.bcol-none { display: block; height: 52px; }
+
+/* ---- a company on the board ---- */
+.pcard {
+  background: var(--panel); border: 1px solid var(--line-2);
+  border-radius: var(--r-2); padding: var(--s-3); display: grid; gap: var(--s-2);
+  box-shadow: var(--e-1); min-width: 0;
+  transition: transform var(--t-2) var(--ease), box-shadow var(--t-2) var(--ease),
+              border-color var(--t-2) var(--ease);
+}
+.pcard:hover { transform: translateY(-1px); box-shadow: var(--e-3); border-color: var(--line-3); }
+.pcard-due { border-left: 3px solid var(--brand); }
+.pcard-id { text-decoration: none; color: inherit; display: grid; gap: 1px; min-width: 0; }
+.pcard-id b {
+  font-size: var(--fs-base); font-weight: 620; letter-spacing: -.014em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: color var(--t-2) var(--ease);
+}
+.pcard-id:hover b { color: var(--brand); }
+.pcard-role {
+  font-size: var(--fs-xs); color: var(--ink-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pcard-foot { display: flex; align-items: center; gap: var(--s-2); }
+.pcard-dots { display: flex; gap: 3px; }
+.pdot {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--line-3);
+  transition: background var(--t-2) var(--ease), transform var(--t-2) var(--spring);
+}
+.pdot.on { background: var(--pos); }
+.pdot.here { background: var(--brand); transform: scale(1.35); }
+.pcard-day {
+  font-family: var(--mono); font-size: 9.5px; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--ink-4);
+}
+.pcard-foot .chip { font-size: 10px; padding: 2px 6px; }
+.pcard .opp-x { margin-left: auto; }
+
+@media (max-width: 1100px) {
+  .board { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 680px) {
+  /* a board that has to be read sideways is not a board; stack the steps */
+  .board { grid-template-columns: minmax(0, 1fr); }
+  .bcol-empty { display: none; }
+  .bcol { min-height: 0; }
+}

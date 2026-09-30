@@ -34,56 +34,54 @@
     var name = (Store.state.user && Store.state.user.name || 'there').split(' ')[0];
     var imported = Store.state.profile.imported;
 
-    /* Every company, and how far along it is. Five steps, drawn: what is
-       finished, the one you are on, and what is still ahead. Each node is a
-       link straight into that step, so the pipeline is the navigation. */
-    function trackHTML(c) {
-      var steps = Store.phases(c);
-      return '<div class="track">' + steps.map(function (st, i) {
-        var state = st.done ? 'done' : st.now ? 'now' : 'todo';
-        var mark = st.done
-          ? '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" ' +
-            'stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-            '<path d="M20 6L9 17l-5-5"/></svg>'
-          : String(st.n);
-        return (i ? '<span class="tline' + (steps[i - 1].done ? ' done' : '') + '"></span>' : '') +
-          '<a class="tnode t-' + state + '" href="#' + st.href + '"' +
-            ' title="' + esc('Step ' + st.n + ', ' + st.label + ' — ' + st.blurb) + '">' +
-            '<span class="tdot">' + mark + '</span>' +
-            '<span class="tlab">' + esc(st.label) + '</span>' +
-          '</a>';
-      }).join('') + '</div>';
-    }
-
-    function oppCard(c) {
-      var pr = Store.phaseProgress(c);
+    /* One pipeline, five columns, every company sitting in the step it is
+       actually on. A salesperson already reads a board this way: what is
+       stuck, what is moving, what is nearly out the door. Dragging is not
+       the point — the board is a picture of the truth, and the cards are
+       the way into the work. */
+    function card(c) {
       var next = Store.nextAction(c);
       var due = c.steps.filter(function (s) { return s.status === 'due'; }).length;
-      return '<div class="opp">' +
-        '<div class="opp-top">' +
-          '<a class="opp-id" href="#/c/' + c.id + '">' +
-            '<b class="opp-co">' + esc(c.company) + '</b>' +
-            '<span class="opp-role">' + esc(c.role) + '</span></a>' +
-          '<div class="opp-end">' +
-            (due ? '<span class="chip chip-accent">' + due + ' due</span>'
-                 : '<span class="chip">Day ' + c.day + '</span>') +
-            '<button class="icon-btn opp-x" data-drop="' + c.id + '" aria-label="Remove ' + esc(c.company) + '" ' +
-              'title="Remove this company">' + Icon.svg('close', 14) + '</button>' +
-          '</div>' +
-        '</div>' +
-        trackHTML(c) +
-        '<div class="opp-foot">' +
-          (next.done
-            ? '<span class="opp-done">All five done</span>'
-            : '<a class="btn btn-secondary btn-sm" href="#' + next.href + '">' +
-              esc(next.label) + ' <span class="arr">\u2192</span></a>') +
-          '<span class="opp-nums">' +
-            '<span><b>' + c.contacts.length + '</b>people</span>' +
-            '<span><b>' + c.sent + '</b>sent</span>' +
-            '<span><b>' + c.replies + '</b>replies</span>' +
-            '<span><b>' + pr.done + '/' + pr.total + '</b>steps</span>' +
-          '</span>' +
+      var pr = Store.phaseProgress(c);
+      return '<div class="pcard' + (due ? ' pcard-due' : '') + '">' +
+        /* the card opens the company, not the step: the column already says
+           which step it is on, and the company screen carries the strip and
+           the next action */
+        '<a class="pcard-id" href="#/c/' + c.id + '"' +
+          ' title="' + esc(c.company + (next.done ? '' : ' \u2014 next: ' + next.label)) + '">' +
+          '<b>' + esc(c.company) + '</b>' +
+          '<span class="pcard-role">' + esc(c.role || 'No role yet') + '</span></a>' +
+        '<div class="pcard-foot">' +
+          '<span class="pcard-dots" aria-label="' + pr.done + ' of ' + pr.total + ' steps done">' +
+            Store.phases(c).map(function (st) {
+              return '<i class="pdot' + (st.done ? ' on' : st.now ? ' here' : '') + '"></i>';
+            }).join('') + '</span>' +
+          (due ? '<span class="chip chip-accent">' + due + ' due</span>'
+               : c.replies ? '<span class="chip chip-pos">' + c.replies + ' replied</span>'
+               : '<span class="pcard-day">Day ' + c.day + '</span>') +
+          '<button class="icon-btn opp-x" data-drop="' + c.id + '" aria-label="Remove ' + esc(c.company) + '" ' +
+            'title="Remove this company">' + Icon.svg('close', 13) + '</button>' +
         '</div></div>';
+    }
+
+    function boardHTML(list) {
+      var phases = Store.PHASES;
+      return '<div class="board">' + phases.map(function (def, i) {
+        var here = list.filter(function (c) {
+          var now = Store.phaseNow(c);
+          return now ? now.key === def.key : def.key === 'interview';
+        });
+        return '<section class="bcol' + (here.length ? '' : ' bcol-empty') + '">' +
+          '<div class="bcol-head">' +
+            '<span class="bcol-n">' + def.n + '</span>' +
+            '<span class="bcol-name">' + esc(def.label) + '</span>' +
+            (here.length ? '<span class="bcol-count">' + here.length + '</span>' : '') +
+          '</div>' +
+          '<div class="bcol-body">' +
+            (here.length ? here.map(card).join('') : '<span class="bcol-none"></span>') +
+          '</div>' +
+        '</section>';
+      }).join('') + '</div>';
     }
 
     var html =
@@ -104,8 +102,8 @@
         '<p class="hint mt4">Or <button class="linkish" id="go-demo">load an example workspace</button> to see a finished one.</p>' +
         '</div></div>';
     } else {
-      html += '<div class="opps">' + list.map(oppCard).join('') +
-        '<button class="addrow addrow-lg" id="go-new">+ Add a company</button></div>';
+      html += boardHTML(list) +
+        '<button class="addrow addrow-lg mt4" id="go-new">+ Add a company</button>';
 
       function kpi(label, value, of) {
         return '<div class="card hover p5"><p class="cap mb3">' + esc(label) + '</p>' +
