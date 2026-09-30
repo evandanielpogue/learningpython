@@ -137,10 +137,11 @@
     }
 
     /* ---------------- the dashboard ---------------- */
-    function panel(id, title, sub, body, span, tall) {
+    function panel(id, title, sub, body, span, tall, count) {
       return '<section class="bf-panel' + (span ? ' sp-' + span : '') + (tall ? ' bf-tall' : '') +
         '" id="bf-' + id + '">' +
         '<div class="bf-head"><h2>' + esc(title) + '</h2>' +
+        (count != null ? '<span class="chip bf-count">' + count + '</span>' : '') +
         (sub ? '<p>' + esc(sub) + '</p>' : '') + '</div>' +
         '<div class="bf-body">' + body + '</div></section>';
     }
@@ -189,11 +190,11 @@
       '</div>' +
 
       '<div class="bf-grid">' +
-        panel('lead', 'Wins', '', leadHTML(), 12) +
-        panel('questions', 'Questions', '', '<div id="qbox">' + questionsHTML() + '</div>', 7, true) +
-        panel('match', 'Match', '', matchHTML(), 5, true) +
-        panel('people', 'People', '', peopleHTML(), 7, true) +
-        panel('research', 'Research', '', researchHTML(), 5, true) +
+        panel('lead', 'Wins', '', leadHTML(), 12, false, b.wins.length) +
+        panel('questions', 'Questions', '', '<div id="qbox">' + questionsHTML() + '</div>', 7, true, qCount) +
+        panel('match', 'Match', '', matchHTML(), 5, true, b.match.length) +
+        panel('people', 'People', '', peopleHTML(), 7, true, b.people.length) +
+        panel('research', 'Research', '', researchHTML(), 5, true, b.research.length) +
       '</div>';
 
     var v = Shell.mount({

@@ -11,9 +11,9 @@
   window.Views = window.Views || {};
 
   function chIcon(ch) {
-    if (ch === 'LinkedIn') return UI.liMark(11);
+    if (ch === 'LinkedIn') return UI.liMark(14);
     var name = { Email: 'email', Call: 'call', Reply: 'reply', ATS: 'ats', Text: 'text' }[ch];
-    return name ? Icon.svg(name, 12) : '';
+    return name ? Icon.svg(name, 15) : '';
   }
 
   /* Without a model these are the only edits we can honestly make: they
@@ -112,17 +112,20 @@
         var col = p ? p.colour : '--line-3';
         var dot = s.status === 'replied' ? 'ok' : s.status === 'sent' ? 'done' : s.status === 'due' ? 'due' : '';
         var t = Store.template(s.template);
-        out += '<button class="stepcard' + (s.id === c.activeStep ? ' on' : '') + '" data-step="' + s.id + '"' +
+        var stTxt = s.status === 'replied' ? 'Replied' : s.status === 'sent' ? 'Sent' : s.status === 'due' ? 'Due' : '';
+        out += '<button class="stepcard' + (s.id === c.activeStep ? ' on' : '') + ' st-' + esc(s.status || 'draft') + '" data-step="' + s.id + '"' +
           (s.id === c.activeStep ? ' aria-current="true"' : '') +
           ' style="--pc:var(' + col + ')">' +
-          '<span class="sc-top"><span class="sc-n">' + (i + 1) + '</span>' +
-            '<span class="sc-ch">' + chIcon(s.channel) + ' ' + esc(s.channel) + '</span>' +
-            '<span class="sc-dot ' + dot + '"></span></span>' +
-          '<span class="sc-who">' + esc(p ? p.name : 'No person') + '</span>' +
-          '<span class="sc-note">' + esc(s.note) + '</span>' +
-          '<span class="sc-foot"><span class="sc-day">Day ' + s.day + '</span>' +
-            (t ? '<span class="sc-tpl">' + esc(t.stage) + '</span>' : '') +
-          '</span></button>';
+          '<span class="sc-tile" title="' + esc(s.channel) + '">' + chIcon(s.channel) + '<span class="sc-n">' + (i + 1) + '</span></span>' +
+          '<span class="sc-body">' +
+            '<span class="sc-top"><span class="sc-who">' + esc(p ? p.name : 'No person') + '</span>' +
+              (stTxt ? '<span class="chip sc-status ' + dot + '"><span class="sc-dot ' + dot + '"></span>' + stTxt + '</span>'
+                     : '<span class="sc-dot ' + dot + '"></span>') + '</span>' +
+            '<span class="sc-note">' + esc(s.note) + '</span>' +
+            '<span class="sc-foot"><span class="chip sc-day">Day ' + s.day + '</span>' +
+              (t ? '<span class="chip sc-tpl">' + esc(t.stage) + '</span>' : '') +
+              '<span class="sc-ch">' + esc(s.channel) + '</span>' +
+            '</span></span></button>';
       });
       out += '<button class="addrow mt3" id="add-step">+ Add a touch</button>';
       return out;
@@ -194,7 +197,7 @@
       '<div class="grid cols-2 mt4">' +
         '<div class="card p5 col g3" id="ctx"></div>' +
         '<div class="card assist-card">' +
-          '<div class="assist-head"><b>Change something</b></div>' +
+          '<div class="assist-head"><h3>Change something</h3></div>' +
           '<div class="assist-log" id="log"></div>' +
           '<div class="assist-sug" id="sug"></div>' +
           '<form class="assist-in" id="assist-form">' +
@@ -206,9 +209,10 @@
 
     function ctxHTML() {
       var s = step(), p = contactOf(s);
-      if (!p) return '<p class="cap">Context</p><p class="dim" style="font-size:var(--fs-sm)">Pick a person.</p>';
+      if (!p) return '<h3>Context</h3><p class="dim" style="font-size:var(--fs-sm)">Pick a person.</p>';
       var acts = (p.activity || []).slice(0, 2);
-      return '<p class="cap">Said lately</p>' +
+      return '<div class="row between g3"><h3>Said lately</h3>' +
+        (acts.length ? '<span class="chip">' + acts.length + '</span>' : '') + '</div>' +
         (acts.length
           ? acts.map(function (a) {
               return '<div class="mini-act"><p>' + esc(a.text) + '</p>' +
