@@ -4,6 +4,11 @@
 (function (window, document) {
   'use strict';
 
+  /* opened inside claude.ai with no model set up: use the one it lends */
+  if (window.AI && AI.whenPage) AI.whenPage().then(function (fn) {
+    if (fn && Store.state.ai && Store.state.ai.mode === 'off') { Store.state.ai.mode = 'page'; Store.save(); }
+  });
+
   Store.init();
   UI.mountPalette();
 

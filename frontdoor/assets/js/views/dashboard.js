@@ -223,8 +223,8 @@
         '<div class="row between wrap g3 mb3"><h3>Claude</h3>' +
         '<span class="chip' + (AI.ready() ? ' chip-pos' : '') + '" id="ai-state">' + esc(AI.describe()) + '</span></div>' +
         '<div class="segmented mb4" id="ai-mode">' +
-          ['off', 'key', 'proxy'].map(function (m) {
-            var label = m === 'off' ? 'No model' : m === 'key' ? 'My API key' : 'My server';
+          ['off', 'page', 'key', 'proxy'].map(function (m) {
+            var label = m === 'off' ? 'No model' : m === 'page' ? 'This page' : m === 'key' ? 'My API key' : 'My server';
             return '<button class="seg' + (Store.state.ai.mode === m ? ' on' : '') + '" data-mode="' + m + '">' + label + '</button>';
           }).join('') +
         '</div>' +
@@ -292,6 +292,22 @@
 
       if (a.mode === 'off') {
         box.innerHTML = '<p class="hint">No model. Pattern matching only.</p>';
+        return;
+      }
+      if (a.mode === 'page') {
+        box.innerHTML = (AI.pageReady()
+          ? '<p class="hint">Claude answers through claude.ai on your own plan. The first call asks you once.</p>'
+          : '<p class="warnbox">Only works with this page open inside claude.ai.</p>') +
+          '<div class="row g2 wrap mt3"><button class="btn btn-secondary btn-sm" id="ai-test">Test it</button>' +
+          '<span class="hint" id="ai-msg"></span></div>';
+        var t2 = box.querySelector('#ai-test');
+        t2.addEventListener('click', function () {
+          var out = box.querySelector('#ai-msg');
+          if (!AI.ready()) { out.textContent = 'Not inside claude.ai.'; return; }
+          out.textContent = 'Asking...';
+          AI.test().then(function () { out.textContent = 'Working.'; out.style.color = 'var(--pos)'; paintState(); })
+            .catch(function (e) { out.textContent = e.message; out.style.color = 'var(--neg)'; });
+        });
         return;
       }
       if (a.mode === 'key') {

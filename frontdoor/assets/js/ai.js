@@ -13,11 +13,22 @@
      proxy  the browser calls a URL you host, and your server holds the key.
             This is the shape a real deployment takes.
 
-   With neither configured the app falls back to reading resumes by pattern
+     page   the page is open inside claude.ai, which lends it the viewer's
+            own Claude. No key, no server; the viewer's plan pays. The
+            posting fetch cannot run this way (it needs the API's web tool).
+
+   With none configured the app falls back to reading resumes by pattern
    matching, which is worse and says so.
    ========================================================================== */
 (function (window) {
   'use strict';
+
+  /* the claude.ai viewer answers `use("sample")` some time after load, or
+     null where the page is not framed by one; nothing here waits on it */
+  var sampleFn = null;
+  var sampleWait = (window.claude && typeof window.claude.use === 'function')
+    ? window.claude.use('sample').then(function (fn) { sampleFn = fn || null; return sampleFn; }, function () { return null; })
+    : Promise.resolve(null);
 
   var ENDPOINT = 'https://api.anthropic.com/v1/messages';
   var VERSION = '2023-06-01';
@@ -107,8 +118,16 @@
     config: cfg,
 
     /* is there anywhere to send a request */
+    /* reading a link needs the API's own web tool, which only the key and
+       server routes have */
+    canFetch: function () { return AI.ready() && cfg().mode !== 'page'; },
+    /* true once the claude.ai viewer has lent this page its Claude */
+    pageReady: function () { return !!sampleFn; },
+    whenPage: function () { return sampleWait; },
+
     ready: function () {
       var c = cfg();
+      if (c.mode === 'page') return !!sampleFn;
       if (c.mode === 'key') return !!(c.key && c.key.trim());
       /* a proxy carries the whole resume, so it goes over https or not at all */
       if (c.mode === 'proxy') return /^https:\/\//i.test((c.proxy || '').trim());
@@ -116,6 +135,7 @@
     },
     describe: function () {
       var c = cfg();
+      if (c.mode === 'page') return sampleFn ? 'Claude, through this page' : 'Open this page inside claude.ai';
       if (c.mode === 'key') return 'Claude ' + (AI.modelName(c.model)) + ', called from this browser';
       if (c.mode === 'proxy') return 'Claude ' + (AI.modelName(c.model)) + ', through your server';
       return 'Pattern matching, no model';
@@ -129,6 +149,7 @@
     send: function (opts) {
       var c = cfg();
       if (!AI.ready()) return Promise.reject(new Error('not configured'));
+      if (c.mode === 'page') return AI.sendPage(opts);
 
       var body = {
         model: c.model || 'claude-opus-5',
@@ -170,6 +191,43 @@
             catch (e) { throw new Error('The model did not return the shape we asked for.'); }
           });
         });
+    },
+
+    /* ---- the same request, through the viewer's Claude -------------------
+       No system role and no schema parameter: the instructions and the
+       shape go in a leading user turn, and the answer is parsed as JSON
+       when a schema was asked for. Server tools (the posting fetch) have
+       no equivalent here and say so. */
+    sendPage: function (opts) {
+      if (!sampleFn) return Promise.reject(new Error('Open this page inside claude.ai to use its Claude.'));
+      if (opts.tools) return Promise.reject(new Error('Fetching a link needs an API key. Paste the posting instead.'));
+      var turns = [];
+      var lead = '';
+      if (opts.system) lead += opts.system + '\n\n';
+      if (opts.schema) {
+        lead += 'Reply with only one JSON value, no prose, matching exactly this JSON schema:\n' +
+          JSON.stringify(opts.schema) + '\n\n';
+      }
+      (opts.messages || []).forEach(function (m) {
+        var text = typeof m.content === 'string' ? m.content
+          : (m.content || []).map(function (b) { return b.text || ''; }).join('\n');
+        if (!text) return;
+        turns.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: text });
+      });
+      if (!turns.length || turns[0].role !== 'user') turns.unshift({ role: 'user', content: lead || 'Go on.' });
+      else turns[0] = { role: 'user', content: lead + turns[0].content };
+      if (turns[turns.length - 1].role !== 'user') turns.push({ role: 'user', content: 'Go on.' });
+      var o = { cache: false, modelTier: opts.schema ? 'default' : 'quick' };
+      var p = opts.schema ? sampleFn.json(turns, o) : sampleFn(turns, o).then(function (r) { return r.text; });
+      return p.catch(function (e) {
+        var code = e && e.code;
+        var msg = code === 'not_granted' ? 'You said no to this page using Claude. Reload to be asked again.'
+          : code === 'rate_limited' ? 'Rate limited. Wait a moment and try again.'
+          : code === 'invalid_json' ? 'The model did not return the shape we asked for.'
+          : code === 'refused' ? 'The model declined that one.'
+          : (e && e.message) || 'Claude could not answer.';
+        throw new Error(msg);
+      });
     },
 
     /* ---- reading a resume ------------------------------------------------ */

@@ -41,7 +41,7 @@
             '<h3 class="mb2">Listing</h3>' +
 
             /* the link row exists only when something can read a link */
-            (AI.ready()
+            (AI.canFetch()
               ? '<div class="lookup">' +
                   '<span class="link-ic">\u26ad</span>' +
                   '<input class="lookup-in" id="post-url" placeholder="Link to the posting" autocomplete="off" spellcheck="false" value="' + esc(postingUrl) + '">' +
@@ -151,7 +151,7 @@
           get.textContent = 'Read link';
         });
       }
-      if (get && AI.ready()) {
+      if (get && AI.canFetch()) {
         if (get) get.addEventListener('click', grab);
         url.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); grab(); } });
       }
