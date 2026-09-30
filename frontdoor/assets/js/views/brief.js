@@ -149,7 +149,7 @@
     function tile(cap, value, tone) {
       return '<div class="bf-tile' + (tone ? ' ' + tone : '') + '">' +
         '<span class="cap">' + esc(cap) + '</span>' +
-        '<p class="kpi mono">' + esc(String(value)) + '</p></div>';
+        '<p class="kpi">' + esc(String(value)) + '</p></div>';
     }
 
     var ready = b.wins.filter(function (w) { return w.story; }).length;

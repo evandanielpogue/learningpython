@@ -412,6 +412,9 @@
 }
 
 @media (max-width: 640px) {
-  .stepbar { flex-direction: column; align-items: stretch; }
-  .stepbar-next { align-self: flex-start; }
+  /* the bottom bar already carries the five steps: the strip keeps only
+     what is next, as one slim line */
+  .stepbar { padding: var(--s-2) var(--s-4); justify-content: flex-end; }
+  .stepbar .track-slim { display: none; }
+  .stepbar-next { align-self: auto; }
 }

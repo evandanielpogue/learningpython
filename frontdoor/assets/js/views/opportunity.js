@@ -314,7 +314,7 @@
   /* A figure and what it is. Nothing underneath narrating it. */
   function kpi(label, value, of) {
     return '<div class="card hover p5"><p class="cap mb3">' + esc(label) + '</p>' +
-      '<p class="kpi mono"><span data-count="' + value + '">0</span>' +
+      '<p class="kpi"><span data-count="' + value + '">0</span>' +
       (of === undefined ? '' : '<span class="kpi-of">/' + of + '</span>') + '</p></div>';
   }
 
