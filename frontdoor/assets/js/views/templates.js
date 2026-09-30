@@ -34,17 +34,17 @@
     function paintList() {
       var rows = Store.state.templates.filter(function (t) { return filter === 'All' || t.stage === filter; });
       v.querySelector('#tpl-list').innerHTML = rows.length
-        ? rows.map(function (t) {
+        ? '<div class="card rank-card">' + rows.map(function (t) {
             return '<button class="tplrow' + (t.id === selected ? ' on' : '') + '" data-tpl="' + t.id + '"' +
               (t.id === selected ? ' aria-current="true"' : '') +
               ' style="--pc:var(' + Store.colourFor(t.persona) + ')">' +
               '<span class="tplrow-dot"></span>' +
               '<span class="tplrow-main"><span class="tplrow-name">' + esc(t.name) + '</span>' +
               '<span class="tplrow-sub">' + esc(t.persona) + ' · ' + esc(t.channel) + '</span></span>' +
-              '<span class="tplrow-stage">' + esc(t.stage) + '</span>' +
+              '<span class="chip tplrow-stage">' + esc(t.stage) + '</span>' +
               (t.stock ? '' : '<span class="tplrow-mine" title="You wrote this">★</span>') +
               '</button>';
-          }).join('')
+          }).join('') + '</div>'
         : '<div class="card p5"><p class="dim">Nothing at this stage yet.</p></div>';
       paintEdit();
     }
@@ -54,7 +54,7 @@
       var box = v.querySelector('#tpl-edit');
       if (!t) { box.innerHTML = '<div class="card p6"><p class="dim">Pick one on the left.</p></div>'; return; }
       box.innerHTML =
-        '<div class="card p5 col g3" style="position:sticky;top:calc(var(--topbar) + var(--s-4))">' +
+        '<div class="card p5 col g3 detail-card" style="position:sticky;top:calc(var(--topbar) + var(--s-4))">' +
           '<div class="field"><label for="t-name">Name</label><input class="input" id="t-name" value="' + esc(t.name) + '"></div>' +
           '<div class="grid cols-3">' +
             '<div class="field"><label for="t-persona">For</label><select class="input" id="t-persona">' +

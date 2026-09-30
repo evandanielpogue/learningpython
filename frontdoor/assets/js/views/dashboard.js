@@ -197,7 +197,7 @@
     var html =
       '<div class="page-head"><h1>Settings</h1></div>' +
 
-      '<div class="card p5 mb4">' +
+      '<div class="card p5 mb4 set-card">' +
         '<h3 class="mb4">You</h3>' +
         '<div class="row g4 wrap" style="align-items:flex-start">' +
           '<div class="photo-set">' +
@@ -207,7 +207,7 @@
             (pf.photo ? '<button class="btn btn-ghost btn-sm" id="photo-clear">Remove</button>' : '') +
           '</div>' +
           '<div class="grow" style="min-width:260px">' +
-            '<div class="grid cols-2">' +
+            '<div class="grid cols-2 set-grid">' +
               '<div class="field"><label for="s-name">Name</label><input class="input" id="s-name" value="' + esc(pf.name) + '"></div>' +
               '<div class="field"><label for="s-email">Email</label><input class="input" id="s-email" value="' + esc(u ? u.email : pf.email) + '"></div>' +
               '<div class="field"><label for="s-phone">Phone</label><input class="input" id="s-phone" value="' + esc(pf.phone) + '"></div>' +
@@ -240,8 +240,9 @@
 
       '<div class="card p5 mb4">' +
         '<h3 class="mb3">R\u00e9sum\u00e9</h3>' +
-        '<div class="row between wrap g3">' +
-          '<span class="dim" style="font-size:var(--fs-sm)">' +
+        '<div class="row between g3 file-row">' +
+          '<span class="file-tile">' + Icon.svg('brief', 18) + '</span>' +
+          '<span class="dim file-name">' +
             (pf.imported ? esc(pf.source) + ' · ' + pf.roles.length + ' roles, ' + pf.wins.length + ' wins' : 'Nothing imported yet') + '</span>' +
           '<button class="btn btn-secondary btn-sm" id="s-reimport">' + (pf.imported ? 'Replace' : 'Add') + '</button>' +
         '</div>' +

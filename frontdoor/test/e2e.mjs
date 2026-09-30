@@ -2512,7 +2512,7 @@ await group('Contacts', async (page) => {
   await step('LinkedIn shows the real mark, not a lookalike tile', async () => {
     await page.goto(BASE + '#/c/c_acme/sequence', { waitUntil: 'networkidle' });
     await page.waitForSelector('.stepcard', { timeout: 4000 });
-    const li = await page.locator('.sc-ch .li-mark').count();
+    const li = await page.locator('.stepcard .sc-tile .li-mark').count();
     if (!li) throw new Error('no LinkedIn mark on the LinkedIn steps');
     const colour = await page.locator('.li-mark').first().evaluate(e => getComputedStyle(e).color);
     if (colour !== 'rgb(10, 102, 194)') throw new Error('not LinkedIn blue: ' + colour);

@@ -40,8 +40,8 @@
       if (!sug.length) { box.innerHTML = ''; return; }
       box.innerHTML =
         '<div class="card p5 mb4 found">' +
-          '<div class="row between wrap g3 mb2"><h3>Suggested</h3>' +
-          '<span class="cap">' + sug.length + '</span></div>' +
+          '<div class="row between wrap g3 mb3"><h3>Suggested</h3>' +
+          '<span class="chip">' + sug.length + '</span></div>' +
           '<div class="foundgrid">' + sug.map(function (g) {
             return '<div class="foundcard" style="--pc:var(' + Store.colourFor(g.persona) + ')">' +
               '<div class="row g3" style="align-items:flex-start">' +
@@ -67,6 +67,7 @@
       paintFound();
       var list = v.querySelector('#list');
       list.innerHTML =
+        '<div class="card rank-card">' +
         c.contacts.map(function (p, i) {
           return '<div class="rankrow' + (p.id === selected ? ' on' : '') + '" data-pick="' + p.id + '" style="--pc:var(' + p.colour + ')">' +
             '<span class="rank">' + (i + 1) + '</span>' +
@@ -75,13 +76,13 @@
               ' aria-pressed="' + (p.id === selected ? 'true' : 'false') + '">' +
               '<span class="rr-name">' + esc(p.name) + '</span>' +
               '<span class="rr-sub">' + esc(p.title || 'No title yet') + '</span></button>' +
-            '<span class="rr-tag' + (p.placeholder ? ' rr-tag-warn' : '') + '">' +
+            '<span class="chip rr-tag' + (p.placeholder ? ' rr-tag-warn' : '') + '">' +
               (p.placeholder ? 'Needs a name' : esc(p.persona)) + '</span>' +
             '<span class="rr-moves">' +
               '<button class="icon-btn" data-up="' + p.id + '" aria-label="Move up"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
               '<button class="icon-btn" data-down="' + p.id + '" aria-label="Move down"' + (i === c.contacts.length - 1 ? ' disabled' : '') + '>↓</button>' +
             '</span></div>';
-        }).join('') +
+        }).join('') + '</div>' +
         (adding ? addForm() : '<button class="addrow" id="add-inline">+ Add another</button>');
 
       if (adding) wireLookup();
@@ -163,7 +164,7 @@
       if (!p) { d.innerHTML = '<div class="card p6"><p class="dim">Nobody selected.</p></div>'; return; }
 
       d.innerHTML =
-        '<div class="card p5" style="position:sticky;top:calc(var(--topbar) + var(--s-4))">' +
+        '<div class="card p5 detail-card" style="position:sticky;top:calc(var(--topbar) + var(--s-4))">' +
           '<div class="row g3 mb4">' +
             '<span class="avatar avatar-lg" style="background:var(' + p.colour + ')">' + esc(Store.initials(p.name)) + '</span>' +
             '<span class="grow"><h3 style="line-height:1.25">' + esc(p.name) + '</h3>' +
