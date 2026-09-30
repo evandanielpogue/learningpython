@@ -176,8 +176,8 @@
 .nav-steps { display: grid; gap: 2px; }
 
 /* ---- the company you are on, and the way to swap ---- */
-.switch {
-  display: grid; grid-template-columns: 26px minmax(0, 1fr) 12px; min-height: 44px;
+.coswitch {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr) 12px; min-height: 52px;
   gap: var(--s-3); align-items: center; width: 100%;
   padding: var(--s-2) var(--s-3); margin-bottom: var(--s-2);
   background: var(--rail-2); border: 1px solid var(--rail-line);
@@ -186,26 +186,28 @@
   transition: border-color var(--t-2) var(--ease), box-shadow var(--t-2) var(--ease),
               transform var(--t-2) var(--spring);
 }
-.switch:hover { border-color: var(--rail-line-2); background: var(--rail-3); }
-.switch:active { transform: scale(.985); }
-.switch:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
-.switch-ring { display: grid; place-items: center; }
+.coswitch:hover { border-color: var(--rail-line-2); background: var(--rail-3); }
+.coswitch:active { transform: scale(.985); }
+.coswitch:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+.coswitch-ring { display: grid; place-items: center; position: relative; width: 36px; height: 36px; }
+.coswitch-ring .pmono { width: 26px; height: 26px; border-radius: 7px; font-size: 10px; }
+.coswitch-ring .ring { position: absolute; inset: 0; }
 /* .ring carries a fixed 38px, which squashes it at any other size */
-.switch-ring .ring { width: 26px; height: 26px; }
-.switch-ring .ring-label { display: none; }
+.coswitch-ring .ring { width: 36px; height: 36px; }
+.coswitch-ring .ring-label { display: none; }
 .sidebar .ring .ring-track { stroke: rgba(255, 255, 255, .14); }
 .sidebar .ring .ring-fill { stroke: var(--rail-brand); }
 .sidebar .ring.done .ring-fill { stroke: var(--rail-pos); }
-.switch-main { min-width: 0; display: grid; }
-.switch-co {
+.coswitch-main { min-width: 0; display: grid; }
+.coswitch-co {
   font-size: var(--fs-base); font-weight: 620; letter-spacing: -.012em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.switch-role {
+.coswitch-role {
   font-size: var(--fs-xs); color: var(--rail-ink-2);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.switch-arr { color: var(--rail-ink-2); font-size: var(--fs-sm); line-height: 1; }
+.coswitch-arr { color: var(--rail-ink-2); font-size: var(--fs-sm); line-height: 1; }
 
 /* ---- a step ---- */
 .nav-item.step { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: var(--s-3); }
@@ -245,8 +247,8 @@
 
 /* ---- collapsed rail: the number is the whole story ---- */
 @media (max-width: 900px) {
-  .sidebar .switch { grid-template-columns: 26px; justify-items: center; padding: var(--s-2); }
-  .sidebar .switch-main, .sidebar .switch-arr { display: none; }
+  .sidebar .coswitch { grid-template-columns: 36px; justify-items: center; padding: var(--s-2); }
+  .sidebar .coswitch-main, .sidebar .coswitch-arr { display: none; }
   .sidebar .step-sub { display: none; }
   .sidebar .nav-item.step { grid-template-columns: 20px; justify-content: center; }
   .sidebar .nav-item.step .nav-count { display: none; }
@@ -355,10 +357,12 @@
 .pcard:hover .pmono { transform: scale(1.06); }
 .pcard-id > span { display: grid; gap: 1px; min-width: 0; }
 .pcard-id b {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
   font-size: var(--fs-base); font-weight: 620; letter-spacing: -.014em; line-height: 1.25;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   transition: color var(--t-2) var(--ease);
 }
+.pcard-id b .pn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcard-id b .chip { margin: 0; flex: none; }
 .pcard-id:hover b { color: var(--brand); }
 .pcard-role {
   font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.3;

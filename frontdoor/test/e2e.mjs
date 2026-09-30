@@ -1960,7 +1960,7 @@ await group('The five steps', async (page) => {
     await page.waitForSelector('.menu', { timeout: 3000 });
     await page.locator('.menu [role="menuitem"][data-k="' + other + '"]').click();
     await page.waitForTimeout(400);
-    const co = await page.evaluate(() => document.querySelector('.switch-co').textContent.trim());
+    const co = await page.evaluate(() => document.querySelector('.coswitch-co').textContent.trim());
     const want = await page.evaluate((id) => Store.campaign(id).company, other);
     if (co !== want) throw new Error('rail still says ' + co);
   });

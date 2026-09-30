@@ -120,11 +120,11 @@
 
   function switcherHTML(c) {
     var pr = Store.phaseProgress(c);
-    return '<button class="switch" id="co-switch" title="' + esc(c.company) + '">' +
-      '<span class="switch-ring">' + UI.ringHTML(pr.done, pr.total, 26) + '</span>' +
-      '<span class="switch-main"><span class="switch-co">' + esc(c.company) + '</span>' +
-      '<span class="switch-role">' + esc(c.role || 'No role') + '</span></span>' +
-      '<span class="switch-arr" aria-hidden="true">\u2304</span></button>';
+    return '<button class="coswitch" id="co-switch" title="' + esc(c.company) + '">' +
+      '<span class="coswitch-ring">' + Views.monogram(c.company, 28) + UI.ringHTML(pr.done, pr.total, 36) + '</span>' +
+      '<span class="coswitch-main"><span class="coswitch-co">' + esc(c.company) + '</span>' +
+      '<span class="coswitch-role">' + esc(c.role || 'No role') + '</span></span>' +
+      '<span class="coswitch-arr" aria-hidden="true">\u2304</span></button>';
   }
 
   function paintMobile(c, activeKey) {

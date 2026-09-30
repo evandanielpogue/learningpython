@@ -78,7 +78,7 @@
         '<a class="pcard-id" href="#/c/' + c.id + '"' +
           ' title="' + esc(c.company + (next.done ? '' : ' — next: ' + next.label)) + '">' +
           Views.monogram(c.company) +
-          '<span><b>' + esc(c.company) + (c.example ? ' <span class="chip chip-xs">Example</span>' : '') + '</b>' +
+          '<span><b><span class="pn">' + esc(c.company) + '</span>' + (c.example ? '<span class="chip chip-xs">Example</span>' : '') + '</b>' +
           '<span class="pcard-role">' + esc(c.role || 'None') + '</span></span></a>' +
         '<button class="icon-btn pcard-more" data-more="' + c.id + '" aria-haspopup="menu" aria-expanded="false"' +
           ' aria-label="More for ' + esc(c.company) + '" title="More">' + Icon.svg('more', 15) + '</button>' +
