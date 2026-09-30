@@ -52,7 +52,7 @@ await step('the typefaces came with it', async () => {
   /* @font-face is lazy, so ask for the faces rather than asking whether
      something already happened to need them */
   const got = await page.evaluate(async () => {
-    const want = ['600 16px "Instrument Sans"', '400 12px "JetBrains Mono"'];
+    const want = ['600 16px "Inter"', '400 12px "JetBrains Mono"'];
     const out = [];
     for (const f of want) {
       try { out.push({ f, n: (await document.fonts.load(f)).length }); }
