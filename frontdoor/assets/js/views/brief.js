@@ -190,7 +190,7 @@
       '</div>' +
 
       '<div class="bf-grid">' +
-        panel('lead', 'Wins', '', leadHTML(), 12, false, b.wins.length) +
+        panel('lead', 'Proof', '', leadHTML(), 12, false, b.wins.length) +
         panel('questions', 'Questions', '', '<div id="qbox">' + questionsHTML() + '</div>', 7, true, qCount) +
         panel('match', 'Match', '', matchHTML(), 5, true, b.match.length) +
         panel('people', 'People', '', peopleHTML(), 7, true, b.people.length) +

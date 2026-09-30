@@ -177,12 +177,25 @@
         '</div>' +
 
         '<div class="card p6 mb4">' +
-          '<div class="row between wrap g2 mb3"><h3>Wins</h3><span class="chip">' + p.wins.length + '</span></div>' +
+          '<div class="row between wrap g2 mb3"><h3>Proof</h3><span class="chip">' + p.wins.length + '</span></div>' +
           (p.wins.length
             ? '<div class="leadwins">' + p.wins.map(function (w) {
                 return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
               }).join('') + '</div>'
             : '<p class="hint">None with a number.</p>') +
+        '</div>' +
+
+        /* the page carries a portrait; a page with initials where a face
+           should be is the one thing a hiring manager notices first */
+        '<div class="card p6 mb4 photo-card"><h3 class="mb3">Photo</h3>' +
+          '<div class="photo-set photo-row">' +
+            '<div class="photo-ring" id="photo-prev">' + Views.photoHTML(72) + '</div>' +
+            '<div class="row g2 wrap">' +
+              '<label class="btn ' + (Store.state.profile.photo ? 'btn-secondary' : 'btn-primary') + ' btn-sm" for="photo-in">' +
+                (Store.state.profile.photo ? 'Replace' : 'Add a photo') + '</label>' +
+              '<input type="file" id="photo-in" accept="image/*" hidden>' +
+            '</div>' +
+          '</div>' +
         '</div>' +
 
         (Store.state.profile.stack.length
@@ -225,6 +238,11 @@
       });
       v.querySelector('#redo-import').addEventListener('click', function () {
         step = 1; pending = ''; paint();
+      });
+      var pin = v.querySelector('#photo-in');
+      if (pin) pin.addEventListener('change', function () {
+        var file = this.files && this.files[0];
+        if (file) Views.readPhoto(file, paint);
       });
     }
 

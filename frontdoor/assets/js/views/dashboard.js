@@ -276,27 +276,7 @@
     v.querySelector('#photo-in').addEventListener('change', function () {
       var file = this.files && this.files[0];
       if (!file) return;
-      var fr = new FileReader();
-      fr.onload = function () {
-        /* everything lives in one 5MB localStorage blob, so a 900KB portrait
-           is a third of the budget. 320px is plenty for a 112px slot. */
-        var img = new Image();
-        img.onload = function () {
-          var n = 320, sc = Math.min(1, n / Math.max(img.width, img.height));
-          var cv = document.createElement('canvas');
-          cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
-          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-          var small;
-          try { small = cv.toDataURL('image/jpeg', 0.82); } catch (e) { small = fr.result; }
-          Store.setPhoto(small.length < String(fr.result).length ? small : fr.result);
-          UI.toast('Photo added.');
-          Views.settings();
-        };
-        img.onerror = function () { UI.toast('That did not look like an image.'); };
-        img.src = fr.result;
-      };
-      fr.onerror = function () { UI.toast('Could not read that file.'); };
-      fr.readAsDataURL(file);
+      Views.readPhoto(file, function () { Views.settings(); });
     });
     var clear = v.querySelector('#photo-clear');
     if (clear) clear.addEventListener('click', function () { Store.setPhoto(null); Views.settings(); });
@@ -380,6 +360,29 @@
   };
 
   /* a portrait if there is one, initials if there is not */
+  /* one reader for every photo slot: shrinks, stores, then calls back */
+  window.Views.readPhoto = function (file, done) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var n = 320, sc = Math.min(1, n / Math.max(img.width, img.height));
+        var cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        var small;
+        try { small = cv.toDataURL('image/jpeg', 0.82); } catch (e) { small = fr.result; }
+        Store.setPhoto(small.length < String(fr.result).length ? small : fr.result);
+        UI.toast('Photo added.');
+        if (done) done();
+      };
+      img.onerror = function () { UI.toast('That did not look like an image.'); };
+      img.src = fr.result;
+    };
+    fr.onerror = function () { UI.toast('Could not read that file.'); };
+    fr.readAsDataURL(file);
+  };
+
   window.Views.photoHTML = function (size) {
     var pf = Store.state.profile;
     if (pf.photo && /^data:image\//.test(pf.photo)) {

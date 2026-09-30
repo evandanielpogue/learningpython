@@ -580,7 +580,7 @@
         if (b.length < 8 || out.requirements.length >= 8) return;
         if (REQ_HEAD.test(b) || SECTION.test(b)) return;
         if (out.requirements.indexOf(b) > -1) return;
-        out.requirements.push(b.length > 84 ? b.slice(0, 80).replace(/\s\S*$/, '') + '…' : b);
+        out.requirements.push(b.length > 160 ? b.slice(0, 156).replace(/\s\S*$/, '') + '…' : b);
       }
 
       lines.forEach(function (l) {
@@ -1258,9 +1258,50 @@
        Stands in for the server call. It resolves against everyone we already
        know about; anything else comes back as a name and nothing more, which
        is honest about what a URL alone can tell you. ------------------------ */
+    /* A browser cannot read a LinkedIn profile: the page sits behind a
+       login and sends no CORS headers, so nothing here can fetch it. What
+       works is the person selecting their profile and pasting it. This reads
+       the name, the headline, the company and the URL out of that. */
+    readProfile: function (raw) {
+      var lines = String(raw || '').replace(/\r/g, '').split('\n')
+        .map(function (l) { return l.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+      var NOISE = /^(contact info|message|connect|follow|more|pending|\d[\d,]*\+? (connections|followers)|·?\s*(1st|2nd|3rd)\b|he\/him|she\/her|they\/them|open to work|premium|verified)/i;
+      var CLEAN = lines.filter(function (l) { return !NOISE.test(l) && l.length < 160; });
+      var urlm = String(raw).match(/linkedin\.com\/in\/([A-Za-z0-9\-_%]+)/i);
+      var name = '', title = '', where = '';
+      for (var i = 0; i < CLEAN.length; i++) {
+        var l = CLEAN[i].replace(/\s*[·|,]\s*(1st|2nd|3rd).*$/i, '').replace(/\s*\(.*?\)\s*$/, '');
+        if (/^[A-Z][A-Za-z.'\-]+(?:\s+[A-Z][A-Za-z.'\-]+){1,3}$/.test(l) && !/\d/.test(l)) {
+          name = l; title = CLEAN[i + 1] || ''; where = CLEAN[i + 2] || ''; break;
+        }
+      }
+      if (!name) return null;
+      if (/^(at|@)\b/i.test(title)) title = '';
+      var co = title.match(/\b(?:at|@)\s+([A-Z][A-Za-z0-9&.'\-]*(?:\s+[A-Z][A-Za-z0-9&.'\-]*){0,2})/);
+      var persona = /recruit|talent|people|sourcer/i.test(title) ? 'Recruiter'
+        : /\b(vp|vice president|chief|cro|ceo|coo|president|founder|svp)\b/i.test(title) ? 'Skip level'
+        : /\b(director|head of|manager|lead)\b/i.test(title) ? 'Hiring manager'
+        : 'Peer';
+      return { name: name, title: title.slice(0, 80), company: co ? co[1] : '',
+        where: /,/.test(where) && where.length < 40 ? where : '',
+        persona: persona, linkedin: urlm ? 'in/' + urlm[1].toLowerCase() : '' };
+    },
+
     lookupLinkedIn: function (raw, cid) {
       var s = String(raw || '').trim();
       if (!s) return { ok: false, reason: 'Paste their LinkedIn URL first.' };
+      /* more than a URL: a pasted profile */
+      if (/\n/.test(s) || (s.length > 80 && !/linkedin\.com/i.test(s))) {
+        var pr = Store.readProfile(s);
+        if (!pr) return { ok: false, reason: 'Could not find a name in that. Paste from the top of their profile.' };
+        var c0 = Store.campaign(cid);
+        var d0 = c0 && c0.contacts.filter(function (p) { return p.name.toLowerCase() === pr.name.toLowerCase(); })[0];
+        if (d0) return { ok: false, reason: d0.name + ' is already on your list.' };
+        return { ok: true, exact: false, pasted: true, person: {
+          name: pr.name, title: pr.title, persona: pr.persona, tenure: '', prev: '', mutuals: 0,
+          email: '', linkedin: pr.linkedin, ask: '', activity: []
+        } };
+      }
       var m = s.match(/linkedin\.com\/(?:in|pub)\/([A-Za-z0-9\-_%]+)/i) ||
               s.match(/^\/?in\/([A-Za-z0-9\-_%]+)/i) ||
               s.match(/^([A-Za-z0-9\-_]{3,})$/);

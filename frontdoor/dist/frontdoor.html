@@ -2267,6 +2267,71 @@ textarea.listing-in { min-height: 220px; }
 :is(.detail-card, .set-card, #ai-card, #tpl-edit) textarea.input { padding-top: 8px; padding-bottom: 8px; }
 .detail-card .grid, #tpl-edit .grid { gap: var(--s-3); }
 
+
+/* ---- Role: rows open to show the whole thing ---------------------------- */
+.mr-ask {
+  appearance: none; background: none; border: none; padding: 0; margin: 0; text-align: left;
+  font: inherit; color: inherit; cursor: pointer; width: 100%; min-width: 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) 16px; gap: var(--s-2); align-items: start;
+}
+.mr-ask > b, .mr-ask > .mr-must, .mr-ask > .mr-note { grid-column: 1; }
+.mr-caret {
+  grid-column: 2; grid-row: 1; color: var(--ink-3); margin-top: 3px;
+  transform: rotate(90deg); transition: transform var(--t-2) var(--ease), color var(--t-2) var(--ease);
+}
+.mr-ask:hover .mr-caret { color: var(--ink); }
+.matchrow[data-open="0"] .mr-ask > b {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.matchrow[data-open="0"] .mr-note { display: none; }
+.matchrow[data-open="1"] .mr-caret { transform: rotate(-90deg); }
+.matchrow[data-open="1"] { background: var(--sunk); border-radius: var(--r-2); }
+.matchrow[data-open="1"] + .matchrow { border-top-color: transparent; }
+.mr-proof { display: inline-grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 6px; }
+.mr-proof .mr-full { display: none; }
+.mr-proof .mr-full i { display: block; font-style: normal; font-size: var(--fs-2xs); color: var(--ink-3); margin-top: 2px; }
+.matchrow[data-open="1"] .mr-proof .mr-short { display: none; }
+.matchrow[data-open="1"] .mr-proof .mr-full { display: block; }
+.matchrow[data-open="1"] .mr-proof { max-width: 100%; align-items: start; }
+.matchrow[data-open="1"] .mr-with { flex-direction: column; align-items: stretch; }
+
+/* ---- Proof: the whole line, with where it happened ---------------------- */
+.prooflist { display: grid; }
+.proof {
+  display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: var(--s-3); align-items: start;
+  padding: var(--s-3) 0; border-top: 1px solid var(--line);
+}
+.proof:first-child { border-top: none; padding-top: 0; }
+.proof:last-child { padding-bottom: 0; }
+.proof > b { color: var(--brand); font-size: var(--fs-sm); font-weight: 600; padding-top: 2px; }
+.proof > span { display: grid; gap: 2px; min-width: 0; }
+.proof-text { font-size: var(--fs-base); color: var(--ink); line-height: 1.45; }
+.proof-where { font-size: var(--fs-xs); color: var(--ink-3); }
+
+
+/* ---- the photo step in the résumé review -------------------------------- */
+.photo-row { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--s-4); }
+.photo-row .portrait { border-radius: var(--r-full); }
+textarea.lookup-in { resize: none; line-height: 1.5; font-family: var(--ui); }
+
+/* ---- the public page keeps its own, larger scale ------------------------ */
+.pub {
+  --fs-base: 14.5px; --fs-md: 16px; --fs-lg: 18px; --fs-2xl: 28px; --fs-3xl: 36px;
+}
+.pub h1 { font-size: clamp(30px, 4.4vw, 40px); }
+.pg-eyebrow { font-family: var(--ui); font-weight: 620; letter-spacing: .09em; font-size: var(--fs-2xs); }
+.pg-hero { padding-bottom: var(--s-8); }
+.pg-stats div {
+  background: var(--panel); border: 1px solid var(--pg-line); border-top: 3px solid var(--ac);
+  box-shadow: var(--e-2); border-radius: var(--r-3); padding: var(--s-5);
+}
+.pg-stats b { font-size: 30px; }
+.pg-stats span { font-size: var(--fs-base); }
+.pg-h { font-size: var(--fs-2xs); letter-spacing: .12em; color: var(--ac); }
+.pg-story { border-left: 3px solid var(--ac); background: var(--ac-wash); padding: var(--s-4) var(--s-5); border-radius: 0 var(--r-3) var(--r-3) 0; }
+.lookup-msg { margin-top: 0; }
+.mr-ask > .mr-must { justify-self: start; }
+
 /* assets/css/motion.css */
 /* ==========================================================================
    motion.css — how the app feels when you touch it.
@@ -4352,7 +4417,7 @@ textarea.listing-in { min-height: 220px; }
         if (b.length < 8 || out.requirements.length >= 8) return;
         if (REQ_HEAD.test(b) || SECTION.test(b)) return;
         if (out.requirements.indexOf(b) > -1) return;
-        out.requirements.push(b.length > 84 ? b.slice(0, 80).replace(/\s\S*$/, '') + '…' : b);
+        out.requirements.push(b.length > 160 ? b.slice(0, 156).replace(/\s\S*$/, '') + '…' : b);
       }
 
       lines.forEach(function (l) {
@@ -5030,9 +5095,50 @@ textarea.listing-in { min-height: 220px; }
        Stands in for the server call. It resolves against everyone we already
        know about; anything else comes back as a name and nothing more, which
        is honest about what a URL alone can tell you. ------------------------ */
+    /* A browser cannot read a LinkedIn profile: the page sits behind a
+       login and sends no CORS headers, so nothing here can fetch it. What
+       works is the person selecting their profile and pasting it. This reads
+       the name, the headline, the company and the URL out of that. */
+    readProfile: function (raw) {
+      var lines = String(raw || '').replace(/\r/g, '').split('\n')
+        .map(function (l) { return l.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+      var NOISE = /^(contact info|message|connect|follow|more|pending|\d[\d,]*\+? (connections|followers)|·?\s*(1st|2nd|3rd)\b|he\/him|she\/her|they\/them|open to work|premium|verified)/i;
+      var CLEAN = lines.filter(function (l) { return !NOISE.test(l) && l.length < 160; });
+      var urlm = String(raw).match(/linkedin\.com\/in\/([A-Za-z0-9\-_%]+)/i);
+      var name = '', title = '', where = '';
+      for (var i = 0; i < CLEAN.length; i++) {
+        var l = CLEAN[i].replace(/\s*[·|,]\s*(1st|2nd|3rd).*$/i, '').replace(/\s*\(.*?\)\s*$/, '');
+        if (/^[A-Z][A-Za-z.'\-]+(?:\s+[A-Z][A-Za-z.'\-]+){1,3}$/.test(l) && !/\d/.test(l)) {
+          name = l; title = CLEAN[i + 1] || ''; where = CLEAN[i + 2] || ''; break;
+        }
+      }
+      if (!name) return null;
+      if (/^(at|@)\b/i.test(title)) title = '';
+      var co = title.match(/\b(?:at|@)\s+([A-Z][A-Za-z0-9&.'\-]*(?:\s+[A-Z][A-Za-z0-9&.'\-]*){0,2})/);
+      var persona = /recruit|talent|people|sourcer/i.test(title) ? 'Recruiter'
+        : /\b(vp|vice president|chief|cro|ceo|coo|president|founder|svp)\b/i.test(title) ? 'Skip level'
+        : /\b(director|head of|manager|lead)\b/i.test(title) ? 'Hiring manager'
+        : 'Peer';
+      return { name: name, title: title.slice(0, 80), company: co ? co[1] : '',
+        where: /,/.test(where) && where.length < 40 ? where : '',
+        persona: persona, linkedin: urlm ? 'in/' + urlm[1].toLowerCase() : '' };
+    },
+
     lookupLinkedIn: function (raw, cid) {
       var s = String(raw || '').trim();
       if (!s) return { ok: false, reason: 'Paste their LinkedIn URL first.' };
+      /* more than a URL: a pasted profile */
+      if (/\n/.test(s) || (s.length > 80 && !/linkedin\.com/i.test(s))) {
+        var pr = Store.readProfile(s);
+        if (!pr) return { ok: false, reason: 'Could not find a name in that. Paste from the top of their profile.' };
+        var c0 = Store.campaign(cid);
+        var d0 = c0 && c0.contacts.filter(function (p) { return p.name.toLowerCase() === pr.name.toLowerCase(); })[0];
+        if (d0) return { ok: false, reason: d0.name + ' is already on your list.' };
+        return { ok: true, exact: false, pasted: true, person: {
+          name: pr.name, title: pr.title, persona: pr.persona, tenure: '', prev: '', mutuals: 0,
+          email: '', linkedin: pr.linkedin, ask: '', activity: []
+        } };
+      }
       var m = s.match(/linkedin\.com\/(?:in|pub)\/([A-Za-z0-9\-_%]+)/i) ||
               s.match(/^\/?in\/([A-Za-z0-9\-_%]+)/i) ||
               s.match(/^([A-Za-z0-9\-_]{3,})$/);
@@ -7289,27 +7395,7 @@ textarea.listing-in { min-height: 220px; }
     v.querySelector('#photo-in').addEventListener('change', function () {
       var file = this.files && this.files[0];
       if (!file) return;
-      var fr = new FileReader();
-      fr.onload = function () {
-        /* everything lives in one 5MB localStorage blob, so a 900KB portrait
-           is a third of the budget. 320px is plenty for a 112px slot. */
-        var img = new Image();
-        img.onload = function () {
-          var n = 320, sc = Math.min(1, n / Math.max(img.width, img.height));
-          var cv = document.createElement('canvas');
-          cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
-          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-          var small;
-          try { small = cv.toDataURL('image/jpeg', 0.82); } catch (e) { small = fr.result; }
-          Store.setPhoto(small.length < String(fr.result).length ? small : fr.result);
-          UI.toast('Photo added.');
-          Views.settings();
-        };
-        img.onerror = function () { UI.toast('That did not look like an image.'); };
-        img.src = fr.result;
-      };
-      fr.onerror = function () { UI.toast('Could not read that file.'); };
-      fr.readAsDataURL(file);
+      Views.readPhoto(file, function () { Views.settings(); });
     });
     var clear = v.querySelector('#photo-clear');
     if (clear) clear.addEventListener('click', function () { Store.setPhoto(null); Views.settings(); });
@@ -7393,6 +7479,29 @@ textarea.listing-in { min-height: 220px; }
   };
 
   /* a portrait if there is one, initials if there is not */
+  /* one reader for every photo slot: shrinks, stores, then calls back */
+  window.Views.readPhoto = function (file, done) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var n = 320, sc = Math.min(1, n / Math.max(img.width, img.height));
+        var cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        var small;
+        try { small = cv.toDataURL('image/jpeg', 0.82); } catch (e) { small = fr.result; }
+        Store.setPhoto(small.length < String(fr.result).length ? small : fr.result);
+        UI.toast('Photo added.');
+        if (done) done();
+      };
+      img.onerror = function () { UI.toast('That did not look like an image.'); };
+      img.src = fr.result;
+    };
+    fr.onerror = function () { UI.toast('Could not read that file.'); };
+    fr.readAsDataURL(file);
+  };
+
   window.Views.photoHTML = function (size) {
     var pf = Store.state.profile;
     if (pf.photo && /^data:image\//.test(pf.photo)) {
@@ -7500,7 +7609,7 @@ textarea.listing-in { min-height: 220px; }
           '</div>' +
 
           '<div class="card p6 mb4">' +
-            '<div class="row between wrap g3 mb2"><h3>Wins</h3>' +
+            '<div class="row between wrap g3 mb2"><h3>Proof</h3>' +
             '<span class="chip chip-accent" id="pick-count"></span></div>' +
             '<div class="grid optlist" style="gap:var(--s-2)" id="wins"></div>' +
           '</div>' +
@@ -7758,14 +7867,21 @@ textarea.listing-in { min-height: 220px; }
           return Store.state.profile.wins.filter(function (w) { return w.id === id; })[0];
         }).filter(Boolean);
         var strength = ['strong', 'partial', 'none'].indexOf(r.strength) > -1 ? r.strength : 'none';
-        return '<div class="matchrow ' + strength + '">' +
+        /* a row is a summary; opening it shows the whole requirement and
+           the whole story behind each piece of proof */
+        return '<div class="matchrow ' + strength + '" data-open="0">' +
           '<span class="mr-dot" title="' + strength + '"></span>' +
-          '<div class="mr-ask"><b>' + esc(r.text) + '</b>' +
+          '<button class="mr-ask" type="button" aria-expanded="false">' +
+            '<b>' + esc(r.full || r.text) + '</b>' +
             (r.priority === 'must' ? '<em class="mr-must">must have</em>' : '') +
-            (r.note ? '<p class="mr-note">' + esc(r.note) + '</p>' : '') + '</div>' +
+            (r.note ? '<p class="mr-note">' + esc(r.note) + '</p>' : '') +
+            '<span class="mr-caret" aria-hidden="true">' + Icon.svg('arrow', 14) + '</span>' +
+          '</button>' +
           '<div class="mr-with">' + (ws.length
             ? ws.map(function (w) {
-                return '<span class="chip"><b class="mono">' + esc(w.metric) + '</b> ' + esc(w.short) + '</span>';
+                return '<span class="chip mr-proof"><b class="mono">' + esc(w.metric) + '</b> ' +
+                  '<span class="mr-short">' + esc(w.short) + '</span>' +
+                  '<span class="mr-full">' + esc(w.text) + (w.where ? ' <i>' + esc(w.where) + '</i>' : '') + '</span></span>';
               }).join('')
             : '<span class="mr-gap">Gap</span>') + '</div>' +
         '</div>';
@@ -7791,10 +7907,12 @@ textarea.listing-in { min-height: 220px; }
         '</div>' +
         '<div class="col g4">' +
           '<div class="card p5">' +
-            '<div class="row between wrap g2 mb3"><h3>Wins</h3><span class="chip">' + wins.length + '</span></div>' +
+            '<div class="row between wrap g2 mb3"><h3>Proof</h3><span class="chip">' + wins.length + '</span></div>' +
             (wins.length
-              ? '<div class="leadwins">' + wins.map(function (w) {
-                  return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
+              ? '<div class="prooflist">' + wins.map(function (w) {
+                  return '<div class="proof"><b class="mono">' + esc(w.metric) + '</b>' +
+                    '<span><span class="proof-text">' + esc(w.text) + '</span>' +
+                    (w.where ? '<span class="proof-where">' + esc(w.where) + '</span>' : '') + '</span></div>';
                 }).join('') + '</div>'
               : '<p class="hint">None picked.</p>') +
           '</div>' +
@@ -7825,6 +7943,12 @@ textarea.listing-in { min-height: 220px; }
     UI.on(v, 'click', '[data-step]', function (e, el) {
       c.activeStep = el.dataset.step; Store.save();
       Router.go('/c/' + c.id + '/sequence');
+    });
+    UI.on(v, 'click', '.mr-ask', function (e, el) {
+      var row = el.closest('.matchrow');
+      var open = row.dataset.open !== '1';
+      row.dataset.open = open ? '1' : '0';
+      el.setAttribute('aria-expanded', String(open));
     });
   };
 })(window, document);
@@ -8010,12 +8134,25 @@ textarea.listing-in { min-height: 220px; }
         '</div>' +
 
         '<div class="card p6 mb4">' +
-          '<div class="row between wrap g2 mb3"><h3>Wins</h3><span class="chip">' + p.wins.length + '</span></div>' +
+          '<div class="row between wrap g2 mb3"><h3>Proof</h3><span class="chip">' + p.wins.length + '</span></div>' +
           (p.wins.length
             ? '<div class="leadwins">' + p.wins.map(function (w) {
                 return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
               }).join('') + '</div>'
             : '<p class="hint">None with a number.</p>') +
+        '</div>' +
+
+        /* the page carries a portrait; a page with initials where a face
+           should be is the one thing a hiring manager notices first */
+        '<div class="card p6 mb4 photo-card"><h3 class="mb3">Photo</h3>' +
+          '<div class="photo-set photo-row">' +
+            '<div class="photo-ring" id="photo-prev">' + Views.photoHTML(72) + '</div>' +
+            '<div class="row g2 wrap">' +
+              '<label class="btn ' + (Store.state.profile.photo ? 'btn-secondary' : 'btn-primary') + ' btn-sm" for="photo-in">' +
+                (Store.state.profile.photo ? 'Replace' : 'Add a photo') + '</label>' +
+              '<input type="file" id="photo-in" accept="image/*" hidden>' +
+            '</div>' +
+          '</div>' +
         '</div>' +
 
         (Store.state.profile.stack.length
@@ -8058,6 +8195,11 @@ textarea.listing-in { min-height: 220px; }
       });
       v.querySelector('#redo-import').addEventListener('click', function () {
         step = 1; pending = ''; paint();
+      });
+      var pin = v.querySelector('#photo-in');
+      if (pin) pin.addEventListener('change', function () {
+        var file = this.files && this.files[0];
+        if (file) Views.readPhoto(file, paint);
       });
     }
 
@@ -8469,7 +8611,7 @@ textarea.listing-in { min-height: 220px; }
 
         '<div class="lookup">' +
           UI.liMark(18) +
-          '<input class="lookup-in" id="n-url" placeholder="linkedin.com/in/marcusreed" autocomplete="off" spellcheck="false">' +
+          '<textarea class="lookup-in" id="n-url" rows="1" placeholder="linkedin.com/in/marcusreed, or paste their profile" autocomplete="off" spellcheck="false"></textarea>' +
           '<button class="btn btn-secondary btn-sm" type="button" id="n-find">Find</button>' +
         '</div>' +
         '<p class="lookup-msg hide" id="n-msg"></p>' +
@@ -8523,12 +8665,21 @@ textarea.listing-in { min-height: 220px; }
         msg.classList.add('ok');
         msg.textContent = res.exact
           ? 'Found ' + p.name + (p.title ? ', ' + p.title : '') + '. Check it, then add.'
-          : 'Only the name came back from that URL. Fill in the rest below.';
+          : res.pasted
+            ? 'Read ' + p.name + (p.title ? ', ' + p.title : '') + '. Check it, then add.'
+            : 'Only the name came back from that URL. Paste their profile text for the rest, or fill it in below.';
       }
 
       find.addEventListener('click', run);
       url.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); run(); }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); run(); }
+      });
+      url.addEventListener('input', function () {
+        this.rows = Math.min(6, Math.max(1, this.value.split('\n').length));
+      });
+      url.addEventListener('paste', function () {
+        var self = this;
+        setTimeout(function () { if (/\n/.test(self.value)) run(); }, 0);
       });
     }
 
@@ -9984,7 +10135,7 @@ textarea.listing-in { min-height: 220px; }
       '</div>' +
 
       '<div class="bf-grid">' +
-        panel('lead', 'Wins', '', leadHTML(), 12, false, b.wins.length) +
+        panel('lead', 'Proof', '', leadHTML(), 12, false, b.wins.length) +
         panel('questions', 'Questions', '', '<div id="qbox">' + questionsHTML() + '</div>', 7, true, qCount) +
         panel('match', 'Match', '', matchHTML(), 5, true, b.match.length) +
         panel('people', 'People', '', peopleHTML(), 7, true, b.people.length) +

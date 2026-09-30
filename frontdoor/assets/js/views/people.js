@@ -95,7 +95,7 @@
 
         '<div class="lookup">' +
           UI.liMark(18) +
-          '<input class="lookup-in" id="n-url" placeholder="linkedin.com/in/marcusreed" autocomplete="off" spellcheck="false">' +
+          '<textarea class="lookup-in" id="n-url" rows="1" placeholder="linkedin.com/in/marcusreed, or paste their profile" autocomplete="off" spellcheck="false"></textarea>' +
           '<button class="btn btn-secondary btn-sm" type="button" id="n-find">Find</button>' +
         '</div>' +
         '<p class="lookup-msg hide" id="n-msg"></p>' +
@@ -149,12 +149,21 @@
         msg.classList.add('ok');
         msg.textContent = res.exact
           ? 'Found ' + p.name + (p.title ? ', ' + p.title : '') + '. Check it, then add.'
-          : 'Only the name came back from that URL. Fill in the rest below.';
+          : res.pasted
+            ? 'Read ' + p.name + (p.title ? ', ' + p.title : '') + '. Check it, then add.'
+            : 'Only the name came back from that URL. Paste their profile text for the rest, or fill it in below.';
       }
 
       find.addEventListener('click', run);
       url.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); run(); }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); run(); }
+      });
+      url.addEventListener('input', function () {
+        this.rows = Math.min(6, Math.max(1, this.value.split('\n').length));
+      });
+      url.addEventListener('paste', function () {
+        var self = this;
+        setTimeout(function () { if (/\n/.test(self.value)) run(); }, 0);
       });
     }
 

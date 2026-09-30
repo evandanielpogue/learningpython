@@ -2087,3 +2087,68 @@ textarea.listing-in { min-height: 220px; }
 :is(.detail-card, .set-card, #ai-card, #tpl-edit, #new-form) :is(input.input, select.input) { min-height: 34px; padding-top: 0; padding-bottom: 0; }
 :is(.detail-card, .set-card, #ai-card, #tpl-edit) textarea.input { padding-top: 8px; padding-bottom: 8px; }
 .detail-card .grid, #tpl-edit .grid { gap: var(--s-3); }
+
+
+/* ---- Role: rows open to show the whole thing ---------------------------- */
+.mr-ask {
+  appearance: none; background: none; border: none; padding: 0; margin: 0; text-align: left;
+  font: inherit; color: inherit; cursor: pointer; width: 100%; min-width: 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) 16px; gap: var(--s-2); align-items: start;
+}
+.mr-ask > b, .mr-ask > .mr-must, .mr-ask > .mr-note { grid-column: 1; }
+.mr-caret {
+  grid-column: 2; grid-row: 1; color: var(--ink-3); margin-top: 3px;
+  transform: rotate(90deg); transition: transform var(--t-2) var(--ease), color var(--t-2) var(--ease);
+}
+.mr-ask:hover .mr-caret { color: var(--ink); }
+.matchrow[data-open="0"] .mr-ask > b {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.matchrow[data-open="0"] .mr-note { display: none; }
+.matchrow[data-open="1"] .mr-caret { transform: rotate(-90deg); }
+.matchrow[data-open="1"] { background: var(--sunk); border-radius: var(--r-2); }
+.matchrow[data-open="1"] + .matchrow { border-top-color: transparent; }
+.mr-proof { display: inline-grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 6px; }
+.mr-proof .mr-full { display: none; }
+.mr-proof .mr-full i { display: block; font-style: normal; font-size: var(--fs-2xs); color: var(--ink-3); margin-top: 2px; }
+.matchrow[data-open="1"] .mr-proof .mr-short { display: none; }
+.matchrow[data-open="1"] .mr-proof .mr-full { display: block; }
+.matchrow[data-open="1"] .mr-proof { max-width: 100%; align-items: start; }
+.matchrow[data-open="1"] .mr-with { flex-direction: column; align-items: stretch; }
+
+/* ---- Proof: the whole line, with where it happened ---------------------- */
+.prooflist { display: grid; }
+.proof {
+  display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: var(--s-3); align-items: start;
+  padding: var(--s-3) 0; border-top: 1px solid var(--line);
+}
+.proof:first-child { border-top: none; padding-top: 0; }
+.proof:last-child { padding-bottom: 0; }
+.proof > b { color: var(--brand); font-size: var(--fs-sm); font-weight: 600; padding-top: 2px; }
+.proof > span { display: grid; gap: 2px; min-width: 0; }
+.proof-text { font-size: var(--fs-base); color: var(--ink); line-height: 1.45; }
+.proof-where { font-size: var(--fs-xs); color: var(--ink-3); }
+
+
+/* ---- the photo step in the résumé review -------------------------------- */
+.photo-row { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--s-4); }
+.photo-row .portrait { border-radius: var(--r-full); }
+textarea.lookup-in { resize: none; line-height: 1.5; font-family: var(--ui); }
+
+/* ---- the public page keeps its own, larger scale ------------------------ */
+.pub {
+  --fs-base: 14.5px; --fs-md: 16px; --fs-lg: 18px; --fs-2xl: 28px; --fs-3xl: 36px;
+}
+.pub h1 { font-size: clamp(30px, 4.4vw, 40px); }
+.pg-eyebrow { font-family: var(--ui); font-weight: 620; letter-spacing: .09em; font-size: var(--fs-2xs); }
+.pg-hero { padding-bottom: var(--s-8); }
+.pg-stats div {
+  background: var(--panel); border: 1px solid var(--pg-line); border-top: 3px solid var(--ac);
+  box-shadow: var(--e-2); border-radius: var(--r-3); padding: var(--s-5);
+}
+.pg-stats b { font-size: 30px; }
+.pg-stats span { font-size: var(--fs-base); }
+.pg-h { font-size: var(--fs-2xs); letter-spacing: .12em; color: var(--ac); }
+.pg-story { border-left: 3px solid var(--ac); background: var(--ac-wash); padding: var(--s-4) var(--s-5); border-radius: 0 var(--r-3) var(--r-3) 0; }
+.lookup-msg { margin-top: 0; }
+.mr-ask > .mr-must { justify-self: start; }

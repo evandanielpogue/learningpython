@@ -2455,8 +2455,8 @@ await group('Add a company from a listing', async (page) => {
     const shown = await page.locator('.bf-win').count();
     if (shown !== all) throw new Error('the brief shows ' + shown + ' of ' + all);
     await page.goto(BASE + '#/c/' + cid, { waitUntil: 'networkidle' });
-    await page.waitForSelector('.leadwins', { timeout: 5000 });
-    const rows = await page.locator('.leadwins div').count();
+    await page.waitForSelector('.prooflist', { timeout: 5000 });
+    const rows = await page.locator('.prooflist .proof').count();
     if (rows !== all) throw new Error('the summary shows ' + rows + ' of ' + all);
     /* this pass added a company the rest of the group does not expect */
     await page.evaluate((id) => Store.removeCampaign(id), cid);

@@ -92,7 +92,7 @@
           '</div>' +
 
           '<div class="card p6 mb4">' +
-            '<div class="row between wrap g3 mb2"><h3>Wins</h3>' +
+            '<div class="row between wrap g3 mb2"><h3>Proof</h3>' +
             '<span class="chip chip-accent" id="pick-count"></span></div>' +
             '<div class="grid optlist" style="gap:var(--s-2)" id="wins"></div>' +
           '</div>' +
@@ -350,14 +350,21 @@
           return Store.state.profile.wins.filter(function (w) { return w.id === id; })[0];
         }).filter(Boolean);
         var strength = ['strong', 'partial', 'none'].indexOf(r.strength) > -1 ? r.strength : 'none';
-        return '<div class="matchrow ' + strength + '">' +
+        /* a row is a summary; opening it shows the whole requirement and
+           the whole story behind each piece of proof */
+        return '<div class="matchrow ' + strength + '" data-open="0">' +
           '<span class="mr-dot" title="' + strength + '"></span>' +
-          '<div class="mr-ask"><b>' + esc(r.text) + '</b>' +
+          '<button class="mr-ask" type="button" aria-expanded="false">' +
+            '<b>' + esc(r.full || r.text) + '</b>' +
             (r.priority === 'must' ? '<em class="mr-must">must have</em>' : '') +
-            (r.note ? '<p class="mr-note">' + esc(r.note) + '</p>' : '') + '</div>' +
+            (r.note ? '<p class="mr-note">' + esc(r.note) + '</p>' : '') +
+            '<span class="mr-caret" aria-hidden="true">' + Icon.svg('arrow', 14) + '</span>' +
+          '</button>' +
           '<div class="mr-with">' + (ws.length
             ? ws.map(function (w) {
-                return '<span class="chip"><b class="mono">' + esc(w.metric) + '</b> ' + esc(w.short) + '</span>';
+                return '<span class="chip mr-proof"><b class="mono">' + esc(w.metric) + '</b> ' +
+                  '<span class="mr-short">' + esc(w.short) + '</span>' +
+                  '<span class="mr-full">' + esc(w.text) + (w.where ? ' <i>' + esc(w.where) + '</i>' : '') + '</span></span>';
               }).join('')
             : '<span class="mr-gap">Gap</span>') + '</div>' +
         '</div>';
@@ -383,10 +390,12 @@
         '</div>' +
         '<div class="col g4">' +
           '<div class="card p5">' +
-            '<div class="row between wrap g2 mb3"><h3>Wins</h3><span class="chip">' + wins.length + '</span></div>' +
+            '<div class="row between wrap g2 mb3"><h3>Proof</h3><span class="chip">' + wins.length + '</span></div>' +
             (wins.length
-              ? '<div class="leadwins">' + wins.map(function (w) {
-                  return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
+              ? '<div class="prooflist">' + wins.map(function (w) {
+                  return '<div class="proof"><b class="mono">' + esc(w.metric) + '</b>' +
+                    '<span><span class="proof-text">' + esc(w.text) + '</span>' +
+                    (w.where ? '<span class="proof-where">' + esc(w.where) + '</span>' : '') + '</span></div>';
                 }).join('') + '</div>'
               : '<p class="hint">None picked.</p>') +
           '</div>' +
@@ -417,6 +426,12 @@
     UI.on(v, 'click', '[data-step]', function (e, el) {
       c.activeStep = el.dataset.step; Store.save();
       Router.go('/c/' + c.id + '/sequence');
+    });
+    UI.on(v, 'click', '.mr-ask', function (e, el) {
+      var row = el.closest('.matchrow');
+      var open = row.dataset.open !== '1';
+      row.dataset.open = open ? '1' : '0';
+      el.setAttribute('aria-expanded', String(open));
     });
   };
 })(window, document);
