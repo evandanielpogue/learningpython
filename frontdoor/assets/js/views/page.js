@@ -175,7 +175,7 @@
       '<div class="preview">' +
         '<div class="col g4">' +
           '<div class="card p4">' +
-            '<p class="cap mb3">Layout</p>' +
+            '<h3 class="mb3">Layout</h3>' +
             '<div class="laypick" id="lay">' + LAYOUTS.map(function (l) {
               return '<button class="lay' + (c.pageTemplate === l.key ? ' on' : '') + '" data-lay="' + l.key + '">' +
                 '<span class="lay-art lay-' + l.key + '"><i></i><i></i><i></i></span>' +
@@ -183,11 +183,11 @@
             }).join('') + '</div>' +
           '</div>' +
           '<div class="card p4">' +
-            '<p class="cap mb3">Sections</p>' +
+            '<h3 class="mb3">Sections</h3>' +
             '<div class="sec-toggles" id="toggles"></div>' +
           '</div>' +
           '<div class="card p4">' +
-            '<p class="cap mb2">Opens</p><h3 class="mono">' + c.views + '</h3>' +
+            '<div class="row between"><h3>Opens</h3><span class="chip mono">' + c.views + '</span></div>' +
             (pf.photo ? '' : '<p class="hint mt3">No photo. <a href="#/settings">Add one</a></p>') +
           '</div>' +
         '</div>' +

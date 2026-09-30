@@ -64,10 +64,10 @@
       v.querySelector('#agenda').innerHTML =
         '<div class="card p5">' +
           '<div class="row between wrap g2 mb3"><h3>Agenda</h3>' +
-          '<span class="cap">' + pr.done + ' of ' + pr.total + '</span></div>' +
+          '<span class="chip">' + pr.done + ' of ' + pr.total + '</span></div>' +
           UI.meterHTML(pr.done, pr.total, '') +
           '<div class="mb4"></div>' +
-          '<div class="col g2">' + agenda.map(function (a) {
+          '<div class="col aglist">' + agenda.map(function (a) {
             return '<button class="agitem' + (a.id === openId ? ' on' : '') + (a.done ? ' done' : '') +
               (a.id === justDid ? ' just-done' : '') +
               '" data-ag="' + a.id + '"' + (a.id === openId ? ' aria-current="true"' : '') + '>' +
@@ -101,7 +101,7 @@
       v.querySelector('#talk').innerHTML =
         '<div class="card assist-card prep-talk">' +
           '<div class="assist-head">' +
-            '<span class="ag-kind">' + (a.kind === 'gap' ? 'Gap' : 'Story') + '</span>' +
+            '<span class="ag-kind chip">' + (a.kind === 'gap' ? 'Gap' : 'Story') + '</span>' +
             '<b>' + esc(a.label) + '</b>' +
           '</div>' +
           '<div class="assist-log" id="log"></div>' +
