@@ -1345,6 +1345,18 @@
       } };
     },
 
+    /* a requirement saved before the reader kept whole lines ends in "…";
+       the full line is still in the listing, so find it there */
+    fullRequirement: function (c, text) {
+      var t = String(text || '');
+      if (!/…$/.test(t) || !c || !c.listing) return t;
+      var head = t.replace(/…$/, '').trim().toLowerCase();
+      var hit = String(c.listing).replace(/\r/g, '').split('\n').map(function (l) {
+        return l.replace(/^[\s\-–—•*·▪●○]+|^\s*\d+[.)]\s*/g, '').replace(/\s+/g, ' ').trim();
+      }).filter(function (l) { return l.toLowerCase().indexOf(head) === 0; })[0];
+      return hit || t;
+    },
+
     /* ---- the brief -------------------------------------------------------
        Everything known about one company, assembled. The interview prep
        screen renders it and every model prompt that needs context reads the

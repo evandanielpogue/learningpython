@@ -232,18 +232,31 @@
           var wins = (r.winIds || []).map(function (id) {
             return Store.state.profile.wins.filter(function (w) { return w.id === id; })[0];
           }).filter(Boolean);
-          return '<div class="matchrow ' + esc(r.strength) + '">' +
+          return '<div class="matchrow ' + esc(r.strength) + '" data-open="0">' +
             '<span class="mr-dot" title="' + esc(r.strength) + '"></span>' +
-            '<div class="mr-ask"><b>' + esc(r.text) + '</b>' +
-              (r.priority === 'must' ? '<em class="mr-must">must have</em>' : '') + '</div>' +
-            '<div class="mr-have">' +
+            '<button class="mr-ask" type="button" aria-expanded="false">' +
+              '<b>' + esc(r.text) + '</b>' +
+              (r.priority === 'must' ? '<em class="mr-must">must have</em>' : '') +
+              (r.note ? '<p class="mr-note">' + esc(r.note) + '</p>' : '') +
+              '<span class="mr-caret" aria-hidden="true">' + Icon.svg('arrow', 14) + '</span>' +
+            '</button>' +
+            '<div class="mr-with mr-have">' +
               (wins.length
-                ? wins.map(function (w) { return '<span class="chip"><b class="mono">' + esc(w.metric) + '</b> ' + esc(w.short) + '</span>'; }).join('')
+                ? wins.map(function (w) {
+                    return '<span class="chip mr-proof"><b class="mono">' + esc(w.metric) + '</b> ' +
+                      '<span class="mr-short">' + esc(w.short) + '</span>' +
+                      '<span class="mr-full">' + esc(w.text) + (w.where ? ' <i>' + esc(w.where) + '</i>' : '') + '</span></span>';
+                  }).join('')
                 : '<span class="mr-none">nothing on your résumé</span>') +
-              (r.note ? '<span class="mr-note">' + esc(r.note) + '</span>' : '') +
             '</div></div>';
         }).join('');
       }
+      UI.on(v, 'click', '.mr-ask', function (e, el) {
+        var row = el.closest('.matchrow');
+        var open = row.dataset.open !== '1';
+        row.dataset.open = open ? '1' : '0';
+        el.setAttribute('aria-expanded', String(open));
+      });
 
       function paintWins() {
         winsEl.innerHTML = ranked.map(function (r) {
@@ -355,7 +368,7 @@
         return '<div class="matchrow ' + strength + '" data-open="0">' +
           '<span class="mr-dot" title="' + strength + '"></span>' +
           '<button class="mr-ask" type="button" aria-expanded="false">' +
-            '<b>' + esc(r.full || r.text) + '</b>' +
+            '<b>' + esc(Store.fullRequirement(c, r.text)) + '</b>' +
             (r.priority === 'must' ? '<em class="mr-must">must have</em>' : '') +
             (r.note ? '<p class="mr-note">' + esc(r.note) + '</p>' : '') +
             '<span class="mr-caret" aria-hidden="true">' + Icon.svg('arrow', 14) + '</span>' +
