@@ -34,32 +34,56 @@
     var name = (Store.state.user && Store.state.user.name || 'there').split(' ')[0];
     var imported = Store.state.profile.imported;
 
+    /* Every company, and how far along it is. Five steps, drawn: what is
+       finished, the one you are on, and what is still ahead. Each node is a
+       link straight into that step, so the pipeline is the navigation. */
+    function trackHTML(c) {
+      var steps = Store.phases(c);
+      return '<div class="track">' + steps.map(function (st, i) {
+        var state = st.done ? 'done' : st.now ? 'now' : 'todo';
+        var mark = st.done
+          ? '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" ' +
+            'stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M20 6L9 17l-5-5"/></svg>'
+          : String(st.n);
+        return (i ? '<span class="tline' + (steps[i - 1].done ? ' done' : '') + '"></span>' : '') +
+          '<a class="tnode t-' + state + '" href="#' + st.href + '"' +
+            ' title="' + esc('Step ' + st.n + ', ' + st.label + ' — ' + st.blurb) + '">' +
+            '<span class="tdot">' + mark + '</span>' +
+            '<span class="tlab">' + esc(st.label) + '</span>' +
+          '</a>';
+      }).join('') + '</div>';
+    }
+
     function oppCard(c) {
-      var pr = Store.taskProgress(c);
+      var pr = Store.phaseProgress(c);
+      var next = Store.nextAction(c);
       var due = c.steps.filter(function (s) { return s.status === 'due'; }).length;
-      return '<a class="opp" href="#/c/' + c.id + '">' +
-        '<div class="opp-ring">' + ringSVG(pr.done, pr.total, 44) +
-          '<span class="opp-pct">' + pr.done + '/' + pr.total + '</span></div>' +
-        '<div class="opp-main">' +
-          '<div class="row g2 wrap" style="align-items:baseline">' +
+      return '<div class="opp">' +
+        '<div class="opp-top">' +
+          '<a class="opp-id" href="#/c/' + c.id + '">' +
             '<b class="opp-co">' + esc(c.company) + '</b>' +
-            '<span class="opp-role">' + esc(c.role) + '</span>' +
+            '<span class="opp-role">' + esc(c.role) + '</span></a>' +
+          '<div class="opp-end">' +
+            (due ? '<span class="chip chip-accent">' + due + ' due</span>'
+                 : '<span class="chip">Day ' + c.day + '</span>') +
+            '<button class="icon-btn opp-x" data-drop="' + c.id + '" aria-label="Remove ' + esc(c.company) + '" ' +
+              'title="Remove this company">' + Icon.svg('close', 14) + '</button>' +
           '</div>' +
-          '<p class="opp-next">' + esc(nextUp(c)) + '</p>' +
         '</div>' +
-        '<div class="opp-nums">' +
-          '<span><b>' + c.contacts.length + '</b>people</span>' +
-          '<span><b>' + c.sent + '</b>sent</span>' +
-          '<span><b>' + c.replies + '</b>replies</span>' +
-          '<span><b>' + c.views + '</b>opens</span>' +
-        '</div>' +
-        '<div class="opp-end">' +
-          '<button class="icon-btn opp-x" data-drop="' + c.id + '" aria-label="Remove ' + esc(c.company) + '" ' +
-            'title="Remove this company">' + Icon.svg('close', 14) + '</button>' +
-          (due ? '<span class="chip chip-accent">' + due + ' due</span>'
-               : '<span class="chip">Day ' + c.day + '</span>') +
-          '<span class="arr">→</span>' +
-        '</div></a>';
+        trackHTML(c) +
+        '<div class="opp-foot">' +
+          (next.done
+            ? '<span class="opp-done">All five done</span>'
+            : '<a class="btn btn-secondary btn-sm" href="#' + next.href + '">' +
+              esc(next.label) + ' <span class="arr">\u2192</span></a>') +
+          '<span class="opp-nums">' +
+            '<span><b>' + c.contacts.length + '</b>people</span>' +
+            '<span><b>' + c.sent + '</b>sent</span>' +
+            '<span><b>' + c.replies + '</b>replies</span>' +
+            '<span><b>' + pr.done + '/' + pr.total + '</b>steps</span>' +
+          '</span>' +
+        '</div></div>';
     }
 
     var html =

@@ -165,3 +165,123 @@
   .card.hover:hover, .opp:hover, .feed-item:hover { transform: none; }
   .btn:active, .icon-btn:active, .subtab:active { transform: none; }
 }
+
+/* ==========================================================================
+   The five steps, in the rail
+
+   Going in the front door is one order of operations. The rail numbers it,
+   marks off what is finished, and shows you which one you are on — so the
+   question "what do I do next" is answered by looking, not by reading.
+   ========================================================================== */
+.nav-steps { display: grid; gap: 2px; }
+
+/* ---- the company you are on, and the way to swap ---- */
+.switch {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr) 12px; min-height: 44px;
+  gap: var(--s-3); align-items: center; width: 100%;
+  padding: var(--s-2) var(--s-3); margin-bottom: var(--s-2);
+  background: var(--panel); border: 1px solid var(--line-2);
+  border-radius: var(--r-2); cursor: pointer; text-align: left;
+  font: inherit; color: inherit; box-shadow: var(--e-1);
+  transition: border-color var(--t-2) var(--ease), box-shadow var(--t-2) var(--ease),
+              transform var(--t-2) var(--spring);
+}
+.switch:hover { border-color: var(--line-3); box-shadow: var(--e-2); }
+.switch:active { transform: scale(.985); }
+.switch:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+.switch-ring { display: grid; place-items: center; }
+/* .ring carries a fixed 38px, which squashes it at any other size */
+.switch-ring .ring { width: 26px; height: 26px; }
+.switch-ring .ring-label { display: none; }
+.switch-main { min-width: 0; display: grid; }
+.switch-co {
+  font-size: var(--fs-base); font-weight: 620; letter-spacing: -.012em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.switch-role {
+  font-size: var(--fs-xs); color: var(--ink-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.switch-arr { color: var(--ink-3); font-size: 13px; line-height: 1; }
+
+/* ---- a step ---- */
+.nav-item.step { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: var(--s-3); }
+.step-mark {
+  width: 20px; height: 20px; border-radius: var(--r-full);
+  display: grid; place-items: center; flex: none;
+  font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+  border: 1.5px solid var(--line-3); color: var(--ink-3);
+  transition: background var(--t-2) var(--ease), border-color var(--t-2) var(--ease),
+              color var(--t-2) var(--ease);
+}
+.step-done .step-mark { background: var(--pos); border-color: var(--pos); color: #fff; }
+.step-done .nav-label { color: var(--ink-3); }
+.step-now .step-mark { background: var(--brand); border-color: var(--brand); color: #fff; }
+.step-now .nav-label { font-weight: 620; }
+
+/* the step you are on is the only one that gets the copper bar */
+.nav-item.step::before { content: none; }
+.nav-item.step.on::before {
+  content: ''; position: absolute; left: 0; top: 50%;
+  width: 3px; height: 60%; border-radius: 0 2px 2px 0;
+  background: var(--brand); transform: translateY(-50%);
+}
+
+/* ---- the second screen of the step you are on ---- */
+.step-sub { display: grid; gap: 1px; margin: 1px 0 3px var(--s-6); }
+.nav-sub {
+  font-size: var(--fs-sm); color: var(--ink-3); text-decoration: none;
+  padding: 5px var(--s-3); border-radius: var(--r-1);
+  border-left: 1.5px solid var(--line-2);
+  transition: color var(--t-2) var(--ease), background var(--t-2) var(--ease),
+              border-color var(--t-2) var(--ease);
+}
+.nav-sub:hover { color: var(--ink); background: var(--sunk); }
+.nav-sub[aria-current="page"] { color: var(--brand); border-left-color: var(--brand); font-weight: 560; }
+
+/* ---- collapsed rail: the number is the whole story ---- */
+@media (max-width: 900px) {
+  .sidebar .switch { grid-template-columns: 26px; justify-items: center; padding: var(--s-2); }
+  .sidebar .switch-main, .sidebar .switch-arr { display: none; }
+  .sidebar .step-sub { display: none; }
+  .sidebar .nav-item.step { grid-template-columns: 20px; justify-content: center; }
+  .sidebar .nav-item.step .nav-count { display: none; }
+}
+
+/* ---- the step strip -------------------------------------------------------
+   The same five steps as the overview, above every screen that belongs to
+   one, so orientation never depends on remembering. */
+.stepbar {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-5);
+  padding: var(--s-3) var(--s-6); background: var(--panel);
+  border-bottom: 1px solid var(--line); flex-wrap: wrap;
+}
+.track-slim {
+  display: grid; align-items: center; flex: 1; min-width: 0; max-width: 620px;
+  grid-template-columns: auto 1fr auto 1fr auto 1fr auto 1fr auto;
+}
+.track-slim .tnode { grid-template-columns: auto auto; grid-auto-flow: column;
+  display: grid; align-items: center; gap: var(--s-2); justify-items: start; }
+.track-slim .tdot { width: 21px; height: 21px; font-size: 10px; }
+.track-slim .tlab { font-size: var(--fs-xs); }
+.track-slim .tline { margin-top: 0; }
+/* the screen you are actually on, as opposed to the step you are up to */
+.track-slim .t-here .tlab { color: var(--brand); font-weight: 640; }
+.track-slim .t-here .tdot { box-shadow: 0 0 0 3px var(--brand-wash); }
+
+.stepbar-next {
+  font-size: var(--fs-sm); font-weight: 560; color: var(--brand);
+  text-decoration: none; white-space: nowrap; flex: none;
+}
+.stepbar-next:hover { color: var(--brand-deep); text-decoration: none; }
+.stepbar-next .arr { transition: transform var(--t-2) var(--ease); display: inline-block; }
+.stepbar-next:hover .arr { transform: translateX(3px); }
+.stepbar-next.done { color: var(--pos); }
+
+@media (max-width: 900px) {
+  .stepbar { padding: var(--s-3) var(--s-4); gap: var(--s-3); }
+  .track-slim { grid-template-columns: repeat(5, auto); justify-content: space-between; }
+  .track-slim .tline { display: none; }
+  .track-slim .tlab { display: none; }
+  .track-slim .t-here .tlab { display: block; }
+}

@@ -618,6 +618,101 @@
       return !!(c && c.cheered && c.cheered[key]);
     },
 
+    /* ---- the five steps ---------------------------------------------------
+       Going in the front door is one order of operations, not seven screens
+       in a list. Everything in the app hangs off these: the rail numbers
+       them, the overview draws each company's position on them, and the next
+       thing to do is always whichever one is not finished yet.
+
+       A step is done when the work is done, never when the screen was
+       visited — otherwise the pipeline lies to you.                        */
+    PHASES: [
+      { key: 'role', n: 1, label: 'Role', icon: 'company',
+        href: '/c/:id', blurb: 'the listing and where you line up',
+        done: function (c) { return !!(c.company && (c.listing || (c.requirements || []).length)); },
+        next: 'Paste a listing' },
+
+      { key: 'story', n: 2, label: 'Story', icon: 'prep',
+        href: '/c/:id/prep', blurb: 'a story behind every number, an answer for every gap',
+        sub: [{ key: 'page', label: 'Page', href: '/c/:id/page' }],
+        done: function (c) {
+          var a = c.agenda || [];
+          return a.length > 0 && a.every(function (x) { return x.done; });
+        },
+        part: function (c) {
+          var a = c.agenda || [];
+          return { done: a.filter(function (x) { return x.done; }).length, total: a.length };
+        },
+        next: 'Nail down your stories' },
+
+      { key: 'people', n: 3, label: 'People', icon: 'contacts',
+        href: '/c/:id/people', blurb: 'who to reach, in what order',
+        sub: [{ key: 'research', label: 'Research', href: '/c/:id/research' }],
+        done: function (c) { return (c.contacts || []).length >= 3; },
+        part: function (c) { return { done: Math.min((c.contacts || []).length, 3), total: 3 }; },
+        next: 'Add your contacts' },
+
+      { key: 'outreach', n: 4, label: 'Outreach', icon: 'sequence',
+        href: '/c/:id/sequence', blurb: 'what you send, and when',
+        done: function (c) { return (c.sent || 0) > 0; },
+        part: function (c) {
+          return { done: c.sent || 0, total: (c.steps || []).length };
+        },
+        next: 'Build the sequence' },
+
+      { key: 'interview', n: 5, label: 'Interview', icon: 'brief',
+        href: '/c/:id/brief', blurb: 'everything you know, for the night before',
+        done: function (c) {
+          var q = c.questions || {};
+          return !!(q.likely && q.likely.length) && (c.replies || 0) > 0;
+        },
+        part: function (c) {
+          var q = c.questions || {};
+          return { done: (q.likely && q.likely.length) ? 1 : 0, total: 1 };
+        },
+        next: 'Work out the questions' }
+    ],
+
+    /* Each step with its state: done, the one you are on, or still ahead.
+       Exactly one step is 'now' — the first unfinished one — unless every
+       step is finished, and then none is. */
+    phases: function (c) {
+      if (!c) return [];
+      var found = false;
+      return Store.PHASES.map(function (s) {
+        var done = !!s.done(c);
+        var now = !done && !found;
+        if (now) found = true;
+        return {
+          key: s.key, n: s.n, label: s.label, icon: s.icon, blurb: s.blurb,
+          href: s.href.replace(':id', c.id),
+          sub: (s.sub || []).map(function (x) {
+            return { key: x.key, label: x.label, href: x.href.replace(':id', c.id) };
+          }),
+          part: s.part ? s.part(c) : { done: done ? 1 : 0, total: 1 },
+          next: s.next,
+          done: done, now: now
+        };
+      });
+    },
+
+    /* the step you are on, or null when there is nothing left to do */
+    phaseNow: function (c) {
+      return Store.phases(c).filter(function (s) { return s.now; })[0] || null;
+    },
+
+    phaseProgress: function (c) {
+      var all = Store.phases(c);
+      return { done: all.filter(function (s) { return s.done; }).length, total: all.length };
+    },
+
+    /* the one sentence the overview and the rail both want */
+    nextAction: function (c) {
+      var s = Store.phaseNow(c);
+      if (!s) return { label: 'Nothing waiting', href: '/c/' + c.id + '/brief', done: true };
+      return { label: s.next, href: s.href, stage: s.key, done: false };
+    },
+
     agendaProgress: function (c) {
       var a = (c && c.agenda) || [];
       return { done: a.filter(function (x) { return x.done; }).length, total: a.length };

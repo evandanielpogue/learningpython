@@ -12,20 +12,19 @@
     { group: 'Workspace', items: [
       { key: 'home', icon: 'overview', label: 'Overview', href: '/', hint: 'every company you are working', sc: 'G then O' }
     ] },
-    { group: 'company', needsCampaign: true, items: [
-      { key: 'opp',      icon: 'company', label: 'Summary',  href: '/c/:id', hint: 'the checklist and the numbers', sc: 'G then C' },
-      { key: 'prep',     icon: 'prep', label: 'Prep',     href: '/c/:id/prep', hint: 'the stories behind your wins, and the gaps', sc: 'G then E' },
-      { key: 'people',   icon: 'contacts', label: 'Contacts', href: '/c/:id/people',   count: 'contacts', hint: 'the people you are working, ranked', sc: 'G then P' },
-      { key: 'research', icon: 'research', label: 'Research', href: '/c/:id/research', hint: 'what they said recently, in public', sc: 'G then R' },
-      { key: 'sequence', icon: 'sequence', label: 'Sequence', href: '/c/:id/sequence', count: 'steps', hint: 'the touches and the days between them', sc: 'G then S' },
-      { key: 'page',     icon: 'page', label: 'Page',     href: '/c/:id/page', hint: 'the public page you send them to' },
-      { key: 'brief',    icon: 'brief', label: 'Brief',    href: '/c/:id/brief', hint: 'everything you know, for the night before', sc: 'G then B' }
-    ] },
     { group: 'Library', items: [
       { key: 'templates', icon: 'templates', label: 'Templates', href: '/templates', hint: 'messages you reuse across steps', sc: 'G then T' },
       { key: 'settings',  icon: 'settings', label: 'Settings',  href: '/settings', hint: 'your name, photo and history' }
     ] }
   ];
+
+  /* which step a route belongs to, so the rail can light the right one even
+     when the screen you are on is a step's second screen */
+  var OF_STAGE = {
+    opp: 'role', prep: 'story', page: 'story',
+    people: 'people', research: 'people',
+    sequence: 'outreach', brief: 'interview'
+  };
 
   function tip(n) {
     var t = n.label;
@@ -68,6 +67,7 @@
         '</aside>' +
         '<div class="main">' +
           '<header class="topbar"><div class="crumbs" id="crumbs"></div><div class="row g2" id="top-actions"></div></header>' +
+          '<div id="stepbar"></div>' +
           '<main id="view" class="view-host" tabindex="-1"></main>' +
         '</div>' +
       '</div>';
@@ -91,26 +91,126 @@
     });
   }
 
+  function stepsHTML(c, activeKey) {
+    var here = OF_STAGE[activeKey] || null;
+    return Store.phases(c).map(function (st) {
+      var on = st.key === here;
+      var state = st.done ? 'done' : st.now ? 'now' : 'todo';
+      var mark = st.done
+        ? '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" ' +
+          'stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<path d="M20 6L9 17l-5-5"/></svg>'
+        : String(st.n);
+      return '<a class="nav-item step step-' + state + (on ? ' on' : '') + '" href="#' + st.href + '"' +
+          ' data-step="' + st.key + '"' + (on ? ' aria-current="page"' : '') +
+          ' title="' + esc('Step ' + st.n + ', ' + st.label + ' — ' + st.blurb +
+            (st.done ? ' (done)' : st.now ? ' (you are here)' : '')) + '">' +
+          '<span class="step-mark" aria-hidden="true">' + mark + '</span>' +
+          '<span class="nav-label">' + esc(st.label) + '</span>' +
+          (st.part && st.part.total > 1 && !st.done
+            ? '<span class="nav-count">' + st.part.done + '/' + st.part.total + '</span>'
+            : '') +
+        '</a>' +
+        /* the step you are on opens up to show its second screen */
+        (on && st.sub.length
+          ? '<div class="step-sub">' + st.sub.map(function (x) {
+              return '<a class="nav-sub" href="#' + x.href + '"' +
+                (x.key === activeKey ? ' aria-current="page"' : '') + '>' + esc(x.label) + '</a>';
+            }).join('') + '</div>'
+          : '');
+    }).join('');
+  }
+
+  function switcherHTML(c) {
+    var pr = Store.phaseProgress(c);
+    return '<button class="switch" id="co-switch" title="' +
+        esc(c.company + ' — step ' + Math.min(pr.done + 1, pr.total) + ' of ' + pr.total + '. Click to swap company') + '">' +
+      '<span class="switch-ring">' + UI.ringHTML(pr.done, pr.total, 26) + '</span>' +
+      '<span class="switch-main"><span class="switch-co">' + esc(c.company) + '</span>' +
+      '<span class="switch-role">' + esc(c.role || 'No role') + '</span></span>' +
+      '<span class="switch-arr" aria-hidden="true">\u2304</span></button>';
+  }
+
   function paintNav(activeKey) {
     var cid = activeCampaignId();
     var c = cid ? Store.campaign(cid) : null;
-    document.getElementById('side-nav').innerHTML = NAV.map(function (g) {
-      if (g.needsCampaign && !cid) return '';
-      var items = g.items.map(function (n) {
-        var href = n.href.replace(':id', cid || '');
-        var count = '';
-        if (c && n.count === 'contacts') count = String(c.contacts.length);
-        if (c && n.count === 'steps') count = String(c.steps.length);
-        return '<a class="nav-item" href="#' + href + '" data-key="' + n.key + '"' +
-          ' title="' + esc(tip(n)) + '"' +
-          (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
-          '<span class="nav-ico">' + Icon.svg(n.icon, 17) + '</span>' +
-          '<span class="nav-label">' + esc(n.label) + '</span>' +
-          (count ? '<span class="nav-count">' + count + '</span>' : '') + '</a>';
-      }).join('');
-      var label = g.needsCampaign && c ? c.company : g.group;
-      return '<div class="nav-group"><p class="cap nav-group-label">' + esc(label) + '</p>' + items + '</div>';
+    var out = NAV[0].items.map(function (n) {
+      return '<a class="nav-item" href="#' + n.href + '" data-key="' + n.key + '"' +
+        ' title="' + esc(tip(n)) + '"' + (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
+        '<span class="nav-ico">' + Icon.svg(n.icon, 17) + '</span>' +
+        '<span class="nav-label">' + esc(n.label) + '</span></a>';
     }).join('');
+
+    var html = '<div class="nav-group"><p class="cap nav-group-label">Workspace</p>' + out + '</div>';
+
+    if (c) {
+      html += '<div class="nav-group nav-steps">' + switcherHTML(c) +
+              stepsHTML(c, activeKey) + '</div>';
+    }
+
+    html += '<div class="nav-group"><p class="cap nav-group-label">Library</p>' +
+      NAV[1].items.map(function (n) {
+        return '<a class="nav-item" href="#' + n.href + '" data-key="' + n.key + '"' +
+          ' title="' + esc(tip(n)) + '"' + (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
+          '<span class="nav-ico">' + Icon.svg(n.icon, 17) + '</span>' +
+          '<span class="nav-label">' + esc(n.label) + '</span></a>';
+      }).join('') + '</div>';
+
+    var host = document.getElementById('side-nav');
+    host.innerHTML = html;
+    UI.animate(host);
+
+    var sw = document.getElementById('co-switch');
+    if (sw) sw.addEventListener('click', function () {
+      var items = Store.campaigns().map(function (x) {
+        var pr = Store.phaseProgress(x);
+        return {
+          key: x.id,
+          icon: x.id === c.id ? '\u2022' : '',
+          label: x.company + '  ' + pr.done + '/' + pr.total,
+          run: function () { Router.go('/c/' + x.id); }
+        };
+      });
+      items.push({ sep: true });
+      items.push({ key: 'add', icon: '+', label: 'Add a company', run: function () { Router.go('/new'); } });
+      UI.menu(this, items);
+    });
+  }
+
+  /* The same five steps as the overview, compact, above whatever screen you
+     are on. It is the one piece of orientation that never moves: where you
+     are, what is behind you, and what is next. */
+  function paintStepbar(activeKey) {
+    var host = document.getElementById('stepbar');
+    if (!host) return;
+    var here = OF_STAGE[activeKey];
+    var cid = activeCampaignId();
+    var c = here && cid ? Store.campaign(cid) : null;
+    if (!c) { host.innerHTML = ''; host.className = ''; return; }
+
+    var steps = Store.phases(c);
+    var next = Store.nextAction(c);
+    host.className = 'stepbar';
+    host.innerHTML =
+      '<nav class="track track-slim" aria-label="Where you are">' + steps.map(function (st, i) {
+        var state = st.done ? 'done' : st.now ? 'now' : 'todo';
+        var on = st.key === here;
+        var mark = st.done
+          ? '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" ' +
+            'stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M20 6L9 17l-5-5"/></svg>'
+          : String(st.n);
+        return (i ? '<span class="tline' + (steps[i - 1].done ? ' done' : '') + '"></span>' : '') +
+          '<a class="tnode t-' + state + (on ? ' t-here' : '') + '" href="#' + st.href + '"' +
+            (on ? ' aria-current="step"' : '') +
+            ' title="' + esc('Step ' + st.n + ', ' + st.label + ' \u2014 ' + st.blurb) + '">' +
+            '<span class="tdot">' + mark + '</span>' +
+            '<span class="tlab">' + esc(st.label) + '</span></a>';
+      }).join('') + '</nav>' +
+      (next.done
+        ? '<span class="stepbar-next done">All five done</span>'
+        : '<a class="stepbar-next" href="#' + next.href + '">Next: ' + esc(next.label) +
+          ' <span class="arr">\u2192</span></a>');
   }
 
   function paintCrumbs(trail) {
@@ -130,6 +230,7 @@
     mount: function (opts) {
       buildShell();
       paintNav(opts.nav);
+      paintStepbar(opts.nav);
       paintCrumbs(opts.crumbs || [{ label: 'Overview' }]);
       paintActions(opts.actions);
       var v = document.getElementById('view');

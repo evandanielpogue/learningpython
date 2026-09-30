@@ -1264,33 +1264,88 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
    Overview: one row per company
    ========================================================================== */
 .cols-4 { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
-.opps { display: grid; gap: var(--s-2); }
+/* an explicit track, or the grid sizes itself to the widest card's
+   max-content and the whole page grows past the window */
+.opps { display: grid; gap: var(--s-2); grid-template-columns: minmax(0, 1fr); }
+/* ---- a company, and where it is in the five steps ------------------------
+   The card is the pipeline: each node links straight into that step, so
+   looking at where you are and going there are the same gesture. */
 .opp {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: var(--s-4);
-  align-items: center; padding: var(--s-4) var(--s-5); background: var(--panel);
-  border: 1px solid var(--line); border-radius: var(--r-3); text-decoration: none; color: inherit;
-  transition: border-color var(--t-1) var(--ease), box-shadow var(--t-2) var(--ease), transform var(--t-2) var(--ease);
+  /* the implicit track would size to max-content and push the card wider
+     than the card's own box */
+  display: grid; grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-4); padding: var(--s-5); min-width: 0;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-3);
+  transition: border-color var(--t-2) var(--ease), box-shadow var(--t-2) var(--ease);
 }
-.opp:hover { text-decoration: none; border-color: var(--line-2); box-shadow: var(--e-2); transform: translateY(-1px); }
-.opp:active { transform: scale(.995); }
-.opp-ring { position: relative; display: grid; place-items: center; flex: none; }
-.opp-pct {
-  position: absolute; font-family: var(--mono); font-size: 9.5px; color: var(--ink-3);
+.opp:hover { border-color: var(--line-2); box-shadow: var(--e-2); }
+.opp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-4); }
+.opp-id { text-decoration: none; color: inherit; display: grid; gap: 1px; min-width: 0; }
+.opp-id:hover .opp-co { color: var(--brand); }
+.opp-co {
+  font-size: var(--fs-lg); font-weight: 650; letter-spacing: -.024em;
+  transition: color var(--t-2) var(--ease);
 }
-.opp-main { min-width: 0; display: grid; gap: 2px; }
-.opp-co { font-size: var(--fs-md); font-weight: 650; letter-spacing: -.02em; }
 .opp-role { font-size: var(--fs-sm); color: var(--ink-3); }
-.opp-next {
-  font-size: var(--fs-sm); color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.opp-end { display: flex; align-items: center; gap: var(--s-2); flex: none; }
+
+/* ---- the track ---- */
+.track {
+  display: grid; align-items: start; min-width: 0;
+  grid-template-columns: auto 1fr auto 1fr auto 1fr auto 1fr auto;
 }
+.tnode {
+  display: grid; justify-items: center; gap: 5px; text-decoration: none;
+  color: var(--ink-3); padding: 2px 4px; border-radius: var(--r-1);
+  transition: color var(--t-2) var(--ease);
+}
+.tnode:hover { text-decoration: none; color: var(--ink); }
+.tnode:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+.tdot {
+  width: 26px; height: 26px; border-radius: var(--r-full);
+  display: grid; place-items: center; flex: none;
+  font-family: var(--mono); font-size: 11.5px; font-weight: 500;
+  border: 1.5px solid var(--line-3); background: var(--panel); color: var(--ink-3);
+  transition: background var(--t-2) var(--ease), border-color var(--t-2) var(--ease),
+              color var(--t-2) var(--ease), transform var(--t-2) var(--spring);
+}
+.tnode:hover .tdot { transform: scale(1.08); }
+.tlab {
+  font-size: var(--fs-xs); white-space: nowrap;
+  transition: color var(--t-2) var(--ease);
+}
+.t-done .tdot { background: var(--pos); border-color: var(--pos); color: #fff; }
+.t-now  .tdot { background: var(--brand); border-color: var(--brand); color: #fff;
+                box-shadow: 0 0 0 4px var(--brand-wash); }
+.t-now  .tlab { color: var(--ink); font-weight: 620; }
+.tline {
+  height: 1.5px; background: var(--line-2); margin-top: 12.25px; border-radius: 1px;
+}
+.tline.done { background: var(--pos); }
+
+.opp-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s-4); flex-wrap: wrap;
+}
+.opp-done { font-size: var(--fs-sm); color: var(--pos); font-weight: 560; }
 .opp-nums { display: flex; gap: var(--s-4); }
 .opp-nums span { display: grid; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-4); font-family: var(--mono); }
 .opp-nums b { font-size: var(--fs-md); font-weight: 620; color: var(--ink); font-family: var(--mono); letter-spacing: -.02em; }
-.opp-end { display: flex; align-items: center; gap: var(--s-3); }
-.opp .arr { color: var(--ink-faint); transition: transform var(--t-2) var(--ease); }
-.opp:hover .arr { transform: translateX(3px); color: var(--ac); }
+.opp .arr { transition: transform var(--t-2) var(--ease); }
+.opp a.btn:hover .arr { transform: translateX(3px); }
+
+@media (max-width: 720px) {
+  .track { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-2); }
+  .tlab { white-space: normal; text-align: center; line-height: 1.25; }
+  .opp-foot { gap: var(--s-3); }
+  .opp-foot .btn { width: 100%; }
+  .tline { display: none; }
+  .tlab { font-size: 10px; }
+  .opp-nums { gap: var(--s-3); }
+}
 @media (max-width: 860px) {
-  .opp { grid-template-columns: auto minmax(0, 1fr) auto; }
+  /* the card stacks now; the old three-column rule fought the stack and
+     pushed the whole page wider than the window */
   .opp-nums { display: none; }
 }
 .addrow-lg { padding: var(--s-5); font-size: var(--fs-base); }
@@ -1992,6 +2047,126 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
   .cheer-card { animation: none; }
   .card.hover:hover, .opp:hover, .feed-item:hover { transform: none; }
   .btn:active, .icon-btn:active, .subtab:active { transform: none; }
+}
+
+/* ==========================================================================
+   The five steps, in the rail
+
+   Going in the front door is one order of operations. The rail numbers it,
+   marks off what is finished, and shows you which one you are on — so the
+   question "what do I do next" is answered by looking, not by reading.
+   ========================================================================== */
+.nav-steps { display: grid; gap: 2px; }
+
+/* ---- the company you are on, and the way to swap ---- */
+.switch {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr) 12px; min-height: 44px;
+  gap: var(--s-3); align-items: center; width: 100%;
+  padding: var(--s-2) var(--s-3); margin-bottom: var(--s-2);
+  background: var(--panel); border: 1px solid var(--line-2);
+  border-radius: var(--r-2); cursor: pointer; text-align: left;
+  font: inherit; color: inherit; box-shadow: var(--e-1);
+  transition: border-color var(--t-2) var(--ease), box-shadow var(--t-2) var(--ease),
+              transform var(--t-2) var(--spring);
+}
+.switch:hover { border-color: var(--line-3); box-shadow: var(--e-2); }
+.switch:active { transform: scale(.985); }
+.switch:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+.switch-ring { display: grid; place-items: center; }
+/* .ring carries a fixed 38px, which squashes it at any other size */
+.switch-ring .ring { width: 26px; height: 26px; }
+.switch-ring .ring-label { display: none; }
+.switch-main { min-width: 0; display: grid; }
+.switch-co {
+  font-size: var(--fs-base); font-weight: 620; letter-spacing: -.012em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.switch-role {
+  font-size: var(--fs-xs); color: var(--ink-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.switch-arr { color: var(--ink-3); font-size: 13px; line-height: 1; }
+
+/* ---- a step ---- */
+.nav-item.step { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: var(--s-3); }
+.step-mark {
+  width: 20px; height: 20px; border-radius: var(--r-full);
+  display: grid; place-items: center; flex: none;
+  font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+  border: 1.5px solid var(--line-3); color: var(--ink-3);
+  transition: background var(--t-2) var(--ease), border-color var(--t-2) var(--ease),
+              color var(--t-2) var(--ease);
+}
+.step-done .step-mark { background: var(--pos); border-color: var(--pos); color: #fff; }
+.step-done .nav-label { color: var(--ink-3); }
+.step-now .step-mark { background: var(--brand); border-color: var(--brand); color: #fff; }
+.step-now .nav-label { font-weight: 620; }
+
+/* the step you are on is the only one that gets the copper bar */
+.nav-item.step::before { content: none; }
+.nav-item.step.on::before {
+  content: ''; position: absolute; left: 0; top: 50%;
+  width: 3px; height: 60%; border-radius: 0 2px 2px 0;
+  background: var(--brand); transform: translateY(-50%);
+}
+
+/* ---- the second screen of the step you are on ---- */
+.step-sub { display: grid; gap: 1px; margin: 1px 0 3px var(--s-6); }
+.nav-sub {
+  font-size: var(--fs-sm); color: var(--ink-3); text-decoration: none;
+  padding: 5px var(--s-3); border-radius: var(--r-1);
+  border-left: 1.5px solid var(--line-2);
+  transition: color var(--t-2) var(--ease), background var(--t-2) var(--ease),
+              border-color var(--t-2) var(--ease);
+}
+.nav-sub:hover { color: var(--ink); background: var(--sunk); }
+.nav-sub[aria-current="page"] { color: var(--brand); border-left-color: var(--brand); font-weight: 560; }
+
+/* ---- collapsed rail: the number is the whole story ---- */
+@media (max-width: 900px) {
+  .sidebar .switch { grid-template-columns: 26px; justify-items: center; padding: var(--s-2); }
+  .sidebar .switch-main, .sidebar .switch-arr { display: none; }
+  .sidebar .step-sub { display: none; }
+  .sidebar .nav-item.step { grid-template-columns: 20px; justify-content: center; }
+  .sidebar .nav-item.step .nav-count { display: none; }
+}
+
+/* ---- the step strip -------------------------------------------------------
+   The same five steps as the overview, above every screen that belongs to
+   one, so orientation never depends on remembering. */
+.stepbar {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-5);
+  padding: var(--s-3) var(--s-6); background: var(--panel);
+  border-bottom: 1px solid var(--line); flex-wrap: wrap;
+}
+.track-slim {
+  display: grid; align-items: center; flex: 1; min-width: 0; max-width: 620px;
+  grid-template-columns: auto 1fr auto 1fr auto 1fr auto 1fr auto;
+}
+.track-slim .tnode { grid-template-columns: auto auto; grid-auto-flow: column;
+  display: grid; align-items: center; gap: var(--s-2); justify-items: start; }
+.track-slim .tdot { width: 21px; height: 21px; font-size: 10px; }
+.track-slim .tlab { font-size: var(--fs-xs); }
+.track-slim .tline { margin-top: 0; }
+/* the screen you are actually on, as opposed to the step you are up to */
+.track-slim .t-here .tlab { color: var(--brand); font-weight: 640; }
+.track-slim .t-here .tdot { box-shadow: 0 0 0 3px var(--brand-wash); }
+
+.stepbar-next {
+  font-size: var(--fs-sm); font-weight: 560; color: var(--brand);
+  text-decoration: none; white-space: nowrap; flex: none;
+}
+.stepbar-next:hover { color: var(--brand-deep); text-decoration: none; }
+.stepbar-next .arr { transition: transform var(--t-2) var(--ease); display: inline-block; }
+.stepbar-next:hover .arr { transform: translateX(3px); }
+.stepbar-next.done { color: var(--pos); }
+
+@media (max-width: 900px) {
+  .stepbar { padding: var(--s-3) var(--s-4); gap: var(--s-3); }
+  .track-slim { grid-template-columns: repeat(5, auto); justify-content: space-between; }
+  .track-slim .tline { display: none; }
+  .track-slim .tlab { display: none; }
+  .track-slim .t-here .tlab { display: block; }
 }
 
 </style>
@@ -3662,6 +3837,101 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     },
     hasCheered: function (c, key) {
       return !!(c && c.cheered && c.cheered[key]);
+    },
+
+    /* ---- the five steps ---------------------------------------------------
+       Going in the front door is one order of operations, not seven screens
+       in a list. Everything in the app hangs off these: the rail numbers
+       them, the overview draws each company's position on them, and the next
+       thing to do is always whichever one is not finished yet.
+
+       A step is done when the work is done, never when the screen was
+       visited — otherwise the pipeline lies to you.                        */
+    PHASES: [
+      { key: 'role', n: 1, label: 'Role', icon: 'company',
+        href: '/c/:id', blurb: 'the listing and where you line up',
+        done: function (c) { return !!(c.company && (c.listing || (c.requirements || []).length)); },
+        next: 'Paste a listing' },
+
+      { key: 'story', n: 2, label: 'Story', icon: 'prep',
+        href: '/c/:id/prep', blurb: 'a story behind every number, an answer for every gap',
+        sub: [{ key: 'page', label: 'Page', href: '/c/:id/page' }],
+        done: function (c) {
+          var a = c.agenda || [];
+          return a.length > 0 && a.every(function (x) { return x.done; });
+        },
+        part: function (c) {
+          var a = c.agenda || [];
+          return { done: a.filter(function (x) { return x.done; }).length, total: a.length };
+        },
+        next: 'Nail down your stories' },
+
+      { key: 'people', n: 3, label: 'People', icon: 'contacts',
+        href: '/c/:id/people', blurb: 'who to reach, in what order',
+        sub: [{ key: 'research', label: 'Research', href: '/c/:id/research' }],
+        done: function (c) { return (c.contacts || []).length >= 3; },
+        part: function (c) { return { done: Math.min((c.contacts || []).length, 3), total: 3 }; },
+        next: 'Add your contacts' },
+
+      { key: 'outreach', n: 4, label: 'Outreach', icon: 'sequence',
+        href: '/c/:id/sequence', blurb: 'what you send, and when',
+        done: function (c) { return (c.sent || 0) > 0; },
+        part: function (c) {
+          return { done: c.sent || 0, total: (c.steps || []).length };
+        },
+        next: 'Build the sequence' },
+
+      { key: 'interview', n: 5, label: 'Interview', icon: 'brief',
+        href: '/c/:id/brief', blurb: 'everything you know, for the night before',
+        done: function (c) {
+          var q = c.questions || {};
+          return !!(q.likely && q.likely.length) && (c.replies || 0) > 0;
+        },
+        part: function (c) {
+          var q = c.questions || {};
+          return { done: (q.likely && q.likely.length) ? 1 : 0, total: 1 };
+        },
+        next: 'Work out the questions' }
+    ],
+
+    /* Each step with its state: done, the one you are on, or still ahead.
+       Exactly one step is 'now' — the first unfinished one — unless every
+       step is finished, and then none is. */
+    phases: function (c) {
+      if (!c) return [];
+      var found = false;
+      return Store.PHASES.map(function (s) {
+        var done = !!s.done(c);
+        var now = !done && !found;
+        if (now) found = true;
+        return {
+          key: s.key, n: s.n, label: s.label, icon: s.icon, blurb: s.blurb,
+          href: s.href.replace(':id', c.id),
+          sub: (s.sub || []).map(function (x) {
+            return { key: x.key, label: x.label, href: x.href.replace(':id', c.id) };
+          }),
+          part: s.part ? s.part(c) : { done: done ? 1 : 0, total: 1 },
+          next: s.next,
+          done: done, now: now
+        };
+      });
+    },
+
+    /* the step you are on, or null when there is nothing left to do */
+    phaseNow: function (c) {
+      return Store.phases(c).filter(function (s) { return s.now; })[0] || null;
+    },
+
+    phaseProgress: function (c) {
+      var all = Store.phases(c);
+      return { done: all.filter(function (s) { return s.done; }).length, total: all.length };
+    },
+
+    /* the one sentence the overview and the rail both want */
+    nextAction: function (c) {
+      var s = Store.phaseNow(c);
+      if (!s) return { label: 'Nothing waiting', href: '/c/' + c.id + '/brief', done: true };
+      return { label: s.next, href: s.href, stage: s.key, done: false };
     },
 
     agendaProgress: function (c) {
@@ -5616,20 +5886,19 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     { group: 'Workspace', items: [
       { key: 'home', icon: 'overview', label: 'Overview', href: '/', hint: 'every company you are working', sc: 'G then O' }
     ] },
-    { group: 'company', needsCampaign: true, items: [
-      { key: 'opp',      icon: 'company', label: 'Summary',  href: '/c/:id', hint: 'the checklist and the numbers', sc: 'G then C' },
-      { key: 'prep',     icon: 'prep', label: 'Prep',     href: '/c/:id/prep', hint: 'the stories behind your wins, and the gaps', sc: 'G then E' },
-      { key: 'people',   icon: 'contacts', label: 'Contacts', href: '/c/:id/people',   count: 'contacts', hint: 'the people you are working, ranked', sc: 'G then P' },
-      { key: 'research', icon: 'research', label: 'Research', href: '/c/:id/research', hint: 'what they said recently, in public', sc: 'G then R' },
-      { key: 'sequence', icon: 'sequence', label: 'Sequence', href: '/c/:id/sequence', count: 'steps', hint: 'the touches and the days between them', sc: 'G then S' },
-      { key: 'page',     icon: 'page', label: 'Page',     href: '/c/:id/page', hint: 'the public page you send them to' },
-      { key: 'brief',    icon: 'brief', label: 'Brief',    href: '/c/:id/brief', hint: 'everything you know, for the night before', sc: 'G then B' }
-    ] },
     { group: 'Library', items: [
       { key: 'templates', icon: 'templates', label: 'Templates', href: '/templates', hint: 'messages you reuse across steps', sc: 'G then T' },
       { key: 'settings',  icon: 'settings', label: 'Settings',  href: '/settings', hint: 'your name, photo and history' }
     ] }
   ];
+
+  /* which step a route belongs to, so the rail can light the right one even
+     when the screen you are on is a step's second screen */
+  var OF_STAGE = {
+    opp: 'role', prep: 'story', page: 'story',
+    people: 'people', research: 'people',
+    sequence: 'outreach', brief: 'interview'
+  };
 
   function tip(n) {
     var t = n.label;
@@ -5672,6 +5941,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
         '</aside>' +
         '<div class="main">' +
           '<header class="topbar"><div class="crumbs" id="crumbs"></div><div class="row g2" id="top-actions"></div></header>' +
+          '<div id="stepbar"></div>' +
           '<main id="view" class="view-host" tabindex="-1"></main>' +
         '</div>' +
       '</div>';
@@ -5695,26 +5965,126 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     });
   }
 
+  function stepsHTML(c, activeKey) {
+    var here = OF_STAGE[activeKey] || null;
+    return Store.phases(c).map(function (st) {
+      var on = st.key === here;
+      var state = st.done ? 'done' : st.now ? 'now' : 'todo';
+      var mark = st.done
+        ? '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" ' +
+          'stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<path d="M20 6L9 17l-5-5"/></svg>'
+        : String(st.n);
+      return '<a class="nav-item step step-' + state + (on ? ' on' : '') + '" href="#' + st.href + '"' +
+          ' data-step="' + st.key + '"' + (on ? ' aria-current="page"' : '') +
+          ' title="' + esc('Step ' + st.n + ', ' + st.label + ' — ' + st.blurb +
+            (st.done ? ' (done)' : st.now ? ' (you are here)' : '')) + '">' +
+          '<span class="step-mark" aria-hidden="true">' + mark + '</span>' +
+          '<span class="nav-label">' + esc(st.label) + '</span>' +
+          (st.part && st.part.total > 1 && !st.done
+            ? '<span class="nav-count">' + st.part.done + '/' + st.part.total + '</span>'
+            : '') +
+        '</a>' +
+        /* the step you are on opens up to show its second screen */
+        (on && st.sub.length
+          ? '<div class="step-sub">' + st.sub.map(function (x) {
+              return '<a class="nav-sub" href="#' + x.href + '"' +
+                (x.key === activeKey ? ' aria-current="page"' : '') + '>' + esc(x.label) + '</a>';
+            }).join('') + '</div>'
+          : '');
+    }).join('');
+  }
+
+  function switcherHTML(c) {
+    var pr = Store.phaseProgress(c);
+    return '<button class="switch" id="co-switch" title="' +
+        esc(c.company + ' — step ' + Math.min(pr.done + 1, pr.total) + ' of ' + pr.total + '. Click to swap company') + '">' +
+      '<span class="switch-ring">' + UI.ringHTML(pr.done, pr.total, 26) + '</span>' +
+      '<span class="switch-main"><span class="switch-co">' + esc(c.company) + '</span>' +
+      '<span class="switch-role">' + esc(c.role || 'No role') + '</span></span>' +
+      '<span class="switch-arr" aria-hidden="true">\u2304</span></button>';
+  }
+
   function paintNav(activeKey) {
     var cid = activeCampaignId();
     var c = cid ? Store.campaign(cid) : null;
-    document.getElementById('side-nav').innerHTML = NAV.map(function (g) {
-      if (g.needsCampaign && !cid) return '';
-      var items = g.items.map(function (n) {
-        var href = n.href.replace(':id', cid || '');
-        var count = '';
-        if (c && n.count === 'contacts') count = String(c.contacts.length);
-        if (c && n.count === 'steps') count = String(c.steps.length);
-        return '<a class="nav-item" href="#' + href + '" data-key="' + n.key + '"' +
-          ' title="' + esc(tip(n)) + '"' +
-          (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
-          '<span class="nav-ico">' + Icon.svg(n.icon, 17) + '</span>' +
-          '<span class="nav-label">' + esc(n.label) + '</span>' +
-          (count ? '<span class="nav-count">' + count + '</span>' : '') + '</a>';
-      }).join('');
-      var label = g.needsCampaign && c ? c.company : g.group;
-      return '<div class="nav-group"><p class="cap nav-group-label">' + esc(label) + '</p>' + items + '</div>';
+    var out = NAV[0].items.map(function (n) {
+      return '<a class="nav-item" href="#' + n.href + '" data-key="' + n.key + '"' +
+        ' title="' + esc(tip(n)) + '"' + (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
+        '<span class="nav-ico">' + Icon.svg(n.icon, 17) + '</span>' +
+        '<span class="nav-label">' + esc(n.label) + '</span></a>';
     }).join('');
+
+    var html = '<div class="nav-group"><p class="cap nav-group-label">Workspace</p>' + out + '</div>';
+
+    if (c) {
+      html += '<div class="nav-group nav-steps">' + switcherHTML(c) +
+              stepsHTML(c, activeKey) + '</div>';
+    }
+
+    html += '<div class="nav-group"><p class="cap nav-group-label">Library</p>' +
+      NAV[1].items.map(function (n) {
+        return '<a class="nav-item" href="#' + n.href + '" data-key="' + n.key + '"' +
+          ' title="' + esc(tip(n)) + '"' + (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
+          '<span class="nav-ico">' + Icon.svg(n.icon, 17) + '</span>' +
+          '<span class="nav-label">' + esc(n.label) + '</span></a>';
+      }).join('') + '</div>';
+
+    var host = document.getElementById('side-nav');
+    host.innerHTML = html;
+    UI.animate(host);
+
+    var sw = document.getElementById('co-switch');
+    if (sw) sw.addEventListener('click', function () {
+      var items = Store.campaigns().map(function (x) {
+        var pr = Store.phaseProgress(x);
+        return {
+          key: x.id,
+          icon: x.id === c.id ? '\u2022' : '',
+          label: x.company + '  ' + pr.done + '/' + pr.total,
+          run: function () { Router.go('/c/' + x.id); }
+        };
+      });
+      items.push({ sep: true });
+      items.push({ key: 'add', icon: '+', label: 'Add a company', run: function () { Router.go('/new'); } });
+      UI.menu(this, items);
+    });
+  }
+
+  /* The same five steps as the overview, compact, above whatever screen you
+     are on. It is the one piece of orientation that never moves: where you
+     are, what is behind you, and what is next. */
+  function paintStepbar(activeKey) {
+    var host = document.getElementById('stepbar');
+    if (!host) return;
+    var here = OF_STAGE[activeKey];
+    var cid = activeCampaignId();
+    var c = here && cid ? Store.campaign(cid) : null;
+    if (!c) { host.innerHTML = ''; host.className = ''; return; }
+
+    var steps = Store.phases(c);
+    var next = Store.nextAction(c);
+    host.className = 'stepbar';
+    host.innerHTML =
+      '<nav class="track track-slim" aria-label="Where you are">' + steps.map(function (st, i) {
+        var state = st.done ? 'done' : st.now ? 'now' : 'todo';
+        var on = st.key === here;
+        var mark = st.done
+          ? '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" ' +
+            'stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M20 6L9 17l-5-5"/></svg>'
+          : String(st.n);
+        return (i ? '<span class="tline' + (steps[i - 1].done ? ' done' : '') + '"></span>' : '') +
+          '<a class="tnode t-' + state + (on ? ' t-here' : '') + '" href="#' + st.href + '"' +
+            (on ? ' aria-current="step"' : '') +
+            ' title="' + esc('Step ' + st.n + ', ' + st.label + ' \u2014 ' + st.blurb) + '">' +
+            '<span class="tdot">' + mark + '</span>' +
+            '<span class="tlab">' + esc(st.label) + '</span></a>';
+      }).join('') + '</nav>' +
+      (next.done
+        ? '<span class="stepbar-next done">All five done</span>'
+        : '<a class="stepbar-next" href="#' + next.href + '">Next: ' + esc(next.label) +
+          ' <span class="arr">\u2192</span></a>');
   }
 
   function paintCrumbs(trail) {
@@ -5734,6 +6104,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     mount: function (opts) {
       buildShell();
       paintNav(opts.nav);
+      paintStepbar(opts.nav);
       paintCrumbs(opts.crumbs || [{ label: 'Overview' }]);
       paintActions(opts.actions);
       var v = document.getElementById('view');
@@ -5894,32 +6265,56 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
     var name = (Store.state.user && Store.state.user.name || 'there').split(' ')[0];
     var imported = Store.state.profile.imported;
 
+    /* Every company, and how far along it is. Five steps, drawn: what is
+       finished, the one you are on, and what is still ahead. Each node is a
+       link straight into that step, so the pipeline is the navigation. */
+    function trackHTML(c) {
+      var steps = Store.phases(c);
+      return '<div class="track">' + steps.map(function (st, i) {
+        var state = st.done ? 'done' : st.now ? 'now' : 'todo';
+        var mark = st.done
+          ? '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" ' +
+            'stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M20 6L9 17l-5-5"/></svg>'
+          : String(st.n);
+        return (i ? '<span class="tline' + (steps[i - 1].done ? ' done' : '') + '"></span>' : '') +
+          '<a class="tnode t-' + state + '" href="#' + st.href + '"' +
+            ' title="' + esc('Step ' + st.n + ', ' + st.label + ' — ' + st.blurb) + '">' +
+            '<span class="tdot">' + mark + '</span>' +
+            '<span class="tlab">' + esc(st.label) + '</span>' +
+          '</a>';
+      }).join('') + '</div>';
+    }
+
     function oppCard(c) {
-      var pr = Store.taskProgress(c);
+      var pr = Store.phaseProgress(c);
+      var next = Store.nextAction(c);
       var due = c.steps.filter(function (s) { return s.status === 'due'; }).length;
-      return '<a class="opp" href="#/c/' + c.id + '">' +
-        '<div class="opp-ring">' + ringSVG(pr.done, pr.total, 44) +
-          '<span class="opp-pct">' + pr.done + '/' + pr.total + '</span></div>' +
-        '<div class="opp-main">' +
-          '<div class="row g2 wrap" style="align-items:baseline">' +
+      return '<div class="opp">' +
+        '<div class="opp-top">' +
+          '<a class="opp-id" href="#/c/' + c.id + '">' +
             '<b class="opp-co">' + esc(c.company) + '</b>' +
-            '<span class="opp-role">' + esc(c.role) + '</span>' +
+            '<span class="opp-role">' + esc(c.role) + '</span></a>' +
+          '<div class="opp-end">' +
+            (due ? '<span class="chip chip-accent">' + due + ' due</span>'
+                 : '<span class="chip">Day ' + c.day + '</span>') +
+            '<button class="icon-btn opp-x" data-drop="' + c.id + '" aria-label="Remove ' + esc(c.company) + '" ' +
+              'title="Remove this company">' + Icon.svg('close', 14) + '</button>' +
           '</div>' +
-          '<p class="opp-next">' + esc(nextUp(c)) + '</p>' +
         '</div>' +
-        '<div class="opp-nums">' +
-          '<span><b>' + c.contacts.length + '</b>people</span>' +
-          '<span><b>' + c.sent + '</b>sent</span>' +
-          '<span><b>' + c.replies + '</b>replies</span>' +
-          '<span><b>' + c.views + '</b>opens</span>' +
-        '</div>' +
-        '<div class="opp-end">' +
-          '<button class="icon-btn opp-x" data-drop="' + c.id + '" aria-label="Remove ' + esc(c.company) + '" ' +
-            'title="Remove this company">' + Icon.svg('close', 14) + '</button>' +
-          (due ? '<span class="chip chip-accent">' + due + ' due</span>'
-               : '<span class="chip">Day ' + c.day + '</span>') +
-          '<span class="arr">→</span>' +
-        '</div></a>';
+        trackHTML(c) +
+        '<div class="opp-foot">' +
+          (next.done
+            ? '<span class="opp-done">All five done</span>'
+            : '<a class="btn btn-secondary btn-sm" href="#' + next.href + '">' +
+              esc(next.label) + ' <span class="arr">\u2192</span></a>') +
+          '<span class="opp-nums">' +
+            '<span><b>' + c.contacts.length + '</b>people</span>' +
+            '<span><b>' + c.sent + '</b>sent</span>' +
+            '<span><b>' + c.replies + '</b>replies</span>' +
+            '<span><b>' + pr.done + '/' + pr.total + '</b>steps</span>' +
+          '</span>' +
+        '</div></div>';
     }
 
     var html =

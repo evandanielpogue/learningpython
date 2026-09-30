@@ -553,7 +553,7 @@ await group('Prep, the conversation that fills the gaps', async (page) => {
     if (!stories.some(t => /SMB pod/.test(t))) throw new Error('not banked: ' + stories.join(' | '));
   });
   await step('prep is in the sidebar and on the checklist', async () => {
-    if (!(await page.locator('.nav-item[data-key="prep"]').count())) throw new Error('no nav item');
+    if (!(await page.locator('.nav-item[data-step="story"]').count())) throw new Error('no step in the rail');
     const done = await page.evaluate(() => Store.campaign('c_acme').tasks.filter(t => t.id === 't7')[0].on);
     if (!done) throw new Error('checklist not ticked');
   });
@@ -567,7 +567,8 @@ await group('Brand, icons and tips', async (page) => {
     if (!mark) throw new Error('no mark in the sidebar');
   });
   await step('every nav item carries a real icon', async () => {
-    const n = await page.locator('.nav-item').count();
+    /* the five steps are numbered rather than iconed; everything else has an icon */
+    const n = await page.locator('.nav-item:not(.step)').count();
     const svgs = await page.locator('.nav-item .nav-ico svg').count();
     if (svgs !== n) throw new Error(svgs + ' icons for ' + n + ' items');
     const stroke = await page.locator('.nav-item .nav-ico svg').first().getAttribute('stroke');
@@ -1853,6 +1854,158 @@ await group('No narration', async (page) => {
   });
 });
 
+/* --------------------------------------------------------- the five steps -- */
+await group('The five steps', async (page) => {
+  await signIn(page);
+
+  await step('a step is done because the work is, not because you visited', async () => {
+    const out = await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      const before = Store.phases(c).filter(p => p.key === 'people')[0].done;
+      const keep = c.contacts.slice();
+      c.contacts = [];
+      const after = Store.phases(c).filter(p => p.key === 'people')[0].done;
+      c.contacts = keep;
+      return { before, after };
+    });
+    if (!out.before) throw new Error('a seeded company with five contacts is not past People');
+    if (out.after) throw new Error('People still reads done with nobody on it');
+  });
+
+  await step('exactly one step is the one you are on', async () => {
+    const n = await page.evaluate(() =>
+      Store.phases(Store.campaign('c_acme')).filter(p => p.now).length);
+    if (n > 1) throw new Error(n + ' steps claim to be current');
+  });
+
+  await step('a finished company has no current step and nothing to do', async () => {
+    const out = await page.evaluate(() => {
+      Store.buildAgenda('c_acme');
+      const c = JSON.parse(JSON.stringify(Store.campaign('c_acme')));
+      c.agenda.forEach(a => { a.done = true; a.text = 'x'; });
+      c.contacts = c.contacts.length ? c.contacts : [{ id: 'x1' }, { id: 'x2' }, { id: 'x3' }];
+      c.sent = 1; c.replies = 1;
+      c.questions = { likely: [{ question: 'q' }] };
+      return { now: Store.phaseNow(c), next: Store.nextAction(c), pr: Store.phaseProgress(c) };
+    });
+    if (out.now) throw new Error('still says you are on ' + out.now.label);
+    if (!out.next.done) throw new Error('still offering a next action');
+    if (out.pr.done !== 5) throw new Error(out.pr.done + '/5 done');
+  });
+
+  await step('the next action points at the step it names', async () => {
+    const out = await page.evaluate(() => {
+      const c = Store.campaign('c_acme');
+      const next = Store.nextAction(c);
+      const now = Store.phaseNow(c);
+      return { next, now };
+    });
+    if (!out.now) return;
+    if (out.next.href !== out.now.href) throw new Error(out.next.href + ' vs ' + out.now.href);
+  });
+
+  await step('the rail carries the five, numbered, with the company above them', async () => {
+    await page.goto(BASE + '#/c/c_acme/people', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.nav-item.step', { timeout: 5000 });
+    const n = await page.locator('.nav-item.step').count();
+    if (n !== 5) throw new Error(n + ' steps in the rail');
+    if (!(await page.locator('#co-switch').count())) throw new Error('no company switcher');
+    const marks = await page.evaluate(() =>
+      [...document.querySelectorAll('.nav-item.step .step-mark')].map(m => m.textContent.trim()));
+    /* a finished step shows a tick, an unfinished one shows its number */
+    marks.forEach((m, i) => {
+      if (m && m !== String(i + 1)) throw new Error('step ' + (i + 1) + ' is marked "' + m + '"');
+    });
+  });
+
+  await step('the rail lights the step the screen belongs to', async () => {
+    const here = await page.evaluate(() =>
+      (document.querySelector('.nav-item.step[aria-current="page"]') || {}).dataset || {});
+    if (here.step !== 'people') throw new Error('Contacts lit "' + here.step + '"');
+  });
+
+  await step("the step you are on opens up to its second screen", async () => {
+    const subs = await page.locator('.step-sub .nav-sub').allTextContents();
+    if (!subs.includes('Research')) throw new Error('People does not offer Research: ' + subs.join(','));
+    await page.goto(BASE + '#/c/c_acme/sequence', { waitUntil: 'networkidle' });
+    await page.waitForTimeout(260);
+    const after = await page.locator('.step-sub .nav-sub').allTextContents();
+    if (after.includes('Research')) throw new Error('Research is still showing under Outreach');
+  });
+
+  await step('the switcher lists every company and a way to add one', async () => {
+    await page.evaluate(() => {
+      if (Store.campaigns().length < 2) {
+        Store.createCampaign({ listing: 'Northwind is hiring a Senior Account Executive. Requirements: 5+ years.' });
+      }
+    });
+    await page.goto(BASE + '#/c/c_acme/people', { waitUntil: 'networkidle' });
+    await page.locator('#co-switch').click();
+    await page.waitForSelector('.menu', { timeout: 3000 });
+    const items = await page.locator('.menu [role="menuitem"]').allTextContents();
+    if (items.length < 3) throw new Error('only ' + items.length + ' entries');
+    if (!items.some(t => /Acme/.test(t))) throw new Error('Acme is not listed');
+    if (!items.some(t => /Add a company/.test(t))) throw new Error('no way to add one');
+    await page.keyboard.press('Escape');
+  });
+
+  await step('swapping company from the rail actually swaps', async () => {
+    const other = await page.evaluate(() =>
+      Store.campaigns().filter(c => c.id !== 'c_acme')[0].id);
+    await page.locator('#co-switch').click();
+    await page.waitForSelector('.menu', { timeout: 3000 });
+    await page.locator('.menu [role="menuitem"][data-k="' + other + '"]').click();
+    await page.waitForTimeout(400);
+    const co = await page.evaluate(() => document.querySelector('.switch-co').textContent.trim());
+    const want = await page.evaluate((id) => Store.campaign(id).company, other);
+    if (co !== want) throw new Error('rail still says ' + co);
+  });
+
+  await step('every step screen carries the strip, and no other screen does', async () => {
+    const on = ['c/c_acme', 'c/c_acme/prep', 'c/c_acme/page', 'c/c_acme/people',
+                'c/c_acme/research', 'c/c_acme/sequence', 'c/c_acme/brief'];
+    const off = ['', 'templates', 'settings'];
+    for (const r of on) {
+      await page.goto(BASE + '#/' + r, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(240);
+      const n = await page.locator('.stepbar .tnode').count();
+      if (n !== 5) throw new Error('#/' + r + ' has ' + n + ' steps in the strip');
+    }
+    for (const r of off) {
+      await page.goto(BASE + '#/' + r, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(240);
+      if (await page.locator('.stepbar .tnode').count())
+        throw new Error('#/' + r + ' shows a step strip it has no business with');
+    }
+  });
+
+  await step('the strip marks the screen you are on, not just the step you are up to', async () => {
+    await page.goto(BASE + '#/c/c_acme/research', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.stepbar', { timeout: 5000 });
+    const here = await page.locator('.stepbar .t-here .tlab').textContent();
+    if (here.trim() !== 'People') throw new Error('Research sits under "' + here + '"');
+  });
+
+  await step('a track node goes straight to that step', async () => {
+    await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.opp .tnode', { timeout: 5000 });
+    const href = await page.locator('.opp').first().locator('.tnode').nth(3).getAttribute('href');
+    if (!/\/sequence$/.test(href)) throw new Error('the fourth node goes to ' + href);
+  });
+
+  await step('the pipeline fits the window at phone width', async () => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+    const over = await page.evaluate(() =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (over > 0) throw new Error('overflows by ' + over + 'px');
+    const nodes = await page.locator('.opp').first().locator('.tnode').count();
+    if (nodes !== 5) throw new Error('only ' + nodes + ' steps drawn narrow');
+    await page.setViewportSize({ width: 1280, height: 900 });
+  });
+});
+
 /* ---------------------------------------------------------- cold start -- */
 await group('Cold start, all the way through', async (page) => {
   await step('a new account lands on the resume screen with nothing in it', async () => {
@@ -1996,11 +2149,20 @@ await group('Overview', async (page) => {
     if (!(await page.locator('.opp-co').first().textContent()).includes('Acme')) throw new Error('Acme missing');
   });
   await step('each company shows its own progress', async () => {
-    const t = await page.locator('.opp-pct').first().textContent();
-    if (!/^\d+\/\d+$/.test(t.trim())) throw new Error('progress reads "' + t + '"');
+    const n = await page.locator('.opp').first().locator('.tnode').count();
+    if (n !== 5) throw new Error(n + ' steps drawn');
+    const marked = await page.evaluate(() => {
+      const card = document.querySelector('.opp');
+      return {
+        done: card.querySelectorAll('.tnode.t-done').length,
+        now: card.querySelectorAll('.tnode.t-now').length
+      };
+    });
+    if (marked.now > 1) throw new Error(marked.now + ' steps claim to be the current one');
+    if (marked.done + marked.now === 0) throw new Error('no step is marked at all');
   });
   await step('a company opens its own summary', async () => {
-    await page.click('.opp');
+    await page.click('.opp-id');
     await page.waitForSelector('.task', { timeout: 5000 });
     if (!(await page.locator('h1').first().textContent()).includes('Acme')) throw new Error('not the Acme summary');
   });
@@ -2483,7 +2645,7 @@ await group('Mobile, 390px', async (page) => {
     if (m.w > 70) throw new Error('rail did not collapse (w=' + m.w + ')');
     if (m.h < 600) throw new Error('rail is not full height (h=' + m.h + ')');
     if (m.hidden !== 'none') throw new Error('labels still showing on the rail');
-    if (m.n < 10) throw new Error('only ' + m.n + ' nav items');
+    if (m.n < 8) throw new Error('only ' + m.n + ' nav items');
     if (!m.labelled) throw new Error('a rail icon has no tooltip');
   });
   await step('the builder is usable narrow', async () => {
