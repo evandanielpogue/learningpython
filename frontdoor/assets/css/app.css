@@ -1255,7 +1255,7 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.22); }
 .tplmark em { font-style: normal; font-size: var(--fs-xs); color: var(--ink-3); }
 .tplmark-off b { color: var(--ink-2); font-weight: 500; }
 .ed-tplbar:has(.tplmark-off) { background: var(--sunk); }
-.ed-count { display: flex; justify-content: flex-end; padding-top: var(--s-2); border-top: 1px solid var(--line); }
+.ed-count { display: flex; justify-content: flex-end; gap: var(--s-4); padding-top: var(--s-2); border-top: 1px solid var(--line); }
 .sc-tpl { font-family: var(--mono); font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-4); }
 
 .modal-picker { max-width: 640px; }

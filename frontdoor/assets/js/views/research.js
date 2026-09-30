@@ -76,7 +76,7 @@
     function sourcesHTML() {
       return '' +
         Sources.groups().map(function (g) {
-          return '<div class="card p5 mt4"><p class="cap mb3">' + esc(g.name) + '</p>' +
+          return '<div class="card p5 mt4"><h3 class="mb3">' + esc(g.name) + '</h3>' +
             '<div class="src-list">' + g.items.map(function (s) {
               return '<div class="src-row">' +
                 '<div class="src-main">' +

@@ -49,10 +49,8 @@
      it stays dismissed, because a tip you have read is clutter. -------- */
   var TIPS = {
     'find-contacts': {
-      title: 'How to find who is actually hiring',
-      body: 'Search LinkedIn for <b>hiring [role] at [company]</b> and filter to Posts. ' +
-        'The people posting the role are the hiring manager and the recruiter, and a reply to ' +
-        'their post lands better than anything sent through the portal.',
+      title: 'Who is hiring',
+      body: 'Search LinkedIn for <b>hiring [role] at [company]</b>, filtered to Posts.',
       cta: { label: 'Run that search', href: 'https://www.linkedin.com/search/results/content/?keywords=' }
     }
   };

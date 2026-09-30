@@ -1565,6 +1565,8 @@
         .replace(/\{role\}/g, campaign.role)
         .replace(/\{slug\}/g, campaign.slug)
         .replace(/\{angle\}/g, angle)
+        /* a win that opens a paragraph keeps its capital */
+        .replace(/(^|\n)([ \t]*)\{win\}/g, function (m, br, sp) { return br + sp + (wins[0] ? wins[0].text : ''); })
         .replace(/\{win\}/g, win)
         .replace(/\{me\}/g, state.profile.name);
     },

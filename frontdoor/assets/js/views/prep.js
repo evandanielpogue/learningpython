@@ -80,7 +80,7 @@
             : '') +
         '</div>' +
         (Store.stories(c).length
-          ? '<div class="card p5 mt4"><p class="cap mb3">Banked</p>' +
+          ? '<div class="card p5 mt4"><h3 class="mb3">Banked</h3>' +
             Store.stories(c).map(function (a) {
               return '<p class="storyline">' + esc(a.text) + '</p>';
             }).join('') + '</div>'

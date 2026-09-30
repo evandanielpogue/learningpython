@@ -206,7 +206,7 @@
       '<div class="card p5 mb4">' +
         '<h3 class="mb3">Voice</h3>' +
         (pf.voice.traits.length
-          ? '<div class="row wrap g2">' + pf.voice.traits.map(function (t) { return '<span class="chip chip-accent">' + esc(t) + '</span>'; }).join('') + '</div>'
+          ? '<div class="row wrap g2">' + pf.voice.traits.map(function (t) { return '<span class="chip">' + esc(t) + '</span>'; }).join('') + '</div>'
           : '<p class="hint">None yet.</p>') +
       '</div>' +
 

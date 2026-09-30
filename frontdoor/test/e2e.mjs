@@ -624,7 +624,7 @@ await group('Brand, icons and tips', async (page) => {
     if (!/linkedin\.com\/search\/results\/content/.test(href)) throw new Error('cta goes to ' + href);
     if (!/hiring%20Mid-Market/.test(href)) throw new Error('search is not filled in: ' + href);
     const body = await page.locator('.tip-body').first().textContent();
-    if (!/filter to Posts/i.test(body)) throw new Error('the tactic is missing: ' + body.slice(0, 60));
+    if (!/filtered? to Posts/i.test(body)) throw new Error('the tactic is missing: ' + body.slice(0, 60));
   });
   await step('the brand page documents what the app actually uses', async () => {
     await page.goto(BASE + '#/brand', { waitUntil: 'networkidle' });
@@ -3027,22 +3027,24 @@ await group('Mobile, 390px', async (page) => {
       if (over > 1) throw new Error(r + ' overflows by ' + over + 'px');
     }
   });
-  await step('the collapsed rail stays left and every icon is labelled', async () => {
+  await step('on a phone the rail gives way to a labelled bar along the bottom', async () => {
     await page.goto(BASE + '#/c/c_acme/sequence', { waitUntil: 'networkidle' });
-    await page.waitForSelector('.nav-item', { timeout: 4000 });
+    await page.waitForSelector('.mobile-bar .mb-item', { timeout: 4000 });
     const m = await page.evaluate(() => {
-      const s = document.querySelector('.sidebar').getBoundingClientRect();
-      return { x: s.x, w: s.width, h: s.height,
-               labelled: [...document.querySelectorAll('.nav-item')].every((a) => (a.title || '').length > 6),
-               n: document.querySelectorAll('.nav-item').length,
-               hidden: getComputedStyle(document.querySelector('.nav-label')).display };
+      const bar = document.querySelector('.mobile-bar').getBoundingClientRect();
+      const items = [...document.querySelectorAll('.mb-item')];
+      return { railShown: getComputedStyle(document.querySelector('.sidebar')).display !== 'none',
+               barBottom: Math.round(bar.bottom), vh: window.innerHeight, w: Math.round(bar.width),
+               n: items.length,
+               labelled: items.every((a) => (a.querySelector('.mb-lab') || {}).textContent.trim().length > 2),
+               current: items.filter((a) => a.getAttribute('aria-current') === 'page').length };
     });
-    if (m.x !== 0) throw new Error('rail is not flush left (x=' + m.x + ')');
-    if (m.w > 70) throw new Error('rail did not collapse (w=' + m.w + ')');
-    if (m.h < 600) throw new Error('rail is not full height (h=' + m.h + ')');
-    if (m.hidden !== 'none') throw new Error('labels still showing on the rail');
-    if (m.n < 7) throw new Error('only ' + m.n + ' nav items');
-    if (!m.labelled) throw new Error('a rail icon has no tooltip');
+    if (m.railShown) throw new Error('the rail is still showing on a phone');
+    if (Math.abs(m.barBottom - m.vh) > 1) throw new Error('bar is not flush with the bottom (' + m.barBottom + '/' + m.vh + ')');
+    if (m.w < 380) throw new Error('bar is not full width (w=' + m.w + ')');
+    if (m.n < 7) throw new Error('only ' + m.n + ' bar items');
+    if (!m.labelled) throw new Error('a bar item has no label');
+    if (m.current !== 1) throw new Error(m.current + ' items marked current');
   });
   await step('the builder is usable narrow', async () => {
     await page.waitForSelector('.stepcard', { timeout: 4000 });

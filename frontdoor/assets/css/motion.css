@@ -332,6 +332,7 @@
 }
 .pcard:hover { transform: translateY(-1px); box-shadow: var(--e-3); border-color: var(--line-3); }
 .pcard-due { border-left: 3px solid var(--brand); }
+.pcard-next { margin-left: auto; font-size: var(--fs-xs); font-weight: 550; white-space: nowrap; }
 .pcard-id { text-decoration: none; color: inherit; display: grid; gap: 1px; min-width: 0; }
 .pcard-id b {
   font-size: var(--fs-base); font-weight: 620; letter-spacing: -.014em;
