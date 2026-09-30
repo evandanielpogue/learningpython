@@ -3,8 +3,8 @@
 
    Two jobs, worked one item at a time: get the story behind each win you are
    leading with, and find something real to say about the things the listing
-   asked for that your resume does not answer. What comes out goes on the page
-   and into the messages.
+   asked for that your résumé does not answer. What comes out goes on the page
+   and into the touches.
    ========================================================================== */
 (function (window, document) {
   'use strict';
@@ -48,12 +48,11 @@
       actions: '<span class="chip" id="prep-chip"></span>' +
                '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/page">Page</a>',
       html: '<div class="page-head"><h1>Story</h1></div>' +
-            UI.tipHTML('prep-specifics') +
             (agenda.length
               ? '<div class="prep"><div id="agenda"></div><div id="talk"></div></div>'
               : '<div class="card"><div class="empty"><span class="art">◈</span>' +
-                '<h2>Nothing to work on yet</h2><p>Add a company from a listing and the things worth nailing down show up here.</p>' +
-                '<a class="btn btn-primary btn-lg" href="#/new">Add a company <span class="arr">→</span></a></div></div>')
+                '<h2>Add a company first</h2>' +
+                '<a class="btn btn-primary btn-lg" href="#/new">Add <span class="arr">→</span></a></div></div>')
     });
     if (!agenda.length) return;
 
@@ -77,7 +76,7 @@
               '<span class="ag-label">' + esc(a.label) + '</span></span></button>';
           }).join('') + '</div>' +
           (pr.done === pr.total
-            ? '<a class="btn btn-primary btn-sm mt4" href="#/c/' + c.id + '/sequence">Go and write it <span class="arr">→</span></a>'
+            ? '<a class="btn btn-primary btn-sm mt4" href="#/c/' + c.id + '/sequence">Outreach <span class="arr">→</span></a>'
             : '') +
         '</div>' +
         (Store.stories(c).length
@@ -240,7 +239,9 @@
           if (out.complete && out.story) {
             Store.answerAgenda(c.id, a.id, out.story);
             paintAgenda();
-            say('ai', 'Saved. Pick the next one on the left.');
+            say('ai', 'Saved.');
+            landed();
+            setTimeout(function () { if (openId === mine) advance(a.id); }, 900);
           }
         }).catch(function (err) {
           if (openId === mine && b.isConnected) b.textContent = 'That did not go through: ' + err.message;
@@ -259,16 +260,13 @@
         var pr = Store.agendaProgress(c);
         if (pr.total && pr.done >= pr.total) {
           UI.cheerOnce(c.id, 'agenda', {
-            title: 'That is all of it',
-            line: 'Every number has a story behind it and every gap has an answer. ' +
-                  'The messages and the page write themselves from here.'
+            title: 'Story done'
           });
         }
       }
 
       v.querySelector('#save-it').addEventListener('click', function () {
-        var said = history.filter(function (m) { return m.role === 'user'; })
-          .map(function (m) { return m.content; }).join(' ');
+        var said = Coach.bankable(history);
         if (!said) { UI.toast('Say something first.'); return; }
         var id = item().id;
         Store.answerAgenda(c.id, id, said);

@@ -52,11 +52,11 @@
       '<div class="shell">' +
         '<button class="skip" id="skip" type="button">Skip to content</button>' +
         '<aside class="sidebar">' +
-          '<a class="brand" href="#/" title="Frontdoor — back to the overview">' + Icon.mark(24) + '<b>Frontdoor</b></a>' +
-          '<button class="side-search" id="side-search" title="Search and jump anywhere  (\u2318K)">' + Icon.svg('search', 15) + '<span>Search</span><kbd>⌘K</kbd></button>' +
+          '<a class="brand" href="#/">' + Icon.mark(24) + '<b>Frontdoor</b></a>' +
+          '<button class="side-search" id="side-search">' + Icon.svg('search', 15) + '<span>Search</span><kbd>⌘K</kbd></button>' +
           '<nav class="side-nav" id="side-nav" aria-label="Sections"></nav>' +
           '<div class="side-foot">' +
-            '<button class="user-btn" id="user-btn" title="' + esc(u.name) + ' — account, settings and sign out">' +
+            '<button class="user-btn" id="user-btn">' +
               '<span class="avatar avatar-sm" style="background:var(--p-recruiter)">' + esc(u.initials) + '</span>' +
               '<span class="grow"><span class="un">' + esc(u.name) + '</span>' +
               '<span class="ue">' + esc(u.email) + '</span></span>' +
@@ -67,6 +67,7 @@
         '<div class="main">' +
           '<header class="topbar"><div class="crumbs" id="crumbs"></div><div class="row g2" id="top-actions"></div></header>' +
           '<div id="stepbar"></div>' +
+          '<nav class="mobile-bar" id="mobile-bar" aria-label="Sections"></nav>' +
           '<main id="view" class="view-host" tabindex="-1"></main>' +
         '</div>' +
       '</div>';
@@ -126,6 +127,28 @@
       '<span class="switch-arr" aria-hidden="true">\u2304</span></button>';
   }
 
+  function paintMobile(c, activeKey) {
+    var mb = document.getElementById('mobile-bar');
+    if (!mb) return;
+    var tick = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" ' +
+      'stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+    var here = OF_STAGE[activeKey] || null;
+    var h = '<a class="mb-item" href="#/"' + (activeKey === 'home' ? ' aria-current="page"' : '') + '>' +
+      '<span class="mb-ico">' + Icon.svg('overview', 18) + '</span><span class="mb-lab">Overview</span></a>';
+    if (c) {
+      h += Store.phases(c).map(function (st) {
+        var cls = st.done ? ' step step-done' : st.now ? ' step step-now' : ' step';
+        return '<a class="mb-item' + cls + '" href="#' + st.href + '"' +
+          (st.key === here ? ' aria-current="page"' : '') + '>' +
+          '<span class="mb-ico">' + (st.done ? tick : String(st.n)) + '</span>' +
+          '<span class="mb-lab">' + esc(st.label) + '</span></a>';
+      }).join('');
+    }
+    h += '<a class="mb-item" href="#/settings"' + (activeKey === 'settings' ? ' aria-current="page"' : '') + '>' +
+      '<span class="mb-ico">' + Icon.svg('settings', 18) + '</span><span class="mb-lab">Settings</span></a>';
+    mb.innerHTML = h;
+  }
+
   function paintNav(activeKey) {
     var cid = activeCampaignId();
     var c = cid ? Store.campaign(cid) : null;
@@ -154,6 +177,7 @@
     var host = document.getElementById('side-nav');
     host.innerHTML = html;
     UI.animate(host);
+    paintMobile(c, activeKey);
 
     var sw = document.getElementById('co-switch');
     if (sw) sw.addEventListener('click', function () {

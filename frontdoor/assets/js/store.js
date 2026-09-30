@@ -94,7 +94,7 @@
     { id: 'tpl_rec', name: 'Check the req is actually moving', persona: 'Recruiter', stage: 'First touch', channel: 'Email', stock: true,
       body: "{first}, I applied for the {role} on Tuesday. Quick context: {win}.\n\nIs the team still interviewing for this one, or is it further along than the posting suggests?" },
     { id: 'tpl_hm', name: 'Open with what you noticed', persona: 'Hiring manager', stage: 'First touch', channel: 'Email', stock: true,
-      body: "{first}, {angle}\n\n{win}. [One sentence on what that actually took \u2014 the part a resume bullet leaves out.]\n\nI applied for the {role}.\n\nWorth fifteen minutes, or should I stay in the queue?" },
+      body: "{first}, {angle}\n\n{win}. [One sentence on what that actually took \u2014 the part a résumé bullet leaves out.]\n\nI applied for the {role}.\n\nWorth fifteen minutes, or should I stay in the queue?" },
     { id: 'tpl_hm2', name: 'Follow up with something new', persona: 'Hiring manager', stage: 'Follow up', channel: 'Email', stock: true,
       body: "{first}, [something you went and found out about {company} since you last wrote \u2014 a number, a friction, a thing they said].\n\n[Why it matters to the thing this role owns.]\n\nStill happy to trade fifteen minutes if useful." },
     { id: 'tpl_exec', name: 'Go one level up', persona: 'Skip level', stage: 'Escalation', channel: 'Email', stock: true,
@@ -750,7 +750,7 @@
       /* one per thing the listing wants that nothing on the resume answers */
       Store.matchScore(c).gaps.slice(0, 4).forEach(function (r) {
         items.push({ id: uid('ag'), kind: 'gap', ref: r.id,
-          label: r.text, ask: 'Nothing on your resume answers this', text: '', done: false });
+          label: r.text, ask: 'Nothing on your résumé answers this', text: '', done: false });
       });
 
       c.agenda = items;
@@ -1103,7 +1103,7 @@
     fromModel: function (data, source) {
       var out = blankProfile();
       out.imported = true;
-      out.source = source || 'your resume';
+      out.source = source || 'your résumé';
       out.name = data.name || '';
       out.email = data.email || '';
       out.phone = data.phone || '';
@@ -1427,7 +1427,7 @@
       var c = Store.campaign(cid); if (!c) return null;
       var last = c.steps.length ? c.steps[c.steps.length - 1].day : 0;
       var s = { id: uid('s'), day: last + 2, contact: c.contacts[0] ? c.contacts[0].id : null,
-                template: null, channel: 'Email', note: 'New step', status: 'queued',
+                template: null, channel: 'Email', note: 'New touch', status: 'queued',
                 subject: '', body: '' };
       c.steps.push(s);
       Store.sortSteps(cid);

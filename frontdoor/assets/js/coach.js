@@ -344,7 +344,7 @@
     thin: [
       'Say a bit more.',
       'What else was going on?',
-      'Keep going. What happened next?'
+      'What happened next?'
     ],
     we: [
       'What part of that was you?',
@@ -402,6 +402,28 @@
   var HUH     = /^(what do you mean|what\?|huh|sorry\?|i do not follow|i don'?t follow|meaning\?|like what)/i;
   var YES     = /^(yes|yeah|yep|yup|that\'s right|that'?s right|correct|exactly|spot on|right|perfect|good|sounds right|ok|okay)\b/i;
   var NO      = /^(no|not quite|not really|nope|change|wrong|that\'s not|that'?s not)\b/i;
+
+  /* a bare yes, no or shrug is a reply to the coach, never part of a story */
+  Coach.isFiller = function (text) {
+    var t = String(text || '').trim();
+    if (!t) return true;
+    return /^(yes|yeah|yep|yup|correct|right|exactly|spot on|ok|okay|perfect|good|sounds right|that'?s right|no|nope|not quite|not really|i (do not|don'?t) know|not sure|no idea|dunno)[.!,\s]*(thanks|thank you)?[.!\s]*$/i.test(t);
+  };
+
+  /* what to bank when someone saves: the read-back they were shown if there
+     is one, otherwise their own words with the filler taken out */
+  Coach.bankable = function (history) {
+    history = history || [];
+    var readBack = null;
+    for (var i = history.length - 1; i >= 0; i--) {
+      var m = history[i];
+      if (m.role === 'assistant' && m.stage === 'confirm' && m.story) { readBack = m.story; break; }
+      if (m.role === 'user' && !Coach.isFiller(m.content) && i === history.length - 1) break;
+    }
+    if (readBack) return readBack;
+    return history.filter(function (m) { return m.role === 'user' && !Coach.isFiller(m.content); })
+      .map(function (m) { return m.content; }).join(' ');
+  };
 
   var DUNNO_REPLIES = {
     thin:     ['No worries. What do you remember?',
@@ -463,7 +485,7 @@
 
   Coach.summary = function (answers) {
     /* someone who types the same thing three times gets it back once */
-    var all = dedupe(answers || []).join(' ').replace(/\s+/g, ' ').trim();
+    var all = dedupe((answers || []).filter(function (x) { return !Coach.isFiller(x); })).join(' ').replace(/\s+/g, ' ').trim();
     if (!all) return '';
     var sentences = all.split(/(?<=[.!?])\s+/)
       .map(function (x) { return x.trim(); })
@@ -540,6 +562,13 @@
     /* and a conversation that never ends is worse than one that ends early */
     if (asked.length >= 5) what = null;
 
+    /* a first answer that already carries a number, an obstacle and an
+       outcome needs no probe: read it back */
+    if (answers.length === 1) {
+      var first = Coach.readAnswer(last);
+      if (first.words >= 14 && first.hasNumber && first.hasObstacle && first.hasOutcome) what = null;
+    }
+
     /* "I don\'t know" is an answer, and pretending otherwise is what makes
        these things infuriating */
     if (DUNNO.test(last.trim())) {
@@ -603,8 +632,8 @@
       if (r.strength === 'none') {
         likely.push({
           question: Coach.asQuestion(r.text),
-          why: 'They asked for it and nothing on your résumé answers it. This one is coming.',
-          gap: r.note ? '' : 'You have not worked out what to say. Do it in Prep.',
+          why: 'They asked for it. Nothing on your résumé answers this.',
+          gap: r.note ? '' : 'You have not worked out what to say. Do it in Story.',
           answer: r.note || '',
           kind: 'gap', ref: r.id
         });
@@ -695,7 +724,7 @@
     }).length;
     if (unanswered > 2) {
       watch.unshift(unanswered + ' requirements have nothing behind them and no answer written. ' +
-                    'That is the interview, not a detail.');
+                    'That\'s the interview, not a detail.');
     }
 
     return {

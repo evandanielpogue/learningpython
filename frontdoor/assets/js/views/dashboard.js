@@ -56,11 +56,12 @@
             Store.phases(c).map(function (st) {
               return '<i class="pdot' + (st.done ? ' on' : st.now ? ' here' : '') + '"></i>';
             }).join('') + '</span>' +
+          (next.done ? '' : '<a class="pcard-next linkish" href="#' + next.href + '">' + esc(next.label) + ' \u2192</a>') +
           (due ? '<span class="chip chip-accent">' + due + ' due</span>'
                : c.replies ? '<span class="chip chip-pos">' + c.replies + ' replied</span>'
                : '<span class="pcard-day">Day ' + c.day + '</span>') +
-          '<button class="icon-btn opp-x" data-drop="' + c.id + '" aria-label="Remove ' + esc(c.company) + '" ' +
-            'title="Remove this company">' + Icon.svg('close', 13) + '</button>' +
+          '<button class="icon-btn opp-x" data-drop="' + c.id + '" aria-label="' + (c.example ? 'Remove example ' : 'Remove ') + esc(c.company) + '" ' +
+            'title="' + (c.example ? 'Remove example' : 'Remove') + '">' + Icon.svg('close', 13) + '</button>' +
         '</div></div>';
     }
 
@@ -139,9 +140,9 @@
       var c = Store.campaign(el.dataset.drop);
       if (!c) return;
       UI.confirm({
-        title: 'Remove ' + c.company + '?',
-        body: 'The contacts, the sequence, the research and everything you worked out in prep go with it. This cannot be undone.',
-        confirm: 'Remove it', danger: true
+        title: (c.example ? 'Remove example ' : 'Remove ') + c.company + '?',
+        body: 'The people, the touches, the research and your stories go with it. This cannot be undone.',
+        confirm: c.example ? 'Remove example' : 'Remove', danger: true
       }).then(function (ok) {
         if (!ok) return;
         Store.removeCampaign(c.id);
@@ -206,7 +207,7 @@
         '<h3 class="mb3">Voice</h3>' +
         (pf.voice.traits.length
           ? '<div class="row wrap g2">' + pf.voice.traits.map(function (t) { return '<span class="chip chip-accent">' + esc(t) + '</span>'; }).join('') + '</div>'
-          : '<p class="hint">Read from your r\u00e9sum\u00e9.</p>') +
+          : '<p class="hint">None yet.</p>') +
       '</div>' +
 
       '<div class="card p5 mb4">' +
@@ -259,7 +260,7 @@
           var small;
           try { small = cv.toDataURL('image/jpeg', 0.82); } catch (e) { small = fr.result; }
           Store.setPhoto(small.length < String(fr.result).length ? small : fr.result);
-          UI.toast('Photo added. It shows up on your page.');
+          UI.toast('Photo added.');
           Views.settings();
         };
         img.onerror = function () { UI.toast('That did not look like an image.'); };
@@ -281,7 +282,7 @@
         }).join('') + '</select></div>';
 
       if (a.mode === 'off') {
-        box.innerHTML = '<p class="hint">Résumés get read by pattern matching, the story chat asks the same three questions every time, and the assistant does canned edits. Everything still works, it is just dumber.</p>';
+        box.innerHTML = '<p class="hint">No model. Pattern matching only.</p>';
         return;
       }
       if (a.mode === 'key') {
@@ -290,8 +291,7 @@
             '<input class="input mono" id="ai-key" type="password" autocomplete="off" spellcheck="false" ' +
             'placeholder="sk-ant-..." value="' + esc(a.key) + '"></div>' +
           models +
-          '<p class="warnbox mt3">This key is kept in this browser and sent straight to Anthropic from this page. ' +
-          'Anyone who can open this browser profile can read it, so use a key you can revoke, and do not ship this file to anyone with the key still in it.</p>' +
+          '<p class="warnbox mt3">Stored in this browser. Use a key you can revoke.</p>' +
           '<div class="row g2 wrap mt3"><button class="btn btn-secondary btn-sm" id="ai-test">Test it</button>' +
           '<span class="hint" id="ai-msg"></span></div>';
       } else {
@@ -300,7 +300,7 @@
             '<input class="input mono" id="ai-proxy" type="url" autocomplete="off" spellcheck="false" ' +
             'placeholder="https://your-server.example.com/claude" value="' + esc(a.proxy) + '"></div>' +
           models +
-          '<p class="hint mt3">Your server holds the key and forwards the body to /v1/messages. Nothing secret sits in the browser. This is the shape a real deployment takes. It must be https: your résumé goes over this connection.</p>' +
+          '<p class="hint mt3">Must be https.</p>' +
           '<div class="row g2 wrap mt3"><button class="btn btn-secondary btn-sm" id="ai-test">Test it</button>' +
           '<span class="hint" id="ai-msg"></span></div>';
       }
@@ -345,7 +345,7 @@
 
     v.querySelector('#s-reimport').addEventListener('click', function () { Router.go('/import'); });
     v.querySelector('#s-reset').addEventListener('click', function () {
-      UI.confirm({ title: 'Clear all data?', body: 'Every company, the profile and the sign in all go. You will land back at the login screen.', confirm: 'Clear it', danger: true })
+      UI.confirm({ title: 'Clear all data?', body: 'Every company, your profile and your sign-in are deleted. This cannot be undone.', confirm: 'Clear', danger: true })
         .then(function (ok) { if (ok) { Store.reset(); Router.go('/login'); location.reload(); } });
     });
   };

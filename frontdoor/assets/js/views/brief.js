@@ -1,5 +1,5 @@
 /* ==========================================================================
-   views/brief.js — the interview brief.
+   views/brief.js — the interview.
 
    Everything this company campaign has accumulated, on one page, for the
    thirty minutes before you walk in: what you said you would lead with and
@@ -38,15 +38,14 @@
           '<p class="bf-where">' + esc(w.win.where) + '</p>' +
           (w.story
             ? '<p class="bf-story">' + esc(w.story) + '</p>'
-            : '<p class="bf-todo">No story behind this yet. ' +
-              '<a href="#/c/' + c.id + '/prep">Work it out in Prep</a> before someone asks.</p>') +
+            : '<p class="bf-todo"><a href="#/c/' + c.id + '/prep">Add a story</a></p>') +
         '</div>';
       }).join('') + '</div>';
     }
 
     /* ---------------- the match, with your answers ---------------- */
     function matchHTML() {
-      if (!b.match.length) return '<p class="dim">No requirements were parsed out of the listing.</p>';
+      if (!b.match.length) return '<p class="dim">No requirements found.</p>';
       return '<div class="bf-match">' + b.match.map(function (m) {
         return '<div class="bf-row ' + m.strength + '">' +
           '<span class="mr-dot"></span>' +
@@ -59,8 +58,7 @@
             (m.answer
               ? '<p class="bf-answer"><em>You will say:</em> ' + esc(m.answer) + '</p>'
               : m.strength === 'none'
-                ? '<p class="bf-todo">Nothing answers this and you have not worked out what to say. ' +
-                  '<a href="#/c/' + c.id + '/prep">Do that first.</a></p>'
+                ? '<p class="bf-todo"><a href="#/c/' + c.id + '/prep">Add an answer</a></p>'
                 : '') +
           '</div></div>';
       }).join('') + '</div>';
@@ -81,7 +79,7 @@
               ? '<span class="chip' + (t.some(function (x) { return x.replied; }) ? ' chip-pos' : '') + '">' +
                 t.length + ' touch' + (t.length === 1 ? '' : 'es') +
                 (t.some(function (x) { return x.replied; }) ? ', replied' : '') + '</span>'
-              : '<span class="chip">not contacted</span>') +
+              : '<span class="chip">no touches</span>') +
           '</div>' +
           (t.length
             ? '<ul class="bf-touches">' + t.map(function (x) {
@@ -100,8 +98,7 @@
     /* ---------------- what the company said ---------------- */
     function researchHTML() {
       if (!b.research.length) {
-        return '<p class="dim">Nothing gathered. <a href="#/c/' + c.id + '/research">Add what you have found</a> — ' +
-          'one specific thing they said is worth more than a page of company history.</p>';
+        return '<p class="dim"><a href="#/c/' + c.id + '/research">Add finding</a></p>';
       }
       return '<ul class="bf-research">' + b.research.map(function (r) {
         return '<li><b>' + esc(r.title) + '</b>' +
@@ -115,9 +112,7 @@
       var q = c.questions;
       if (!q || !(q.likely || []).length) {
         return '<div class="bf-empty">' +
-          '<p>Nothing to work from yet — paste the listing on the company screen ' +
-          'and pick the wins you are leading with.</p>' +
-          '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '">Go back to ' + esc(c.company) + '</a></div>';
+          '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '">Role</a></div>';
       }
       return '<div class="bf-qs">' + (q.likely || []).map(function (x) {
         return '<div class="bf-q">' +
@@ -138,7 +133,7 @@
           }).join('') + '</ul>'
         : '') +
       '<button class="btn btn-secondary btn-sm mt3" id="gen-q">' +
-        (AI.ready() ? 'Work them out with Claude' : 'Work them out again') + '</button>';
+        (AI.ready() ? 'Redo with Claude' : 'Redo') + '</button>';
     }
 
     /* ---------------- the dashboard ---------------- */
@@ -213,23 +208,23 @@
       if (busy) return;
       busy = true;
       el.disabled = true;
-      el.textContent = 'Working them out…';
+      el.textContent = 'Working…';
       if (!AI.ready()) {
         Store.setQuestions(c.id, Store.questionsLocally(c));
         busy = false;
         paintQ();
-        UI.toast('From the listing and your gaps. Claude does this properly.');
+        UI.toast('Done.');
         return;
       }
       AI.interviewPrep(c).then(function (q) {
         q.source = 'claude';
         Store.setQuestions(c.id, q);
         paintQ();
-        UI.toast((q.likely || []).length + ' questions, with what you already have to answer them.');
+        UI.toast((q.likely || []).length + ' questions.');
       }).catch(function (err) {
         Store.setQuestions(c.id, Store.questionsLocally(c));
         paintQ();
-        UI.toast('Claude could not (' + err.message + '). Fell back to the listing.');
+        UI.toast('Claude could not (' + err.message + ').');
       }).then(function () { busy = false; });
     });
 
@@ -237,7 +232,7 @@
     v.querySelector('#booked').addEventListener('click', function () {
       Store.setBooked(c.id, !c.booked);
       if (c.booked) {
-        UI.cheerOnce(c.id, 'booked', { title: 'Interview booked', line: 'Everything on this page is for that room.' });
+        UI.cheerOnce(c.id, 'booked', { title: 'Interview booked' });
       }
       Views.brief(params);
     });
