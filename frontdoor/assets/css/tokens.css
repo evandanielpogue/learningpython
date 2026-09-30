@@ -23,9 +23,9 @@
 
 :root {
   /* ---- surfaces ------------------------------------------------------- */
-  --bg:            #F7F7F8;   /* app canvas */
+  --bg:            #F4F5F7;   /* app canvas */
   --panel:         #FFFFFF;   /* cards, sheets, inputs */
-  --sunk:          #F1F2F4;   /* wells, hovers, secondary fills */
+  --sunk:          #F0F1F4;   /* wells, hovers, secondary fills */
   --sunk-2:        #E9EAED;   /* pressed / heavier wells */
   --overlay:       rgba(17, 18, 21, .38);
 
@@ -36,6 +36,17 @@
   --ink-4:         var(--ink-3);   /* retired: one quiet ink, alias kept so nothing breaks */
   --ink-faint:     #B0B4BD;   /* NEVER text. Separators, dots, strike-through rules. */
   --ink-inv:       #FFFFFF;
+
+  /* ---- the rail: the one dark surface, so the app has a frame -------- */
+  --rail:          #15181D;
+  --rail-2:        #1F232A;   /* hover, the open company */
+  --rail-3:        #282D35;   /* pressed */
+  --rail-line:     rgba(255, 255, 255, .08);
+  --rail-line-2:   rgba(255, 255, 255, .16);
+  --rail-ink:      #F2F3F5;
+  --rail-ink-2:    #A2A8B3;   /* 6.9:1 on the rail */
+  --rail-brand:    #E3823B;   /* copper lifted for a dark ground, 6.2:1 */
+  --rail-pos:      #3FBF8A;
 
   /* ---- lines ---------------------------------------------------------- */
   --line:          #E6E7EA;
@@ -95,12 +106,12 @@
   --s-6: 24px; --s-7: 32px; --s-8: 40px; --s-9: 56px; --s-10: 72px;
 
   /* ---- radius: overlays sit higher than cards ------------------------- */
-  --r-1: 6px;  --r-2: 8px;  --r-3: 10px; --r-4: 14px; --r-5: 18px;
+  --r-1: 6px;  --r-2: 8px;  --r-3: 12px; --r-4: 16px; --r-5: 20px;
   --r-full: 999px;
 
   /* ---- elevation: tight, downward, single direction -------------------- */
-  --e-1: 0 1px 2px rgba(17, 18, 21, .05);
-  --e-2: 0 1px 3px rgba(17, 18, 21, .07), 0 1px 2px rgba(17, 18, 21, .04);
+  --e-1: 0 1px 2px rgba(17, 18, 21, .04);
+  --e-2: 0 1px 2px rgba(17, 18, 21, .05), 0 2px 6px rgba(17, 18, 21, .04);
   --e-3: 0 4px 12px rgba(17, 18, 21, .07), 0 1px 3px rgba(17, 18, 21, .05);
   --e-4: 0 12px 32px rgba(17, 18, 21, .12), 0 2px 8px rgba(17, 18, 21, .06);
   --e-5: 0 24px 64px rgba(17, 18, 21, .18), 0 4px 12px rgba(17, 18, 21, .08);
@@ -118,21 +129,21 @@
   --t-6: 1100ms;  /* a moment that is meant to be noticed */
 
   /* ---- type ------------------------------------------------------------ */
-  --ui:   'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ui:   'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
   --fs-2xs:  10.5px;
   --fs-xs:   11.5px;
   --fs-sm:   12.5px;
-  --fs-base: 13.75px;
-  --fs-md:   15px;
-  --fs-lg:   17px;
-  --fs-xl:   21px;
-  --fs-2xl:  27px;
-  --fs-3xl:  34px;
+  --fs-base: 13.5px;
+  --fs-md:   14.5px;
+  --fs-lg:   16.5px;
+  --fs-xl:   20px;
+  --fs-2xl:  24px;
+  --fs-3xl:  30px;
 
   /* ---- layout ---------------------------------------------------------- */
-  --sidebar: 244px;
-  --topbar:  56px;
+  --sidebar: 240px;
+  --topbar:  52px;
   --measure: 66ch;
 }

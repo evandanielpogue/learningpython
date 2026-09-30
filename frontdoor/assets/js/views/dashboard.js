@@ -18,6 +18,34 @@
   }
   window.Views.ringSVG = ringSVG;
 
+  /* a company gets a colour from its name and keeps it, so the same card
+     reads the same on the board, in the rail and on its own screen */
+  var HUES = ['--p-manager', '--p-peer', '--p-recruiter', '--p-tie', '--brand', '--p-exec'];
+  function monogram(name, size) {
+    var n = String(name || '').trim();
+    var h = 0;
+    for (var i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0;
+    var words = n.split(/\s+/).filter(Boolean);
+    var ini = words.length > 1 ? (words[0][0] + words[1][0]) : n.slice(0, 2);
+    return '<span class="pmono" aria-hidden="true" style="background:var(' + HUES[h % HUES.length] + ')' +
+      (size ? ';width:' + size + 'px;height:' + size + 'px' : '') + '">' + esc(ini.toUpperCase()) + '</span>';
+  }
+  window.Views.monogram = monogram;
+
+  /* one confirm, wherever a company is removed from */
+  window.Views.removeCompany = function (c) {
+    return UI.confirm({
+      title: (c.example ? 'Remove example ' : 'Remove ') + c.company + '?',
+      body: 'The people, the touches, the research and your stories go with it. This cannot be undone.',
+      confirm: c.example ? 'Remove example' : 'Remove', danger: true
+    }).then(function (ok) {
+      if (!ok) return false;
+      Store.removeCampaign(c.id);
+      UI.toast(c.company + ' removed.');
+      return true;
+    });
+  };
+
   function nextUp(c) {
     var s = c.steps.filter(function (x) { return x.status === 'due'; })[0] ||
             c.steps.filter(function (x) { return x.status === 'queued'; })[0];
@@ -43,25 +71,26 @@
       var next = Store.nextAction(c);
       var due = c.steps.filter(function (s) { return s.status === 'due'; }).length;
       var pr = Store.phaseProgress(c);
-      return '<div class="pcard' + (due ? ' pcard-due' : '') + '">' +
+      return '<div class="pcard' + (due ? ' pcard-due' : '') + '" data-card="' + c.id + '">' +
         /* the card opens the company, not the step: the column already says
            which step it is on, and the company screen carries the strip and
            the next action */
         '<a class="pcard-id" href="#/c/' + c.id + '"' +
-          ' title="' + esc(c.company + (next.done ? '' : ' \u2014 next: ' + next.label)) + '">' +
-          '<b>' + esc(c.company) + (c.example ? ' <span class="chip chip-xs">Example</span>' : '') + '</b>' +
-          '<span class="pcard-role">' + esc(c.role || 'None') + '</span></a>' +
+          ' title="' + esc(c.company + (next.done ? '' : ' — next: ' + next.label)) + '">' +
+          Views.monogram(c.company) +
+          '<span><b>' + esc(c.company) + (c.example ? ' <span class="chip chip-xs">Example</span>' : '') + '</b>' +
+          '<span class="pcard-role">' + esc(c.role || 'None') + '</span></span></a>' +
+        '<button class="icon-btn pcard-more" data-more="' + c.id + '" aria-haspopup="menu" aria-expanded="false"' +
+          ' aria-label="More for ' + esc(c.company) + '" title="More">' + Icon.svg('more', 15) + '</button>' +
+        '<span class="pbar" aria-label="' + pr.done + ' of ' + pr.total + ' steps done">' +
+          Store.phases(c).map(function (st) {
+            return '<i class="' + (st.done ? 'on' : st.now ? 'here' : '') + '"></i>';
+          }).join('') + '</span>' +
         '<div class="pcard-foot">' +
-          '<span class="pcard-dots" aria-label="' + pr.done + ' of ' + pr.total + ' steps done">' +
-            Store.phases(c).map(function (st) {
-              return '<i class="pdot' + (st.done ? ' on' : st.now ? ' here' : '') + '"></i>';
-            }).join('') + '</span>' +
-          (next.done ? '' : '<a class="pcard-next linkish" href="#' + next.href + '">' + esc(next.label) + ' \u2192</a>') +
+          (next.done ? '' : '<a class="pcard-next" href="#' + next.href + '">' + esc(next.label) + ' <span class="arr">→</span></a>') +
           (due ? '<span class="chip chip-accent">' + due + ' due</span>'
                : c.replies ? '<span class="chip chip-pos">' + c.replies + ' replied</span>'
                : '<span class="pcard-day">Day ' + c.day + '</span>') +
-          '<button class="icon-btn opp-x" data-drop="' + c.id + '" aria-label="' + (c.example ? 'Remove example ' : 'Remove ') + esc(c.company) + '" ' +
-            'title="' + (c.example ? 'Remove example' : 'Remove') + '">' + Icon.svg('close', 13) + '</button>' +
         '</div></div>';
     }
 
@@ -134,21 +163,20 @@
       html: html
     });
 
-    UI.on(v, 'click', '[data-drop]', function (e, el) {
+    UI.on(v, 'click', '[data-more]', function (e, el) {
       e.preventDefault();
       e.stopPropagation();
-      var c = Store.campaign(el.dataset.drop);
+      var c = Store.campaign(el.dataset.more);
       if (!c) return;
-      UI.confirm({
-        title: (c.example ? 'Remove example ' : 'Remove ') + c.company + '?',
-        body: 'The people, the touches, the research and your stories go with it. This cannot be undone.',
-        confirm: c.example ? 'Remove example' : 'Remove', danger: true
-      }).then(function (ok) {
-        if (!ok) return;
-        Store.removeCampaign(c.id);
-        Views.home();
-        UI.toast(c.company + ' removed.');
-      });
+      el.setAttribute('aria-expanded', 'true');
+      UI.menu(el, [
+        { key: 'open', icon: '→', label: 'Open', run: function () { Router.go('/c/' + c.id); } },
+        { key: 'next', icon: '→', label: Store.nextAction(c).label, run: function () { Router.go(Store.nextAction(c).href); } },
+        { sep: true },
+        { key: 'drop', icon: '✕', label: c.example ? 'Remove example' : 'Remove', danger: true, run: function () {
+          Views.removeCompany(c).then(function (ok) { if (ok) Views.home(); });
+        } }
+      ]);
     });
     UI.on(v, 'click', '#go-import', function () { Router.go('/import'); });
     UI.on(v, 'click', '#go-demo', function () {

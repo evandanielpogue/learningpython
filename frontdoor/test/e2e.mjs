@@ -584,7 +584,7 @@ await group('Brand, icons and tips', async (page) => {
        tokens.css should move this, not break it */
     const [c, want] = await page.evaluate(() => {
       const probe = document.createElement('span');
-      probe.style.color = getComputedStyle(document.documentElement).getPropertyValue('--ac').trim();
+      probe.style.color = getComputedStyle(document.documentElement).getPropertyValue('--rail-brand').trim();
       document.body.appendChild(probe);
       const resolved = getComputedStyle(probe).color;
       probe.remove();
@@ -2329,11 +2329,12 @@ await group('Overview', async (page) => {
     if (!names.some(t => t.includes('Acme'))) throw new Error('Acme missing: ' + names.join(','));
   });
   await step('each company shows its own progress', async () => {
-    const dots = await page.locator('.pcard').first().locator('.pdot').count();
-    if (dots !== 5) throw new Error(dots + ' dots on the card');
+    const dots = await page.locator('.pcard').first().locator('.pbar i').count();
+    if (dots !== 5) throw new Error(dots + ' segments on the card');
     const here = await page.evaluate(() =>
-      document.querySelector('.pcard').querySelectorAll('.pdot.here').length);
-    if (here > 1) throw new Error(here + ' dots claim to be the current step');
+      document.querySelector('.pcard').querySelectorAll('.pbar i.here').length);
+    if (here > 1) throw new Error(here + ' segments claim to be the current step');
+    if (!(await page.locator('.pcard .pmono').first().count())) throw new Error('no monogram on the card');
   });
   await step('a company sits in the column of the step it is on', async () => {
     const out = await page.evaluate(() => {
@@ -2896,7 +2897,9 @@ await group('Naming, the coach and the sequence', async (page) => {
     const ex = await page.evaluate(() => !!Store.campaign('c_acme').example);
     if (!ex) return;
     if (!(await page.locator('.pcard .chip', { hasText: 'Example' }).count())) throw new Error('no Example chip');
-    await page.locator('.pcard [data-drop]').first().click();
+    await page.locator('.pcard [data-more]').first().click();
+    await page.waitForSelector('.menu', { timeout: 3000 });
+    await page.locator('.menu button.danger').first().click();
     await page.waitForSelector('.modal', { timeout: 3000 });
     const t = await page.evaluate(() => document.body.innerText);
     if (!/Remove example \w+\?/.test(t)) throw new Error('confirm does not name the example');

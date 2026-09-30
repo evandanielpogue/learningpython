@@ -400,8 +400,18 @@
     var v = Shell.mount({
       nav: 'opp',
       crumbs: [{ label: 'Overview', href: '/' }, { label: c.company }],
-      actions: '<span class="chip">Day ' + c.day + '</span>',
+      actions: '<span class="chip">Day ' + c.day + '</span>' +
+        '<button class="icon-btn" id="co-more" aria-haspopup="menu" aria-label="More for ' + esc(c.company) + '" title="More">' + Icon.svg('more', 16) + '</button>',
       html: html
+    });
+
+    var more = document.getElementById('co-more');
+    if (more) more.addEventListener('click', function () {
+      UI.menu(this, [
+        { key: 'drop', icon: '\u2715', label: c.example ? 'Remove example' : 'Remove ' + c.company, danger: true, run: function () {
+          Views.removeCompany(c).then(function (ok) { if (ok) Router.go('/'); });
+        } }
+      ]);
     });
 
     UI.on(v, 'click', '[data-step]', function (e, el) {

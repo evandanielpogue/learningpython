@@ -192,6 +192,9 @@
       });
       items.push({ sep: true });
       items.push({ key: 'add', icon: '+', label: 'Add a company', run: function () { Router.go('/new'); } });
+      items.push({ key: 'drop', icon: '\u2715', label: (c.example ? 'Remove example' : 'Remove ') + (c.example ? '' : c.company), danger: true, run: function () {
+        Views.removeCompany(c).then(function (ok) { if (ok) Router.go('/'); });
+      } });
       UI.menu(this, items);
     });
   }

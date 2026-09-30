@@ -122,7 +122,7 @@
 
       '<div class="card p6">' +
         '<h3 class="mb2">Type</h3>' +
-        '<p class="dim mb5" style="font-size:var(--fs-sm)">Instrument Sans for everything you read, JetBrains Mono for anything you would copy: numbers, ids, drafts, keys.</p>' +
+        '<p class="dim mb5" style="font-size:var(--fs-sm)">Inter for everything you read, JetBrains Mono for anything you would copy: numbers, ids, drafts, keys.</p>' +
         '<p style="font-size:var(--fs-3xl);letter-spacing:-.035em;font-weight:680;line-height:1.1">Five people, ten touches</p>' +
         '<p style="font-size:var(--fs-lg);color:var(--ink-2);margin-top:var(--s-3)">One company at a time, worked properly.</p>' +
         '<p class="mono mt4" style="font-size:var(--fs-sm);color:var(--ink-2)">112% · $1.2M · 30→70 · day 3 of 14</p>' +
