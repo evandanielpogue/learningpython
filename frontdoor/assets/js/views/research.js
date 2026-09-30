@@ -161,7 +161,6 @@
     UI.on(v, 'click', '[data-sub]', function (e, el) { tab = el.dataset.sub; paint(); });
     UI.on(v, 'click', '[data-use]', function (e, el) {
       c.pendingInsert = el.dataset.use;
-      Store.completeTask(c.id, 't4');
       Store.save();
       UI.toast('Dropped into your draft.');
       Router.go('/c/' + c.id + '/sequence');

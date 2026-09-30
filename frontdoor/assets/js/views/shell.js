@@ -10,11 +10,10 @@
      collapsed rail, where the label is hidden and an icon alone is a guess. */
   var NAV = [
     { group: 'Workspace', items: [
-      { key: 'home', icon: 'overview', label: 'Overview', href: '/', hint: 'every company you are working', sc: 'G then O' }
+      { key: 'home', icon: 'overview', label: 'Overview', href: '/', sc: 'G then O' }
     ] },
-    { group: 'Library', items: [
-      { key: 'templates', icon: 'templates', label: 'Templates', href: '/templates', hint: 'messages you reuse across steps', sc: 'G then T' },
-      { key: 'settings',  icon: 'settings', label: 'Settings',  href: '/settings', hint: 'your name, photo and history' }
+    { group: 'Account', items: [
+      { key: 'settings',  icon: 'settings', label: 'Settings',  href: '/settings', sc: 'G then S' }
     ] }
   ];
 
@@ -23,7 +22,7 @@
   var OF_STAGE = {
     opp: 'role', prep: 'story', page: 'story',
     people: 'people', research: 'people',
-    sequence: 'outreach', brief: 'interview'
+    sequence: 'outreach', templates: 'outreach', brief: 'interview'
   };
 
   function tip(n) {
@@ -79,11 +78,9 @@
     document.getElementById('side-search').addEventListener('click', UI.openPalette);
     document.getElementById('user-btn').addEventListener('click', function () {
       UI.menu(this, [
-        { key: 'settings', icon: '⚙', label: 'Settings', run: function () { Router.go('/settings'); } },
-        { key: 'help', icon: '?', label: 'How this works', run: function () { UI.toast('Five people, ten touches, fourteen days.'); } },
-        { sep: true },
-        { key: 'reset', icon: '↺', label: 'Reset the demo', run: function () {
-          UI.confirm({ title: 'Clear everything?', body: 'This wipes the campaign and the profile out of this browser and drops you back at the sign in screen.', confirm: 'Clear it', danger: true })
+
+        { key: 'reset', icon: '↺', label: 'Clear all data', run: function () {
+          UI.confirm({ title: 'Clear all data?', body: 'Every company, your profile and your sign-in are deleted. This cannot be undone.', confirm: 'Clear', danger: true })
             .then(function (ok) { if (ok) { Store.reset(); Router.go('/login'); location.reload(); } });
         } },
         { key: 'out', icon: '→', label: 'Sign out', danger: true, run: function () { Store.signOut(); Router.go('/login'); } }
@@ -103,8 +100,7 @@
         : String(st.n);
       return '<a class="nav-item step step-' + state + (on ? ' on' : '') + '" href="#' + st.href + '"' +
           ' data-step="' + st.key + '"' + (on ? ' aria-current="page"' : '') +
-          ' title="' + esc('Step ' + st.n + ', ' + st.label + ' — ' + st.blurb +
-            (st.done ? ' (done)' : st.now ? ' (you are here)' : '')) + '">' +
+          ' title="' + esc('Step ' + st.n + ', ' + st.label + (st.done ? ' — done' : '')) + '">' +
           '<span class="step-mark" aria-hidden="true">' + mark + '</span>' +
           '<span class="nav-label">' + esc(st.label) + '</span>' +
           (st.part && st.part.total > 1 && !st.done
@@ -123,8 +119,7 @@
 
   function switcherHTML(c) {
     var pr = Store.phaseProgress(c);
-    return '<button class="switch" id="co-switch" title="' +
-        esc(c.company + ' — step ' + Math.min(pr.done + 1, pr.total) + ' of ' + pr.total + '. Click to swap company') + '">' +
+    return '<button class="switch" id="co-switch" title="' + esc(c.company) + '">' +
       '<span class="switch-ring">' + UI.ringHTML(pr.done, pr.total, 26) + '</span>' +
       '<span class="switch-main"><span class="switch-co">' + esc(c.company) + '</span>' +
       '<span class="switch-role">' + esc(c.role || 'No role') + '</span></span>' +
@@ -141,14 +136,14 @@
         '<span class="nav-label">' + esc(n.label) + '</span></a>';
     }).join('');
 
-    var html = '<div class="nav-group"><p class="cap nav-group-label">Workspace</p>' + out + '</div>';
+    var html = '<div class="nav-group">' + out + '</div>';
 
     if (c) {
       html += '<div class="nav-group nav-steps">' + switcherHTML(c) +
               stepsHTML(c, activeKey) + '</div>';
     }
 
-    html += '<div class="nav-group"><p class="cap nav-group-label">Library</p>' +
+    html += '<div class="nav-group nav-foot">' +
       NAV[1].items.map(function (n) {
         return '<a class="nav-item" href="#' + n.href + '" data-key="' + n.key + '"' +
           ' title="' + esc(tip(n)) + '"' + (n.key === activeKey ? ' aria-current="page"' : '') + '>' +
@@ -189,7 +184,7 @@
     if (!c) { host.innerHTML = ''; host.className = ''; return; }
 
     var steps = Store.phases(c);
-    var next = Store.nextAction(c);
+    var next = Store.nextAction(c, here);
     host.className = 'stepbar';
     host.innerHTML =
       '<nav class="track track-slim" aria-label="Where you are">' + steps.map(function (st, i) {
@@ -203,12 +198,12 @@
         return (i ? '<span class="tline' + (steps[i - 1].done ? ' done' : '') + '"></span>' : '') +
           '<a class="tnode t-' + state + (on ? ' t-here' : '') + '" href="#' + st.href + '"' +
             (on ? ' aria-current="step"' : '') +
-            ' title="' + esc('Step ' + st.n + ', ' + st.label + ' \u2014 ' + st.blurb) + '">' +
+            ' title="' + esc('Step ' + st.n + ', ' + st.label) + '">' +
             '<span class="tdot">' + mark + '</span>' +
             '<span class="tlab">' + esc(st.label) + '</span></a>';
       }).join('') + '</nav>' +
       (next.done
-        ? '<span class="stepbar-next done">All five done</span>'
+        ? '<span class="stepbar-next done">Done</span>'
         : '<a class="stepbar-next" href="#' + next.href + '">Next: ' + esc(next.label) +
           ' <span class="arr">\u2192</span></a>');
   }

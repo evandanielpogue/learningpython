@@ -59,7 +59,7 @@
       if (notFound) notFound(path);
       return;
     }
-    if (!m.route.publicRoute && !authed) { Router.go('/login', true); return; }
+    if (!m.route.publicRoute && !authed) { Router.go(window.Store.hasAccount() ? '/login' : '/signup', true); return; }
     if (m.route.publicRoute && authed && (path === '/login' || path === '/signup')) { Router.go('/', true); return; }
 
     m.route.handler(m.params, path);
@@ -67,7 +67,7 @@
 
   Router.start = function () {
     window.addEventListener('hashchange', Router.resolve);
-    if (!window.location.hash) Router.go(window.Store.isAuthed() ? '/' : '/login', true);
+    if (!window.location.hash) Router.go(window.Store.isAuthed() ? '/' : (window.Store.hasAccount() ? '/login' : '/signup'), true);
     else Router.resolve();
   };
 

@@ -69,6 +69,9 @@ async function step(label, fn) {
    that want a populated workspace ask for the example explicitly. */
 const signIn = async (page, demo = true) => {
   await page.goto(BASE, { waitUntil: 'networkidle' });
+  /* a fresh browser lands on Create account; the fields ship empty */
+  if (await page.locator('#f-name').count()) await page.fill('#f-name', 'Evan Pogue');
+  await page.fill('#f-email', 'evan@example.com');
   await page.fill('#f-pass', 'demo1234');
   await page.click('#f-submit');
   await page.waitForSelector('.shell', { timeout: 6000 });
@@ -100,7 +103,9 @@ await group('Auth', async (page) => {
   await step('login renders with the aside', async () => {
     await page.goto(BASE, { waitUntil: 'networkidle' });
     await page.waitForSelector('#auth-form', { timeout: 5000 });
-    if (!(await page.locator('.auth-aside blockquote').count())) throw new Error('no aside');
+    /* the aside states what the product does; it never quotes anyone */
+    if (!(await page.locator('.auth-aside .auth-steps li').count())) throw new Error('no aside');
+    if (await page.locator('.auth-aside blockquote').count()) throw new Error('a testimonial is back');
   });
   await step('short password is rejected', async () => {
     await page.fill('#f-pass', 'abc');
@@ -128,7 +133,8 @@ await group('Route guard', async (page) => {
     await page.goto(BASE + '#/c/c_acme/sequence', { waitUntil: 'networkidle' });
     await page.waitForSelector('#auth-form', { timeout: 5000 });
     const h = await page.evaluate(() => location.hash);
-    if (h !== '#/login') throw new Error('hash=' + h);
+    /* a browser that has never held an account is sent to Create account */
+    if (h !== '#/signup' && h !== '#/login') throw new Error('hash=' + h);
   });
 });
 
@@ -382,12 +388,11 @@ await group('The model in the rest of the app', async (page) => {
 await group('Reading the posting from its link', async (page) => {
   await page.addInitScript(STUB);
   await signIn(page);
-  await step('without a model it says why, and does not pretend', async () => {
+  await step('without a model there is no link row to fail at', async () => {
     await page.goto(BASE + '#/new', { waitUntil: 'networkidle' });
-    await page.waitForSelector('#post-url', { timeout: 5000 });
-    if (!(await page.locator('#post-get').isDisabled())) throw new Error('offered to fetch with no model');
-    const t = await page.locator('#post-msg').textContent();
-    if (!/not allowed to read another/.test(t)) throw new Error('no explanation: ' + t);
+    await page.waitForSelector('#listing', { timeout: 5000 });
+    if (await page.locator('#post-url').count()) throw new Error('a link field is offered with nothing to read it');
+    if (await page.locator('.lookup-msg').count()) throw new Error('an error is showing before anything happened');
   });
   await step('with a model, a link fills the listing box', async () => {
     await page.evaluate(() => { window.__useKey(); window.__calls = []; });
@@ -417,7 +422,7 @@ await group('Reading the posting from its link', async (page) => {
     await page.waitForSelector('.agitem', { timeout: 10000 });
     const id = await page.evaluate(() => Store.campaigns()[0].id);
     await page.goto(BASE + '#/c/' + id, { waitUntil: 'networkidle' });
-    await page.waitForSelector('.task', { timeout: 6000 });
+    await page.waitForSelector('.matchlist, .card', { timeout: 6000 });
     const c = await page.evaluate(() => Store.campaigns()[0]);
     if (c.company !== 'Acme') throw new Error('company: ' + c.company);
     if (c.postingUrl !== 'https://jobs.example.com/ae') throw new Error('link not kept: ' + c.postingUrl);
@@ -552,10 +557,10 @@ await group('Prep, the conversation that fills the gaps', async (page) => {
     const stories = await page.evaluate(() => Store.stories(Store.campaign('c_acme')).map(s => s.text));
     if (!stories.some(t => /SMB pod/.test(t))) throw new Error('not banked: ' + stories.join(' | '));
   });
-  await step('prep is in the sidebar and on the checklist', async () => {
+  await step('story is a step in the rail, and the answer moved it', async () => {
     if (!(await page.locator('.nav-item[data-step="story"]').count())) throw new Error('no step in the rail');
-    const done = await page.evaluate(() => Store.campaign('c_acme').tasks.filter(t => t.id === 't7')[0].on);
-    if (!done) throw new Error('checklist not ticked');
+    const part = await page.evaluate(() => Store.phases(Store.campaign('c_acme')).filter(p => p.key === 'story')[0].part);
+    if (!part.done) throw new Error('the saved story did not count: ' + JSON.stringify(part));
   });
 });
 
@@ -1219,7 +1224,6 @@ await group('The questions are worked out, not listed', async (page) => {
     await page.waitForSelector('.bf-panel', { timeout: 6000 });
     const n = await page.locator('.bf-q').count();
     if (!n) throw new Error('no questions on first open');
-    if (!(await page.locator('.bf-src-note').count())) throw new Error('it does not say where they came from');
   });
 
   await step('a listing line that is an instruction is not read as a noun', async () => {
@@ -1804,12 +1808,12 @@ await group('No narration', async (page) => {
     if (bad.length) throw new Error(bad.join(' | '));
   });
 
-  await step('a checklist item is the thing to do, not a description of it', async () => {
+  await step('there is no hand-ticked checklist anywhere', async () => {
     await page.goto(BASE + '#/c/c_acme', { waitUntil: 'networkidle' });
-    await page.waitForSelector('.task', { timeout: 5000 });
-    const subs = await page.evaluate(() =>
-      [...document.querySelectorAll('.task .tt em')].map(e => e.textContent.trim()).filter(Boolean));
-    if (subs.length) throw new Error(subs.join(' | '));
+    await page.waitForSelector('.matchlist, .card', { timeout: 5000 });
+    if (await page.locator('.task').count()) throw new Error('a checklist is back');
+    const tasks = await page.evaluate(() => Store.campaign('c_acme').tasks);
+    if (tasks) throw new Error('c.tasks is still stored');
   });
 
   await step('a small label is a label, not a sentence', async () => {
@@ -1883,9 +1887,9 @@ await group('The five steps', async (page) => {
       Store.buildAgenda('c_acme');
       const c = JSON.parse(JSON.stringify(Store.campaign('c_acme')));
       c.agenda.forEach(a => { a.done = true; a.text = 'x'; });
-      c.contacts = c.contacts.length ? c.contacts : [{ id: 'x1' }, { id: 'x2' }, { id: 'x3' }];
-      c.sent = 1; c.replies = 1;
-      c.questions = { likely: [{ question: 'q' }] };
+      c.contacts = [{ id: 'x1', name: 'A' }, { id: 'x2', name: 'B' }, { id: 'x3', name: 'C' }];
+      c.steps.forEach(st => { st.status = 'sent'; });
+      c.booked = true;
       return { now: Store.phaseNow(c), next: Store.nextAction(c), pr: Store.phaseProgress(c) };
     });
     if (out.now) throw new Error('still says you are on ' + out.now.label);
@@ -1963,8 +1967,9 @@ await group('The five steps', async (page) => {
 
   await step('every step screen carries the strip, and no other screen does', async () => {
     const on = ['c/c_acme', 'c/c_acme/prep', 'c/c_acme/page', 'c/c_acme/people',
-                'c/c_acme/research', 'c/c_acme/sequence', 'c/c_acme/brief'];
-    const off = ['', 'templates', 'settings'];
+                'c/c_acme/research', 'c/c_acme/sequence', 'c/c_acme/brief', 'templates'];
+    /* Templates lives under Outreach now, so it carries the strip too */
+    const off = ['', 'settings'];
     for (const r of on) {
       await page.goto(BASE + '#/' + r, { waitUntil: 'networkidle' });
       await page.waitForTimeout(240);
@@ -2226,16 +2231,16 @@ await group('Cold start, all the way through', async (page) => {
     await page.waitForSelector('.agitem', { timeout: 8000 });
     const id = await page.evaluate(() => Store.campaigns()[0].id);
     await page.goto(BASE + '#/c/' + id, { waitUntil: 'networkidle' });
-    await page.waitForSelector('.task', { timeout: 6000 });
+    await page.waitForSelector('.matchlist, .card', { timeout: 6000 });
     const c = await page.evaluate(() => Store.campaigns()[0]);
     if (c.company !== 'Acme') throw new Error('company: ' + c.company);
     if (c.contacts.length) throw new Error('contacts appeared from nowhere');
     if (c.suggested.length !== 3) throw new Error(c.suggested.length + ' suggested');
     if (c.steps.length) throw new Error('a sequence appeared from nowhere');
   });
-  await step('the summary asks for contacts before a sequence', async () => {
-    const t = await page.locator('.card', { hasText: 'Next' }).first().textContent();
-    if (!/Add contacts/.test(t)) throw new Error('no prompt: ' + t.slice(0, 80));
+  await step('the strip points at Story, then People', async () => {
+    const t = await page.locator('.stepbar-next').textContent();
+    if (!/Next: Story/.test(t)) throw new Error('strip says ' + t);
   });
   await step('the three suggestions can all be added', async () => {
     const id = await page.evaluate(() => Store.campaigns()[0].id);
@@ -2342,24 +2347,16 @@ await group('Overview', async (page) => {
   });
   await step('a company opens its own summary', async () => {
     await page.locator('.pcard-id').first().click();
-    await page.waitForSelector('.task', { timeout: 5000 });
-    if (!(await page.locator('h1').first().textContent()).includes('Acme')) throw new Error('not the Acme summary');
+    await page.waitForSelector('.matchlist, .card', { timeout: 5000 });
+    if (!(await page.locator('.role-line').textContent()).includes('Acme')) throw new Error('not the Acme role screen');
   });
-  await step('the checklist belongs to that company', async () => {
-    const before = await page.locator('#ring-label').textContent();
-    await page.locator('.task[aria-pressed="false"]').first().click();
-    await page.waitForTimeout(220);
-    const after = await page.locator('#ring-label').textContent();
-    if (before === after) throw new Error('ring did not move: ' + after);
-    const saved = await page.evaluate(() => Store.campaign('c_acme').tasks.filter(t => t.on).length);
-    if (!saved) throw new Error('not persisted on the campaign');
-  });
-  await step('suggested people can be added from the summary', async () => {
-    const n0 = await page.evaluate(() => Store.campaign('c_acme').contacts.length);
-    await page.locator('[data-take]').first().click();
-    await page.waitForTimeout(320);
-    const n1 = await page.evaluate(() => Store.campaign('c_acme').contacts.length);
-    if (n1 !== n0 + 1) throw new Error(n0 + ' -> ' + n1);
+  await step('Role shows the match, requirement by requirement', async () => {
+    const rows = await page.locator('.matchlist .matchrow').count();
+    const want = await page.evaluate(() => Store.campaign('c_acme').match.length);
+    if (rows !== want) throw new Error(rows + ' rows for ' + want + ' requirements');
+    const gaps = await page.locator('.mr-gap').count();
+    const wantGaps = await page.evaluate(() => Store.matchScore(Store.campaign('c_acme')).gaps.length);
+    if (gaps !== wantGaps) throw new Error(gaps + ' gaps shown, ' + wantGaps + ' real');
   });
 });
 
@@ -2825,7 +2822,7 @@ await group('Mobile, 390px', async (page) => {
     if (m.w > 70) throw new Error('rail did not collapse (w=' + m.w + ')');
     if (m.h < 600) throw new Error('rail is not full height (h=' + m.h + ')');
     if (m.hidden !== 'none') throw new Error('labels still showing on the rail');
-    if (m.n < 8) throw new Error('only ' + m.n + ' nav items');
+    if (m.n < 7) throw new Error('only ' + m.n + ' nav items');
     if (!m.labelled) throw new Error('a rail icon has no tooltip');
   });
   await step('the builder is usable narrow', async () => {

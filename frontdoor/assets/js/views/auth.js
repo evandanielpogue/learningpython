@@ -7,18 +7,19 @@
 
   var esc = UI.esc;
 
+  /* No testimonial and no statistics: this product has not shipped, so it
+     has neither. The aside says what the product does, in the order it
+     does it, and nothing it cannot stand behind. */
   function aside() {
+    var steps = ['Role', 'Story', 'People', 'Outreach', 'Interview'];
     return '' +
       '<aside class="auth-aside">' +
-        '<blockquote>"I stopped applying to forty companies and picked four. Two of them called me back in the same week."</blockquote>' +
-        '<div class="by"><span class="avatar avatar-md" style="background:var(--p-recruiter)">RT</span>' +
-          '<span><b style="color:var(--ink)">Rachel Tam</b><br>Enterprise AE, hired at Segment</span></div>' +
-        '<hr class="divider">' +
-        '<div class="stat-row">' +
-          '<div><b>8&times;</b><span>More likely to be hired than an inbound applicant</span></div>' +
-          '<div><b>242</b><span>Applications the average opening now gets</span></div>' +
-          '<div><b>5</b><span>People per company. That is the whole method</span></div>' +
-        '</div>' +
+        '<div class="auth-mark">' + Icon.mark(40) + '</div>' +
+        '<p class="auth-line">One company at a time. In through the front.</p>' +
+        '<ol class="auth-steps">' + steps.map(function (t, i) {
+          return '<li><span class="auth-n">' + (i + 1) + '</span>' + t + '</li>';
+        }).join('') + '</ol>' +
+        '<p class="auth-local">Everything stays in this browser.</p>' +
       '</aside>';
   }
 
@@ -30,30 +31,22 @@
       '<div class="auth">' +
         '<div class="auth-main"><div class="auth-box">' +
           '<div class="brand">' + Icon.mark(26) + '<b>Frontdoor</b></div>' +
-          '<h1>' + (signup ? 'Start with one company' : 'Welcome back') + '</h1>' +
-          '<p class="sub">' + (signup
-            ? 'Pick a company you actually want to work at. We will build the rest around it.'
-            : 'Pick up where you left off.') + '</p>' +
+          '<h1>' + (signup ? 'Create account' : 'Sign in') + '</h1>' +
           '<form id="auth-form" novalidate>' +
-            (signup ? '<div class="field"><label for="f-name">Your name</label>' +
-              '<input class="input" id="f-name" value="Evan Pogue" autocomplete="name"></div>' : '') +
-            '<div class="field"><label for="f-email">Work email</label>' +
-              '<input class="input" id="f-email" type="email" value="evan@example.com" autocomplete="email" spellcheck="false"></div>' +
-            '<div class="field">' +
-              '<div class="row between"><label for="f-pass">Password</label>' +
-                (signup ? '' : '<a href="#/login" class="hint" onclick="return false">Forgot it?</a>') + '</div>' +
-              '<input class="input" id="f-pass" type="password" value="demo1234" autocomplete="current-password">' +
-              '<p class="err-txt hide" id="f-err">That password is under six characters.</p>' +
+            (signup ? '<div class="field"><label for="f-name">Name</label>' +
+              '<input class="input" id="f-name" autocomplete="name" placeholder="Your name"></div>' : '') +
+            '<div class="field"><label for="f-email">Email</label>' +
+              '<input class="input" id="f-email" type="email" autocomplete="email" spellcheck="false" placeholder="you@company.com"></div>' +
+            '<div class="field"><label for="f-pass">Password</label>' +
+              '<input class="input" id="f-pass" type="password" autocomplete="' + (signup ? 'new-password' : 'current-password') + '">' +
+              '<p class="err-txt hide" id="f-err">Six characters or more.</p>' +
             '</div>' +
             '<button class="btn btn-primary btn-lg btn-block" id="f-submit" type="submit">' +
               (signup ? 'Create account' : 'Sign in') + '</button>' +
           '</form>' +
-          '<div class="auth-alt">or</div>' +
-          '<button class="btn btn-secondary btn-lg btn-block" id="f-google">Continue with Google</button>' +
-          '<div class="demo-note">Nothing here talks to a server yet. Any email works, and the password just has to be six characters. <b>Everything you do is saved in this browser.</b></div>' +
           '<p class="auth-foot">' + (signup
             ? 'Already have an account? <a href="#/login">Sign in</a>'
-            : 'No account yet? <a href="#/signup">Create one</a>') + '</p>' +
+            : 'No account? <a href="#/signup">Create one</a>') + '</p>' +
         '</div></div>' +
         aside() +
       '</div>';
@@ -72,9 +65,9 @@
       }
       pass.classList.remove('err');
       err.classList.add('hide');
-      UI.busy(btn, 750).then(function () {
-        Store.signIn(email.value.trim());
-        UI.toast(Store.state.profile.imported ? 'Signed in.' : 'Welcome. Start with your resume.');
+      var nameEl = document.getElementById('f-name');
+      UI.busy(btn, 500).then(function () {
+        Store.signIn(email.value.trim(), nameEl ? nameEl.value.trim() : '');
         Router.go(Store.state.profile.imported ? '/' : '/import');
       });
     }
@@ -86,14 +79,6 @@
     pass.addEventListener('input', function () {
       this.classList.remove('err');
       err.classList.add('hide');
-    });
-    document.getElementById('f-google').addEventListener('click', function () {
-      var b = this;
-      UI.busy(b, 850).then(function () {
-        Store.signIn(email.value.trim());
-        UI.toast('Signed in with Google.');
-        Router.go(Store.state.profile.imported ? '/' : '/import');
-      });
     });
   }
 

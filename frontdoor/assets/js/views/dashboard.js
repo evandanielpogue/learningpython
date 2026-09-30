@@ -49,8 +49,8 @@
            the next action */
         '<a class="pcard-id" href="#/c/' + c.id + '"' +
           ' title="' + esc(c.company + (next.done ? '' : ' \u2014 next: ' + next.label)) + '">' +
-          '<b>' + esc(c.company) + '</b>' +
-          '<span class="pcard-role">' + esc(c.role || 'No role yet') + '</span></a>' +
+          '<b>' + esc(c.company) + (c.example ? ' <span class="chip chip-xs">Example</span>' : '') + '</b>' +
+          '<span class="pcard-role">' + esc(c.role || 'None') + '</span></a>' +
         '<div class="pcard-foot">' +
           '<span class="pcard-dots" aria-label="' + pr.done + ' of ' + pr.total + ' steps done">' +
             Store.phases(c).map(function (st) {
@@ -85,21 +85,19 @@
     }
 
     var html =
-      '<div class="page-head">' +
-        '<h1>' + esc(greet) + ', ' + esc(name) + '</h1>' +
-      '</div>';
+      '<div class="page-head"><h1>Overview</h1></div>';
 
     if (!imported) {
       html += '<div class="card" style="overflow:hidden"><div class="empty">' +
         '<span class="art">↑</span><h2>Start with your résumé</h2>' +
         '<button class="btn btn-primary btn-lg" id="go-import">Add your résumé <span class="arr">→</span></button>' +
-        '<p class="hint mt4">Want to look around first? <button class="linkish" id="go-demo">Load an example workspace</button></p>' +
+        '<p class="hint mt4"><button class="linkish" id="go-demo">Load an example</button></p>' +
         '</div></div>';
     } else if (!list.length) {
       html += '<div class="card" style="overflow:hidden"><div class="empty">' +
-        '<span class="art">◎</span><h2>Add your first company</h2>' +
-        '<button class="btn btn-primary btn-lg" id="go-new">Paste a job listing <span class="arr">→</span></button>' +
-        '<p class="hint mt4">Or <button class="linkish" id="go-demo">load an example workspace</button> to see a finished one.</p>' +
+        '<span class="art">◎</span><h2>Add a company</h2>' +
+        '<button class="btn btn-primary btn-lg" id="go-new">Paste a listing <span class="arr">\u2192</span></button>' +
+        '<p class="hint mt4"><button class="linkish" id="go-demo">Load an example</button></p>' +
         '</div></div>';
     } else {
       html += boardHTML(list) +
@@ -154,7 +152,7 @@
     UI.on(v, 'click', '#go-import', function () { Router.go('/import'); });
     UI.on(v, 'click', '#go-demo', function () {
       var c = Store.createSeedCampaign();
-      UI.toast('Example loaded. Acme, three days in.');
+      UI.toast('Example loaded.');
       Router.go('/c/' + c.id);
     });
     UI.on(v, 'click', '#go-new', function () { Router.go('/new'); });
@@ -184,9 +182,9 @@
               '<div class="field"><label for="s-name">Name</label><input class="input" id="s-name" value="' + esc(pf.name) + '"></div>' +
               '<div class="field"><label for="s-email">Email</label><input class="input" id="s-email" value="' + esc(u ? u.email : pf.email) + '"></div>' +
               '<div class="field"><label for="s-phone">Phone</label><input class="input" id="s-phone" value="' + esc(pf.phone) + '"></div>' +
-              '<div class="field"><label for="s-loc">Where you are</label><input class="input" id="s-loc" value="' + esc(pf.location) + '"></div>' +
+              '<div class="field"><label for="s-loc">Location</label><input class="input" id="s-loc" value="' + esc(pf.location) + '"></div>' +
             '</div>' +
-            '<div class="row mt4"><button class="btn btn-primary btn-sm" id="s-save">Save changes</button>' +
+            '<div class="row mt4"><button class="btn btn-primary btn-sm" id="s-save">Save</button>' +
             '<span class="hint" id="s-saved" style="opacity:0;transition:opacity var(--t-2)">Saved</span></div>' +
           '</div>' +
         '</div>' +
@@ -208,21 +206,20 @@
         '<h3 class="mb3">Voice</h3>' +
         (pf.voice.traits.length
           ? '<div class="row wrap g2">' + pf.voice.traits.map(function (t) { return '<span class="chip chip-accent">' + esc(t) + '</span>'; }).join('') + '</div>'
-          : '<p class="hint">Nothing read yet. Import a résumé and this fills in from how you write.</p>') +
+          : '<p class="hint">Read from your r\u00e9sum\u00e9.</p>') +
       '</div>' +
 
       '<div class="card p5 mb4">' +
-        '<h3 class="mb3">Roles</h3>' +
+        '<h3 class="mb3">R\u00e9sum\u00e9</h3>' +
         '<div class="row between wrap g3">' +
           '<span class="dim" style="font-size:var(--fs-sm)">' +
             (pf.imported ? esc(pf.source) + ' · ' + pf.roles.length + ' roles, ' + pf.wins.length + ' wins' : 'Nothing imported yet') + '</span>' +
-          '<button class="btn btn-secondary btn-sm" id="s-reimport">Import again</button>' +
+          '<button class="btn btn-secondary btn-sm" id="s-reimport">' + (pf.imported ? 'Replace' : 'Add') + '</button>' +
         '</div>' +
       '</div>' +
 
       '<div class="card p5">' +
         '<h3 class="mb3">Data</h3>' +
-        '<p class="dim mb4" style="font-size:var(--fs-sm)">Everything lives in this browser. Clearing it cannot be undone.</p>' +
         '<button class="btn btn-danger btn-sm" id="s-reset">Clear all data</button>' +
       '</div>';
 

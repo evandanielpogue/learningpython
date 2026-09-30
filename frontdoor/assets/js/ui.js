@@ -111,6 +111,8 @@
       toastHost.setAttribute('aria-atomic', 'false');
       document.body.appendChild(toastHost);
     }
+    /* one at a time: a stack of toasts is a stack of things nobody read */
+    while (toastHost.firstChild) toastHost.removeChild(toastHost.firstChild);
     var t = document.createElement('div');
     t.className = 'toast' + (kind ? ' ' + kind : '');
     t.innerHTML = '<i></i><span>' + UI.esc(msg) + '</span>';
@@ -156,6 +158,12 @@
       if (was && was.isConnected && was.focus) { try { was.focus(); } catch (e) {} }
     };
   };
+
+  UI.clearToasts = function () {
+    if (toastHost) while (toastHost.firstChild) toastHost.removeChild(toastHost.firstChild);
+  };
+  /* a toast belongs to the screen that raised it */
+  window.addEventListener('hashchange', UI.clearToasts);
 
   /* ---- modal ---------------------------------------------------------- */
   UI.confirm = function (opts) {

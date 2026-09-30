@@ -40,22 +40,20 @@
           '<div class="card p6">' +
             '<h3 class="mb2">Listing</h3>' +
 
-            '<div class="lookup">' +
-              '<span class="link-ic">\u26ad</span>' +
-              '<input class="lookup-in" id="post-url" placeholder="Link to the posting" autocomplete="off" spellcheck="false" value="' + esc(postingUrl) + '">' +
-              '<button class="btn btn-secondary btn-sm" type="button" id="post-get"' + (AI.ready() ? '' : ' disabled') + '>Read the link</button>' +
-            '</div>' +
-            '<p class="' + (AI.ready() ? 'hint' : 'lookup-msg') + ' mb4" id="post-msg" style="margin-top:var(--s-2)">' +
-              (AI.ready()
-                ? 'We read the page and drop the text below. Sites that build the listing in the browser, LinkedIn among them, will not give it up.'
-                : 'A browser is not allowed to read another site\u2019s page, so this needs a model to fetch it. <a href="#/settings">Turn one on</a>, or paste the text.') +
-            '</p>' +
-
-            '<div class="or"><span>the posting</span></div>' +
+            /* the link row exists only when something can read a link */
+            (AI.ready()
+              ? '<div class="lookup">' +
+                  '<span class="link-ic">\u26ad</span>' +
+                  '<input class="lookup-in" id="post-url" placeholder="Link to the posting" autocomplete="off" spellcheck="false" value="' + esc(postingUrl) + '">' +
+                  '<button class="btn btn-secondary btn-sm" type="button" id="post-get">Read link</button>' +
+                '</div>' +
+                '<p class="hint mb4" id="post-msg" style="margin-top:var(--s-2)"></p>' +
+                '<div class="or"><span>or</span></div>'
+              : '') +
             '<textarea class="input listing-in" id="listing" placeholder="Paste the whole posting here" spellcheck="false"></textarea>' +
             '<div class="row between wrap mt4 g3">' +
-              '<button class="btn btn-ghost btn-sm" id="use-sample">Use an example listing</button>' +
-              '<button class="btn btn-primary" id="read" disabled>Read it <span class="arr">→</span></button>' +
+              '<button class="btn btn-ghost btn-sm" id="use-sample">Use an example</button>' +
+              '<button class="btn btn-primary" id="read" disabled>Read <span class="arr">\u2192</span></button>' +
             '</div>' +
             '<div class="hide mt5" id="scan-box"><p class="cap mb3">Reading the listing</p><div id="scan"></div></div>' +
           '</div>';
@@ -129,6 +127,7 @@
       var pmsg = v.querySelector('#post-msg');
 
       function grab() {
+        if (!url) return;
         var link = url.value.trim();
         if (!link) { pmsg.className = 'lookup-msg'; pmsg.textContent = 'Paste the link first.'; return; }
         postingUrl = link;
@@ -154,7 +153,7 @@
         });
       }
       if (get && AI.ready()) {
-        get.addEventListener('click', grab);
+        if (get) get.addEventListener('click', grab);
         url.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); grab(); } });
       }
 
@@ -349,98 +348,63 @@
     if (!c) return Router.go('/', true);
     Store.touch(c.id);
 
-    var pr = Store.taskProgress(c);
     var wins = Store.campaignWins(c);
-    var upNext = c.steps.filter(function (s) { return s.status === 'due' || s.status === 'queued'; }).slice(0, 4);
-    var sugg = c.suggested || [];
+    var match = c.match || [];
+    var covered = match.filter(function (r) { return r.strength !== 'none'; }).length;
 
-    function taskList() {
-      return c.tasks.map(function (t) {
-        return '<button class="task" data-task="' + t.id + '" aria-pressed="' + t.on + '">' +
-          '<span class="tick"></span>' +
-          '<span class="tt">' + esc(t.text) + '</span>' +
-          '<span class="cap">' + (t.on ? 'Done' : 'Open') + '</span></button>';
-      }).join('');
+    /* the requirement, and the win that answers it */
+    function matchRows() {
+      if (!match.length) {
+        return '<p class="hint">No requirement list came out of the listing.</p>';
+      }
+      return '<div class="matchlist">' + match.map(function (r) {
+        var ws = (r.winIds || []).map(function (id) {
+          return Store.state.profile.wins.filter(function (w) { return w.id === id; })[0];
+        }).filter(Boolean);
+        var strength = ['strong', 'partial', 'none'].indexOf(r.strength) > -1 ? r.strength : 'none';
+        return '<div class="matchrow ' + strength + '">' +
+          '<span class="mr-dot" title="' + strength + '"></span>' +
+          '<div class="mr-ask"><b>' + esc(r.text) + '</b>' +
+            (r.priority === 'must' ? '<em class="mr-must">must have</em>' : '') +
+            (r.note ? '<p class="mr-note">' + esc(r.note) + '</p>' : '') + '</div>' +
+          '<div class="mr-with">' + (ws.length
+            ? ws.map(function (w) {
+                return '<span class="chip"><b class="mono">' + esc(w.metric) + '</b> ' + esc(w.short) + '</span>';
+              }).join('')
+            : '<span class="mr-gap">Gap</span>') + '</div>' +
+        '</div>';
+      }).join('') + '</div>';
     }
 
     var html =
       '<div class="page-head">' +
-        '<div class="row between wrap g3">' +
-          '<div><h1>' + esc(c.company) + '</h1>' +
-          '<p>' + esc(c.role) + (c.location ? ' · ' + esc(c.location) : '') +
+        '<h1>Role</h1>' +
+        '<p class="role-line">' + esc(c.company) + ' &middot; ' + esc(c.role) +
+          (c.location ? ' &middot; ' + esc(c.location) : '') +
           (/^https?:\/\//i.test(c.postingUrl || '')
-            ? ' · <a href="' + esc(c.postingUrl) + '" target="_blank" rel="noopener noreferrer">the posting \u2197</a>'
+            ? ' &middot; <a href="' + esc(c.postingUrl) + '" target="_blank" rel="noopener noreferrer">the posting \u2197</a>'
             : '') +
-          '</p></div>' +
-        '</div>' +
+        '</p>' +
       '</div>' +
 
-      '<div class="grid cols-4 mb4">' +
-        kpi('People', c.contacts.length) +
-        kpi('Touches sent', c.sent, c.steps.length) +
-        kpi('Replies', c.replies) +
-        kpi('Page opens', c.views) +
-        '</div>' +
-
       '<div class="split-wide">' +
-        '<div class="col g4">' +
-          '<div class="card p5">' +
-            '<div class="row g4" style="align-items:flex-start">' +
-              Views.ringSVG(pr.done, pr.total) +
-              '<div class="col g2 grow">' +
-                '<div class="row between wrap"><h3>Setup</h3>' +
-                '<span class="cap" id="ring-label">' + pr.done + ' of ' + pr.total + ' done</span></div>' +
-              '</div>' +
-            '</div>' +
-            '<div class="mt3" id="tasks" style="display:grid;gap:1px">' + taskList() + '</div>' +
-          '</div>' +
-
-          '<div class="card p5">' +
-            '<div class="row between mb4"><h3>Next</h3>' +
-            '<a class="btn btn-ghost btn-sm" href="#/c/' + c.id + '/sequence">Open the sequence <span class="arr">→</span></a></div>' +
-            (upNext.length
-              ? '<div class="seq">' + upNext.map(function (s) { return stepRow(c, s); }).join('') + '</div>'
-              : '<p class="dim mb4" style="font-size:var(--fs-sm)">' +
-                (c.contacts.length
-                  ? 'Nothing scheduled yet. Ten touches across your ' + c.contacts.length + ' contacts, built from your templates.'
-                  : 'Add the people we found first, then the fourteen days build around them.') + '</p>' +
-                '<a class="btn btn-primary btn-sm" href="#/c/' + c.id +
-                (c.contacts.length ? '/sequence">Build the sequence' : '/people">Add contacts') +
-                ' <span class="arr">→</span></a>') +
-          '</div>' +
+        '<div class="card p5">' +
+          '<div class="row between wrap g2 mb4"><h3>Match</h3>' +
+            '<span class="cap">' + covered + ' of ' + match.length + '</span></div>' +
+          matchRows() +
         '</div>' +
-
         '<div class="col g4">' +
           '<div class="card p5">' +
-            '<p class="cap mb3">Wins</p>' +
+            '<div class="row between wrap g2 mb3"><h3>Wins</h3><span class="cap">' + wins.length + '</span></div>' +
             (wins.length
               ? '<div class="leadwins">' + wins.map(function (w) {
                   return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
                 }).join('') + '</div>'
-              : '<p class="hint">Nothing picked yet.</p>') +
-            (c.story ? '<p class="storyline">' + esc(c.story) + '</p>' : '') +
-            '<a class="btn btn-secondary btn-sm mt4" href="#/c/' + c.id + '/page">See the page <span class="arr">→</span></a>' +
+              : '<p class="hint">None picked.</p>') +
           '</div>' +
-
-          (sugg.length
-            ? '<div class="card p5">' +
-                '<p class="cap mb2">Suggested</p>' +
-                '<div class="col g2">' + sugg.slice(0, 3).map(function (s) {
-                  return '<div class="sugg"><span class="avatar avatar-md" style="background:var(' + Store.colourFor(s.persona) + ')">' +
-                    esc(Store.initials(s.name)) + '</span>' +
-                    '<span class="grow" style="min-width:0"><b>' + esc(s.name) + '</b>' +
-                    '<em>' + esc(s.title) + '</em></span>' +
-                    '<button class="btn btn-secondary btn-sm" data-take="' + s.id + '">Add</button></div>';
-                }).join('') + '</div>' +
-                '<a class="btn btn-ghost btn-sm mt3" href="#/c/' + c.id + '/people">See all of them <span class="arr">→</span></a>' +
-              '</div>'
-            : '') +
-
-          (c.requirements.length
-            ? '<div class="card p5"><p class="cap mb3">Requirements</p>' +
-              '<ul class="ticks">' + c.requirements.slice(0, 6).map(function (r) {
-                return '<li>' + esc(r) + '</li>';
-              }).join('') + '</ul></div>'
+          (c.listing
+            ? '<details class="card p5 listing-fold"><summary><h3>Listing</h3></summary>' +
+              '<pre class="listing-raw">' + esc(c.listing) + '</pre></details>'
             : '') +
         '</div>' +
       '</div>';
@@ -448,28 +412,13 @@
     var v = Shell.mount({
       nav: 'opp',
       crumbs: [{ label: 'Overview', href: '/' }, { label: c.company }],
-      actions: '<span class="chip chip-pos">Day ' + c.day + ' of 14</span>' +
-               '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/page">View page</a>',
+      actions: '<span class="chip">Day ' + c.day + '</span>',
       html: html
     });
 
-    UI.on(v, 'click', '[data-task]', function (e, el) {
-      var t = Store.toggleTask(c.id, el.dataset.task);
-      var p2 = Store.taskProgress(c);
-      el.setAttribute('aria-pressed', t.on);
-      el.querySelector('.cap').textContent = t.on ? 'Done' : 'Open';
-      var r = 17, C = 2 * Math.PI * r;
-      v.querySelector('.ring .fill').setAttribute('stroke-dashoffset', (C - (p2.done / p2.total) * C).toFixed(1));
-      v.querySelector('#ring-label').textContent = p2.done + ' of ' + p2.total + ' done';
-      if (t.on) UI.toast(p2.done === p2.total ? 'That is all of them. Go send the first message.' : 'Nice. ' + p2.done + ' of ' + p2.total + '.');
-    });
     UI.on(v, 'click', '[data-step]', function (e, el) {
       c.activeStep = el.dataset.step; Store.save();
       Router.go('/c/' + c.id + '/sequence');
-    });
-    UI.on(v, 'click', '[data-take]', function (e, el) {
-      var p = Store.acceptSuggestion(c.id, el.dataset.take);
-      if (p) { Store.completeTask(c.id, 't3'); UI.toast(p.name + ' added.'); Views.opportunity(params); }
     });
   };
 })(window, document);

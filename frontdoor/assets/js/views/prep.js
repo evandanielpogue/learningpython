@@ -44,10 +44,10 @@
 
     var v = Shell.mount({
       nav: 'prep',
-      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Prep' }],
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Story' }],
       actions: '<span class="chip" id="prep-chip"></span>' +
-               '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/page">See the page</a>',
-      html: '<div class="page-head"><h1>Prep</h1></div>' +
+               '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '/page">Page</a>',
+      html: '<div class="page-head"><h1>Story</h1></div>' +
             UI.tipHTML('prep-specifics') +
             (agenda.length
               ? '<div class="prep"><div id="agenda"></div><div id="talk"></div></div>'
@@ -92,7 +92,7 @@
       var chip = document.getElementById('prep-chip');
       if (chip) {
         chip.className = 'chip' + (pr.done === pr.total ? ' chip-pos' : '');
-        chip.innerHTML = '<b>' + pr.done + '</b> of <b>' + pr.total + '</b> nailed down';
+        chip.innerHTML = '<b>' + pr.done + '</b> of <b>' + pr.total + '</b>';
       }
     }
 
@@ -111,8 +111,8 @@
             '<button type="submit" aria-label="Send">↑</button></form>' +
         '</div>' +
         '<div class="row g2 wrap mt3">' +
-          '<button class="btn btn-secondary btn-sm" id="save-it">Save what I said</button>' +
-          '<button class="btn btn-ghost btn-sm" id="skip-it">Skip this one</button>' +
+          '<button class="btn btn-primary btn-sm" id="save-it">Save</button>' +
+          '<button class="btn btn-ghost btn-sm" id="skip-it">Skip</button>' +
         '</div>';
       wireTalk();
     }
@@ -166,7 +166,7 @@
       if (a.done && a.text) {
         say('ai', 'You already answered this one:');
         say('me', a.text);
-        say('ai', 'Say more and it gets replaced, or pick another on the left.');
+        say('ai', 'Say more to replace it, or pick another.');
         return;
       }
       if (!AI.ready()) {
@@ -221,9 +221,9 @@
             stage = out.stage;
             if (out.complete && out.story) {
               Store.answerAgenda(c.id, a.id, out.story);
-              Store.completeTask(c.id, 't7');
               paintAgenda(a.id);
               landed();
+              setTimeout(function () { if (openId === mine) advance(a.id); }, 900);
             }
             busy = false;
           });
@@ -239,7 +239,6 @@
           history.push({ role: 'assistant', content: out.reply });
           if (out.complete && out.story) {
             Store.answerAgenda(c.id, a.id, out.story);
-            Store.completeTask(c.id, 't7');
             paintAgenda();
             say('ai', 'Saved. Pick the next one on the left.');
           }
@@ -247,6 +246,13 @@
           if (openId === mine && b.isConnected) b.textContent = 'That did not go through: ' + err.message;
         }).then(function () { if (openId === mine) busy = false; });
       });
+
+      /* the next unfinished item opens on its own, so a save never leaves
+         you sitting on a finished one */
+      function advance(fromId) {
+        var next = agenda.filter(function (x) { return !x.done && !x.skipped && x.id !== fromId; })[0];
+        if (next) open(next.id);
+      }
 
       /* the first of the three moments: every story and every gap answered */
       function landed() {
@@ -266,15 +272,17 @@
         if (!said) { UI.toast('Say something first.'); return; }
         var id = item().id;
         Store.answerAgenda(c.id, id, said);
-        Store.completeTask(c.id, 't7');
         paintAgenda(id);
-        UI.toast('Saved in your words.');
         landed();
+        advance(id);
       });
+      /* skipping is a decision: the item is marked and the queue moves on */
       v.querySelector('#skip-it').addEventListener('click', function () {
-        var next = agenda.filter(function (x) { return !x.done && x.id !== openId; })[0];
+        Store.skipAgenda(c.id, openId);
+        var next = agenda.filter(function (x) { return !x.done && !x.skipped && x.id !== openId; })[0];
+        paintAgenda();
         if (next) open(next.id);
-        else UI.toast('That is everything.');
+        else UI.toast('Nothing left to skip.');
       });
     }
 

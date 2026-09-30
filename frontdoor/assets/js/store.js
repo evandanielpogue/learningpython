@@ -224,17 +224,7 @@
     { key: 'video', label: 'Video',             on: false }
   ];
 
-  function taskSet() {
-    return [
-      { id: 't1', text: 'Paste the job listing',   sub: 'We read it for you',                     on: false },
-      { id: 't2', text: 'Check the match', sub: 'What they asked for, what you have',       on: false },
-      { id: 't7', text: 'Nail down your stories', sub: 'The detail a bullet leaves out',      on: false },
-      { id: 't3', text: 'Add your contacts',       sub: 'Start with the three we found',          on: false },
-      { id: 't4', text: 'Read the research',       sub: 'What they said, recently, in public',    on: false },
-      { id: 't5', text: 'Build the sequence',      sub: 'Ten touches over two weeks',             on: false },
-      { id: 't6', text: 'Send the first message',  sub: 'Start with the peer',                    on: false }
-    ];
-  }
+
 
   function seedCampaign() {
     return {
@@ -258,7 +248,6 @@
       steps: clone(STEPS),
       research: clone(RESEARCH),
       sections: clone(SECTIONS),
-      tasks: taskSet(),
       activeStep: 's4',
       activeContact: 'p1',
       pendingInsert: null,
@@ -328,18 +317,21 @@
          screen with no way back. Fill the shape in on the way through. */
       var shape = {
         facts: [], requirements: [], winIds: [], match: [], agenda: [], angles: [],
-        contacts: [], suggested: [], steps: [], research: [], sections: [], tasks: []
+        contacts: [], suggested: [], steps: [], research: [], sections: []
       };
       state.campaigns.forEach(function (c) {
         Object.keys(shape).forEach(function (k) { if (!Array.isArray(c[k])) c[k] = clone(shape[k]); });
         if (!c.sections.length) c.sections = clone(SECTIONS);
-        if (!c.tasks.length) c.tasks = taskSet();
         if (typeof c.story !== 'string') c.story = '';
         if (typeof c.sent !== 'number') c.sent = 0;
         if (typeof c.replies !== 'number') c.replies = 0;
         if (typeof c.views !== 'number') c.views = 0;
         if (typeof c.day !== 'number') c.day = 0;
         if (!c.cheered || typeof c.cheered !== 'object') c.cheered = {};
+        if (typeof c.booked !== 'boolean') c.booked = false;
+        delete c.tasks;
+        Store.refreshDue(c);
+        Store.syncCounts(c);
       });
       if (!state.profile || typeof state.profile !== 'object') state.profile = blankProfile();
       ['roles', 'wins', 'stack'].forEach(function (k) {
@@ -356,10 +348,14 @@
     save: function () { write(); emit(); },
 
     /* auth */
-    signIn: function (email) {
-      /* before a resume goes in there is no name, so fall back to the part of
-         the address in front of the @ rather than showing a shrug */
-      var nm = state.profile.name ||
+    /* a browser that has ever held a profile or a user has an account here */
+    hasAccount: function () {
+      return !!(state.profile && state.profile.imported) || !!state.user || !!state.everSignedIn;
+    },
+    signIn: function (email, name) {
+      state.everSignedIn = true;
+      /* the name they typed, else the résumé's, else the front of the address */
+      var nm = (name && name.trim()) || state.profile.name ||
         String(email || '').split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); }) ||
         'You';
       state.user = { email: email || state.profile.email, name: nm, initials: Store.initials(nm) };
@@ -383,12 +379,10 @@
         Store.applyResume(Store.parseResume(EXAMPLE_RESUME, 'Evan_Pogue.pdf'));
       }
       var c = seedCampaign();
+      c.example = true;
       c.winIds = Store.rankWins(ACME_LISTING).slice(0, 3).map(function (r) { return r.win.id; });
       c.match = Store.matchLocally(Store.parseListing(ACME_LISTING).requirements, ACME_LISTING);
       c.sections = clone(SECTIONS);
-      c.tasks[0].on = true;
-      c.tasks[1].on = true;
-      c.tasks[2].on = true;
       state.campaigns.unshift(c);
       state.lastCampaign = c.id;
       Store.save();
@@ -660,12 +654,9 @@
         steps: [],
         research: [],
         sections: clone(SECTIONS),
-        tasks: taskSet(),
         activeStep: null, activeContact: null, pendingInsert: null,
         sent: 0, replies: 0, views: 0, lastView: 'never'
       };
-      c.tasks[0].on = true;
-      c.tasks[1].on = true;
       state.campaigns.unshift(c);
       state.lastCampaign = id;
       Store.save();
@@ -778,6 +769,15 @@
       c.story = first ? first.text : '';
       Store.save();
     },
+    /* leaving an item is a decision, and a decision is recorded */
+    skipAgenda: function (cid, id) {
+      var c = Store.campaign(cid); if (!c) return;
+      var it = (c.agenda || []).filter(function (x) { return x.id === id; })[0];
+      if (!it) return;
+      it.skipped = true;
+      Store.save();
+    },
+
     /* A milestone is celebrated once and then never again. Returning false
        means it has already happened, which is how the views stay honest on
        a reload: the data says done, the confetti does not fire twice. */
@@ -803,50 +803,92 @@
        visited — otherwise the pipeline lies to you.                        */
     PHASES: [
       { key: 'role', n: 1, label: 'Role', icon: 'company',
-        href: '/c/:id', blurb: 'the listing and where you line up',
+        href: '/c/:id',
         done: function (c) { return !!(c.company && (c.listing || (c.requirements || []).length)); },
-        next: 'Paste a listing' },
+        next: 'Role' },
 
+      /* Story is done when every win you lead with has a story. A gap is
+         worth answering but never blocks the step: some gaps are gaps. */
       { key: 'story', n: 2, label: 'Story', icon: 'prep',
-        href: '/c/:id/prep', blurb: 'a story behind every number, an answer for every gap',
+        href: '/c/:id/prep',
         sub: [{ key: 'page', label: 'Page', href: '/c/:id/page' }],
         done: function (c) {
-          var a = c.agenda || [];
-          return a.length > 0 && a.every(function (x) { return x.done; });
+          var wins = (c.agenda || []).filter(function (x) { return x.kind === 'story'; });
+          return wins.length > 0 && wins.every(function (x) { return x.done; });
         },
         part: function (c) {
-          var a = c.agenda || [];
-          return { done: a.filter(function (x) { return x.done; }).length, total: a.length };
+          var wins = (c.agenda || []).filter(function (x) { return x.kind === 'story'; });
+          return { done: wins.filter(function (x) { return x.done; }).length, total: wins.length };
         },
-        next: 'Nail down your stories' },
+        next: 'Story' },
 
+      /* a placeholder seat is not a person */
       { key: 'people', n: 3, label: 'People', icon: 'contacts',
-        href: '/c/:id/people', blurb: 'who to reach, in what order',
+        href: '/c/:id/people',
         sub: [{ key: 'research', label: 'Research', href: '/c/:id/research' }],
-        done: function (c) { return (c.contacts || []).length >= 3; },
-        part: function (c) { return { done: Math.min((c.contacts || []).length, 3), total: 3 }; },
-        next: 'Add your contacts' },
+        done: function (c) { return Store.realPeople(c).length >= 3; },
+        part: function (c) { return { done: Math.min(Store.realPeople(c).length, 3), total: 3 }; },
+        next: 'People' },
 
+      /* every planned touch has gone out, been answered, or been dropped */
       { key: 'outreach', n: 4, label: 'Outreach', icon: 'sequence',
-        href: '/c/:id/sequence', blurb: 'what you send, and when',
-        done: function (c) { return (c.sent || 0) > 0; },
-        part: function (c) {
-          return { done: c.sent || 0, total: (c.steps || []).length };
-        },
-        next: 'Build the sequence' },
-
-      { key: 'interview', n: 5, label: 'Interview', icon: 'brief',
-        href: '/c/:id/brief', blurb: 'everything you know, for the night before',
+        href: '/c/:id/sequence',
+        sub: [{ key: 'templates', label: 'Templates', href: '/templates' }],
         done: function (c) {
-          var q = c.questions || {};
-          return !!(q.likely && q.likely.length) && (c.replies || 0) > 0;
+          var st = c.steps || [];
+          return st.length > 0 && st.every(function (x) { return /^(sent|replied|skipped)$/.test(x.status); });
         },
         part: function (c) {
-          var q = c.questions || {};
-          return { done: (q.likely && q.likely.length) ? 1 : 0, total: 1 };
+          var st = c.steps || [];
+          return { done: st.filter(function (x) { return /^(sent|replied)$/.test(x.status); }).length,
+                   total: st.length };
         },
-        next: 'Work out the questions' }
+        next: 'Outreach' },
+
+      /* a fact you record, never something a screen decides for you */
+      { key: 'interview', n: 5, label: 'Interview', icon: 'brief',
+        href: '/c/:id/brief',
+        done: function (c) { return !!c.booked; },
+        part: function (c) { return { done: c.booked ? 1 : 0, total: 1 }; },
+        next: 'Interview' }
     ],
+
+    /* a contact with a real name, as opposed to a seat we suggested */
+    realPeople: function (c) {
+      return (c.contacts || []).filter(function (p) { return p.name && !p.placeholder; });
+    },
+
+    /* sent and replied are derived from the touches, never counted by hand:
+       two counters that can drift is two versions of the truth */
+    syncCounts: function (c) {
+      if (!c) return;
+      var st = c.steps || [];
+      c.sent = st.filter(function (x) { return x.status === 'sent' || x.status === 'replied'; }).length;
+      c.replies = st.filter(function (x) { return x.status === 'replied'; }).length;
+    },
+
+    /* a touch is due when its day has come, and the day is counted from
+       the day the company was added */
+    refreshDue: function (c) {
+      if (!c || !c.createdAt) return;
+      var today = Math.max(0, Math.floor((Date.now() - c.createdAt) / 86400000));
+      c.day = today;
+      (c.steps || []).forEach(function (x) {
+        if (x.status === 'queued' && x.day <= today) x.status = 'due';
+      });
+    },
+
+    setBooked: function (cid, on) {
+      var c = Store.campaign(cid); if (!c) return;
+      c.booked = !!on;
+      Store.save();
+    },
+
+    /* an unresolved placeholder in a message is the one thing that must
+       never go out: "[one sentence on what that took]" is not a sentence */
+    unresolved: function (body) {
+      return (String(body || '').match(/\[[^\]\n]{3,}\]/g) || []);
+    },
 
     /* Each step with its state: done, the one you are on, or still ahead.
        Exactly one step is 'now' — the first unfinished one — unless every
@@ -859,7 +901,7 @@
         var now = !done && !found;
         if (now) found = true;
         return {
-          key: s.key, n: s.n, label: s.label, icon: s.icon, blurb: s.blurb,
+          key: s.key, n: s.n, label: s.label, icon: s.icon,
           href: s.href.replace(':id', c.id),
           sub: (s.sub || []).map(function (x) {
             return { key: x.key, label: x.label, href: x.href.replace(':id', c.id) };
@@ -881,11 +923,17 @@
       return { done: all.filter(function (s) { return s.done; }).length, total: all.length };
     },
 
-    /* the one sentence the overview and the rail both want */
-    nextAction: function (c) {
-      var s = Store.phaseNow(c);
-      if (!s) return { label: 'Nothing waiting', href: '/c/' + c.id + '/brief', done: true };
-      return { label: s.next, href: s.href, stage: s.key, done: false };
+    /* The step to go to next. From a given step it is the first unfinished
+       one after it, so "Next" never points backwards from where you stand;
+       with nothing after, it is the first unfinished one at all. */
+    nextAction: function (c, hereKey) {
+      var all = Store.phases(c);
+      var idx = hereKey ? all.map(function (p) { return p.key; }).indexOf(hereKey) : -1;
+      var ahead = all.slice(idx + 1).filter(function (p) { return !p.done; })[0];
+      var any = all.filter(function (p) { return !p.done; })[0];
+      var s = ahead || any;
+      if (!s) return { label: 'Done', href: '/c/' + c.id + '/brief', done: true };
+      return { label: s.label, href: s.href, stage: s.key, done: false };
     },
 
     agendaProgress: function (c) {
@@ -1393,7 +1441,26 @@
       if (patch.status === 'sent' && s.status === 'replied') delete patch.status;
       Object.keys(patch).forEach(function (k) { s[k] = patch[k]; });
       Store.sortSteps(cid);
+      Store.syncCounts(c);
       Store.save();
+    },
+
+    /* Somebody wrote back. The rest of the plan for that person is off:
+       you are in a conversation now, not a sequence. Returns how many
+       touches were dropped so the screen can say so. */
+    logReply: function (cid, sid) {
+      var c = Store.campaign(cid); if (!c) return 0;
+      var s = c.steps.filter(function (x) { return x.id === sid; })[0]; if (!s) return 0;
+      s.status = 'replied';
+      var dropped = 0;
+      c.steps.forEach(function (x) {
+        if (x.id !== sid && x.contact === s.contact && /^(queued|due)$/.test(x.status)) {
+          x.status = 'skipped'; dropped++;
+        }
+      });
+      Store.syncCounts(c);
+      Store.save();
+      return dropped;
     },
     removeStep: function (cid, sid) {
       var c = Store.campaign(cid); if (!c) return;
@@ -1511,21 +1578,10 @@
     },
 
     /* ---- per opportunity checklist ---------------------------------------- */
-    toggleTask: function (cid, id) {
-      var c = Store.campaign(cid); if (!c) return null;
-      var t = c.tasks.filter(function (x) { return x.id === id; })[0];
-      if (t) { t.on = !t.on; Store.save(); }
-      return t;
-    },
-    completeTask: function (cid, id) {
-      var c = Store.campaign(cid); if (!c) return;
-      var t = c.tasks.filter(function (x) { return x.id === id; })[0];
-      if (t && !t.on) { t.on = true; Store.save(); }
-    },
-    taskProgress: function (c) {
-      if (!c) return { done: 0, total: 0 };
-      return { done: c.tasks.filter(function (t) { return t.on; }).length, total: c.tasks.length };
-    },
+    /* The hand-ticked checklist is gone; the five steps are the only record
+       of progress. These stay so nothing that still calls them can throw. */
+    completeTask: function () {},
+    taskProgress: function (c) { return Store.phaseProgress(c); },
 
     reset: function () {
       try {

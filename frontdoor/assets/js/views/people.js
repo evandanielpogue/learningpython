@@ -24,10 +24,10 @@
 
     var v = Shell.mount({
       nav: 'people',
-      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Contacts' }],
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'People' }],
       actions: '<button class="btn btn-primary btn-sm" id="add-top">Add contact</button>',
       html:
-        '<div class="page-head"><h1>Contacts</h1></div>' +
+        '<div class="page-head"><h1>People</h1></div>' +
         UI.tipHTML('find-contacts', { q: 'hiring ' + c.role + ' at ' + c.company }) +
         '<div id="found"></div>' +
         '<div class="split"><div id="list"></div><div id="detail"></div></div>'
@@ -41,7 +41,7 @@
       box.innerHTML =
         '<div class="card p5 mb4 found">' +
           '<div class="row between wrap g3 mb2"><h3>Suggested</h3>' +
-          '<span class="cap">' + sug.length + ' to look at</span></div>' +
+          '<span class="cap">' + sug.length + '</span></div>' +
           '<div class="foundgrid">' + sug.map(function (g) {
             return '<div class="foundcard" style="--pc:var(' + Store.colourFor(g.persona) + ')">' +
               '<div class="row g3" style="align-items:flex-start">' +
@@ -52,12 +52,11 @@
               '<p class="fc-why">' + esc(g.why) + '</p>' +
               '<p class="fc-found">' + esc(g.found) + '</p>' +
               (g.guessedEmail && g.email
-                ? '<p class="fc-guess">' + esc(g.email) + ' is a guess from the company\u2019s usual pattern. ' +
-                  'Check it before you send anything.</p>'
+                ? '<p class="fc-guess">' + esc(g.email) + ' \u2014 guessed, not verified.</p>'
                 : '') +
               '<div class="row g2 mt3">' +
-                '<button class="btn btn-primary btn-sm" data-take="' + g.id + '">Add them</button>' +
-                '<button class="btn btn-ghost btn-sm" data-skip="' + g.id + '">Not this one</button>' +
+                '<button class="btn btn-secondary btn-sm" data-take="' + g.id + '">Add</button>' +
+                '<button class="btn btn-ghost btn-sm" data-skip="' + g.id + '">Skip</button>' +
               '</div></div>';
           }).join('') + '</div></div>';
     }
@@ -83,7 +82,7 @@
               '<button class="icon-btn" data-down="' + p.id + '" aria-label="Move down"' + (i === c.contacts.length - 1 ? ' disabled' : '') + '>↓</button>' +
             '</span></div>';
         }).join('') +
-        (adding ? addForm() : '<button class="addrow" id="add-inline">+ Add another contact</button>');
+        (adding ? addForm() : '<button class="addrow" id="add-inline">+ Add another</button>');
 
       if (adding) wireLookup();
       paintDetail();
@@ -230,7 +229,7 @@
         /* repaint after the blur finishes, or the browser tears this input out
            from under the event that is still running */
         setTimeout(paint, 0);
-        UI.toast('Now it says ' + nm + ' everywhere it said the job title.');
+        UI.toast(nm + ' set.');
       });
 
       var find = d.querySelector('#d-find');
@@ -273,9 +272,8 @@
     UI.on(v, 'click', '[data-take]', function (e, el) {
       var p = Store.acceptSuggestion(c.id, el.dataset.take);
       if (!p) return;
-      Store.completeTask(c.id, 't3');
       selected = p.id; paint();
-      UI.toast(p.name + ' added. Rank them where they belong.');
+      UI.toast(p.name + ' added.');
     });
     UI.on(v, 'click', '[data-skip]', function (e, el) {
       Store.dismissSuggestion(c.id, el.dataset.skip); paint();
@@ -308,9 +306,8 @@
         activity: found ? found.activity : []
       });
       found = null;
-      Store.completeTask(c.id, 't3');
       adding = false; selected = p.id; paint();
-      UI.toast(name + ' added. Drag them up if they matter more.');
+      UI.toast(name + ' added. ');
     });
 
     paint();

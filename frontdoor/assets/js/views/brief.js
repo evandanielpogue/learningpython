@@ -119,12 +119,7 @@
           'and pick the wins you are leading with.</p>' +
           '<a class="btn btn-secondary btn-sm" href="#/c/' + c.id + '">Go back to ' + esc(c.company) + '</a></div>';
       }
-      return '<p class="bf-src-note">' + (q.source === 'claude'
-        ? 'Worked out by Claude from the listing, your gaps and what these people said.'
-        : 'Built from the listing and your gaps. ' +
-          (AI.ready() ? 'Claude can do this properly.' : 'Turn Claude on in Settings for the sharper version.')) +
-        '</p>' +
-        '<div class="bf-qs">' + (q.likely || []).map(function (x) {
+      return '<div class="bf-qs">' + (q.likely || []).map(function (x) {
         return '<div class="bf-q">' +
           '<b>' + esc(x.question) + '</b>' +
           '<p class="bf-why">' + esc(x.why) + '</p>' +
@@ -172,16 +167,19 @@
     var html =
       '<div class="bf-bar">' +
         '<div class="bf-id">' +
-          '<h1>' + esc(c.company) + '</h1>' +
-          '<p>' + esc(c.role) + (c.location ? ' &middot; ' + esc(c.location) : '') + '</p>' +
+          '<h1>Interview</h1>' +
+          '<p>' + esc(c.company) + ' &middot; ' + esc(c.role) + (c.location ? ' &middot; ' + esc(c.location) : '') + '</p>' +
         '</div>' +
         '<div class="bf-bar-acts">' +
           (/^https?:\/\//i.test(c.postingUrl || '')
             ? '<a class="btn btn-ghost btn-sm" href="' + esc(c.postingUrl) +
               '" target="_blank" rel="noopener noreferrer">The listing \u2197</a>'
             : '') +
-          '<a class="btn btn-ghost btn-sm" href="#/c/' + c.id + '/prep">Prep</a>' +
-          '<button class="btn btn-secondary btn-sm" id="print">Print it</button>' +
+          /* the one fact this step records: it is a thing you did, not a
+             thing a screen decided */
+          '<button class="btn ' + (c.booked ? 'btn-secondary' : 'btn-primary') + ' btn-sm" id="booked" aria-pressed="' + !!c.booked + '">' +
+            (c.booked ? 'Interview booked' : 'Mark interview booked') + '</button>' +
+          '<button class="btn btn-ghost btn-sm" id="print">Print</button>' +
         '</div>' +
       '</div>' +
 
@@ -205,7 +203,7 @@
 
     var v = Shell.mount({
       nav: 'brief',
-      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Brief' }],
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Interview' }],
       html: html
     });
 
@@ -236,5 +234,12 @@
     });
 
     v.querySelector('#print').addEventListener('click', function () { window.print(); });
+    v.querySelector('#booked').addEventListener('click', function () {
+      Store.setBooked(c.id, !c.booked);
+      if (c.booked) {
+        UI.cheerOnce(c.id, 'booked', { title: 'Interview booked', line: 'Everything on this page is for that room.' });
+      }
+      Views.brief(params);
+    });
   };
 })(window, document);

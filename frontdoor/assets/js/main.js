@@ -24,7 +24,7 @@
     .add('/c/:id/sequence', Views.sequence)
     .add('/c/:id/page',     Views.page)
     .add('/c/:id/brief',    Views.brief)
-    .notFound(function () { Router.go(Store.isAuthed() ? '/' : '/login', true); });
+    .notFound(function () { Router.go(Store.isAuthed() ? '/' : (Store.hasAccount() ? '/login' : '/signup'), true); });
 
   /* ---- command palette contents --------------------------------------- */
   UI.paletteSource = function () {

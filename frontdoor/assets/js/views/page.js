@@ -200,8 +200,7 @@
     var v = Shell.mount({
       nav: 'page',
       crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Page' }],
-      actions: '<button class="btn btn-secondary btn-sm" id="copy-link">Copy link</button>' +
-               '<button class="btn btn-primary btn-sm" id="sim">Simulate a view</button>',
+      actions: '<button class="btn btn-primary btn-sm" id="copy-link">Copy link</button>',
       html: html
     });
 
@@ -233,11 +232,6 @@
 
     document.getElementById('copy-link').addEventListener('click', function () {
       UI.copy('https://frontdoor.app/p/' + c.slug); UI.toast('Link copied.');
-    });
-    document.getElementById('sim').addEventListener('click', function () {
-      c.views += 1; c.lastView = 'just now'; Store.save();
-      UI.toast((hm ? hm.name.split(' ')[0] : 'Someone') + ' opened your page. Just now.');
-      Views.page(params);
     });
   };
 })(window, document);

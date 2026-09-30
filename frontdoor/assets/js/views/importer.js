@@ -17,23 +17,14 @@
     var parsed = null;
     var pending = '';
 
-    function pips(active) {
-      return '<div class="steps-bar">' + ['Your resume', 'Check it', 'Add a company'].map(function (l, i) {
-        var n = i + 1;
-        var st = n < active ? 'done' : n === active ? 'active' : 'todo';
-        return '<span class="step-pip" data-state="' + st + '"><span class="n"><span>' + n + '</span></span>' + esc(l) + '</span>' +
-          (i < 2 ? '<span style="color:var(--ink-4)">→</span>' : '');
-      }).join('') + '</div>';
-    }
-
     /* ------------------------------------------------------------ step 1 -- */
     function stepOne() {
-      return pips(1) +
+      return '' +
         '<div class="card p6">' +
           '<h3 class="mb2">Your history</h3>' +
           '<label class="drop" id="drop" for="file-in">' +
             '<span class="drop-ic">↑</span>' +
-            '<b>Drop your resume here</b>' +
+            '<b>Drop your r\u00e9sum\u00e9 here</b>' +
             '<span class="hint">PDF, or plain text. Or click to choose a file.</span>' +
             '<input type="file" id="file-in" accept=".txt,.md,.rtf,.pdf,.doc,.docx,text/plain" hidden>' +
           '</label>' +
@@ -41,10 +32,10 @@
 
           '<div class="or"><span>or paste it</span></div>' +
           '<textarea class="input listing-in" id="paste" spellcheck="false" ' +
-            'placeholder="Open your resume, select all, paste it here. Plain text is fine."></textarea>' +
+            'placeholder="Paste the whole r\u00e9sum\u00e9"></textarea>' +
           '<div class="row between wrap mt4 g3">' +
-            '<button class="btn btn-ghost btn-sm" id="use-example">Use an example resume</button>' +
-            '<button class="btn btn-primary" id="read" disabled>Read it <span class="arr">→</span></button>' +
+            '<button class="btn btn-ghost btn-sm" id="use-example">Use an example</button>' +
+            '<button class="btn btn-primary" id="read" disabled>Read <span class="arr">\u2192</span></button>' +
           '</div>' +
         '</div>';
     }
@@ -55,7 +46,7 @@
       var msg = v.querySelector('#file-msg');
       var drop = v.querySelector('#drop');
 
-      function check() { go.disabled = ta.value.trim().length < 60; }
+      function check() { go.disabled = !ta.value.trim(); }
       ta.value = pending;
       check();
       ta.addEventListener('input', function () { pending = ta.value; check(); });
@@ -165,16 +156,14 @@
       if (!p.roles.length) missing.push('any roles');
       if (!p.wins.length) missing.push('a win with a number in it');
 
-      return pips(2) +
+      return '' +
         '<div class="card p6 mb4">' +
           '<div class="row between wrap mb3 g3"><h3>What we read</h3>' +
           '<span class="chip' + (p.readBy === 'model' ? ' chip-pos' : '') + '">' +
             (p.readBy === 'model' ? 'Read by Claude' : 'Read by pattern matching') + '</span></div>' +
-          '<p class="dim mb4" style="font-size:var(--fs-sm)">From ' + esc(p.source || 'your resume') +
-          (p.readBy === 'model' ? '.' : '. <a href="#/settings">Turn on a model</a> and it reads this properly.') + '</p>' +
+          '<p class="dim mb4" style="font-size:var(--fs-sm)">From ' + esc(p.source || 'your r\u00e9sum\u00e9') + '</p>' +
           (missing.length
-            ? '<p class="lookup-msg mb4">We could not find ' + esc(missing.join(', ')) +
-              '. Go back and paste more of it, or fix it in Settings later.</p>'
+            ? '<p class="lookup-msg mb4">Could not find ' + esc(missing.join(', ')) + '. Paste more of it.</p>'
             : '') +
           '<dl class="facts mb5">' +
             '<div><dt>Name</dt><dd>' + esc(p.name || '—') + '</dd></div>' +
@@ -189,12 +178,12 @@
         '</div>' +
 
         '<div class="card p6 mb4">' +
-          '<h3 class="mb3">' + p.wins.length + ' win' + (p.wins.length === 1 ? '' : 's') + ' with a number in them</h3>' +
+          '<div class="row between wrap g2 mb3"><h3>Wins</h3><span class="cap">' + p.wins.length + '</span></div>' +
           (p.wins.length
             ? '<div class="leadwins">' + p.wins.map(function (w) {
                 return '<div><b>' + esc(w.metric) + '</b><span>' + esc(w.short) + '</span></div>';
               }).join('') + '</div>'
-            : '<p class="hint">Nothing with a number in it. Bullets like "grew ARR 41%" are what we match against a listing.</p>') +
+            : '<p class="hint">None with a number in them. "Grew ARR 41%" is a win; "responsible for growth" is not.</p>') +
         '</div>' +
 
         (Store.state.profile.stack.length
@@ -203,10 +192,18 @@
             '</div></div>'
           : '') +
 
-        '<div class="row g2 wrap">' +
-          '<button class="btn btn-primary" id="done-import">Looks right <span class="arr">→</span></button>' +
-          '<button class="btn btn-ghost" id="redo-import">Read a different one</button>' +
-        '</div>';
+        /* a read that found no roles and no wins cannot be "right"; the
+           only sensible primary is to try again */
+        (missing.length >= 2
+          ? '<div class="row g2 wrap">' +
+              '<button class="btn btn-primary" id="redo-import">Paste again</button>' +
+              '<button class="btn btn-ghost" id="done-import">Use it anyway</button>' +
+            '</div>'
+          : '<div class="row g2 wrap">' +
+              '<button class="btn btn-primary" id="done-import">' +
+                (Store.campaigns().length ? 'Save' : 'Add a company') + ' <span class="arr">\u2192</span></button>' +
+              '<button class="btn btn-ghost" id="redo-import">Paste again</button>' +
+            '</div>');
     }
 
     function wireTwo(v) {
@@ -217,7 +214,7 @@
           return '<button class="opt" data-role="' + r.id + '" aria-pressed="' + r.on + '">' +
             '<span class="box"></span><span class="ot">' + esc(r.title || 'Untitled role') +
             '<em>' + esc([r.company, r.span].filter(Boolean).join(', ')) + '</em></span>' +
-            '<span class="om mono">' + r.bullets.length + '</span></button>';
+            '<span class="om mono" title="' + r.bullets.length + ' bullets">' + r.bullets.length + ' bullets</span></button>';
         }).join('');
       }
       paintRoles();
@@ -225,7 +222,6 @@
 
       v.querySelector('#done-import').addEventListener('click', function () {
         if (Store.campaigns().length) { UI.toast('Saved.'); Router.go('/'); return; }
-        UI.toast('Saved. Now paste a job listing.');
         Router.go('/new');
       });
       v.querySelector('#redo-import').addEventListener('click', function () {
@@ -236,7 +232,7 @@
     function paint() {
       var v = Shell.mount({
         nav: 'home',
-        crumbs: [{ label: 'Overview', href: '/' }, { label: 'Your resume' }],
+        crumbs: [{ label: 'Overview', href: '/' }, { label: 'R\u00e9sum\u00e9' }],
         html: '<div class="page-head"><h1>R\u00e9sum\u00e9</h1></div>' +
               (step === 1 ? stepOne() : stepTwo())
       });

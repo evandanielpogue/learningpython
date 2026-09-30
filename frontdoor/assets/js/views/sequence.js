@@ -68,10 +68,10 @@
 
     var v = Shell.mount({
       nav: 'sequence',
-      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Sequence' }],
+      crumbs: [{ label: 'Overview', href: '/' }, { label: c.company, href: '/c/' + c.id }, { label: 'Outreach' }],
       actions: '<span class="chip" id="cap-chip"></span>' +
                '<button class="btn btn-secondary btn-sm" id="preview">Preview</button>',
-      html: '<div class="page-head"><h1>Sequence</h1></div>' +
+      html: '<div class="page-head"><h1>Outreach</h1></div>' +
             UI.tipHTML('sequence-touches') +
             '<div id="seq-mount"></div>'
     });
@@ -364,9 +364,7 @@
       var mark = v.querySelector('#mark');
       if (mark) mark.addEventListener('click', function () {
         if (s.status === 'sent' || s.status === 'replied') { UI.toast('Already logged.'); return; }
-        c.sent += 1;
         Store.updateStep(c.id, s.id, { status: 'sent' });
-        Store.completeTask(c.id, 't6');
         paintAll();
         /* the third moment: every planned touch has actually gone out */
         var out = c.steps.filter(function (x) { return x.status === 'sent' || x.status === 'replied'; }).length;
@@ -385,10 +383,10 @@
       var rep = v.querySelector('#reply');
       if (rep) rep.addEventListener('click', function () {
         if (s.status === 'replied') { UI.toast('Already logged.'); return; }
-        c.replies += 1;
-        Store.updateStep(c.id, s.id, { status: 'replied' });
-        Store.save();
+        var dropped = Store.logReply(c.id, s.id);
         paintAll();
+        if (dropped) UI.toast(dropped + ' later touch' + (dropped === 1 ? '' : 'es') + ' to ' +
+          (contactOf(s) ? contactOf(s).name.split(' ')[0] : 'them') + ' dropped.');
         var first = UI.cheerOnce(c.id, 'reply', {
           title: 'Somebody wrote back',
           line: 'That is the whole point of the fourteen days. Reply today, ' +
@@ -479,7 +477,6 @@
     UI.on(v, 'click', '#add-step', function () {
       var s = Store.addStep(c.id);
       c.activeStep = s.id; Store.save(); paintAll();
-      Store.completeTask(c.id, 't5');
       UI.toast('Step added. Set the day and who it goes to.');
     });
 
