@@ -1,12 +1,24 @@
 import 'server-only';
 import { z } from 'zod';
 import { AIError } from './server';
+import { supabaseEnabled } from '@/lib/data/config';
+import { serverSupabase } from '@/lib/data/server';
 
 /* Every route reads its body through here: JSON only, size-capped, shape
    checked. A bad request never reaches the model. */
 const MAX_BYTES = 200_000;
 
+/* With accounts on, only a signed-in user can spend the model. Without
+   them the app is running for one person on their own machine. */
+async function requireUser(): Promise<void> {
+  if (!supabaseEnabled) return;
+  const sb = await serverSupabase();
+  const { data } = await sb.auth.getUser();
+  if (!data.user) throw new AIError('Sign in first.', 401);
+}
+
 export async function readBody<S extends z.ZodType>(req: Request, schema: S): Promise<z.infer<S>> {
+  await requireUser();
   const raw = await req.text();
   if (raw.length > MAX_BYTES) throw new AIError('That is too much text to send at once.', 413);
   let data: unknown;

@@ -11,7 +11,7 @@ export function TabBar() {
   const path = usePathname();
   const latest = useStore((s) => s.ws.opportunities.slice().sort((a, b) => b.updatedAt - a.updatedAt)[0]);
   const items = [
-    { href: '/opportunities', label: 'Pipeline', icon: LayoutGrid, active: path === '/opportunities' },
+    { href: '/opportunities', label: 'Opportunities', icon: LayoutGrid, active: path === '/opportunities' },
     ...(latest ? [{ href: `/o/${latest.id}`, label: latest.company, icon: Compass, active: path.startsWith('/o/') }] : []),
     { href: '/new', label: 'Add', icon: Plus, active: path === '/new' },
     { href: '/settings', label: 'Settings', icon: Settings, active: path === '/settings' },

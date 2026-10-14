@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontdoor (web)
 
-## Getting Started
+An account-based job search for salespeople. For each company: tailor your
+proof to the listing, find the right people, write and send the outreach,
+prepare for the interview, and track it through.
 
-First, run the development server:
+Next.js 16 (App Router), React 19, TypeScript (strict), Tailwind CSS 4 with
+Radix primitives in the shadcn style, Zustand, Supabase, the Anthropic SDK,
+Vitest and Playwright.
+
+## Run it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd web
+npm install          # also copies the pdf.js worker into public/
+npm run dev          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+With nothing configured, everything runs in the browser and every AI feature
+falls back to pattern matching. Copy `.env.example` to `.env.local` to turn
+things on:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variable | Turns on |
+|---|---|
+| `ANTHROPIC_API_KEY` | Claude for résumé reading, listing match, the story coach, interview questions, practice feedback, rewrites, and reading a posting from its link. Server only. |
+| `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or `..._ANON_KEY`) | Accounts by email magic link, Postgres storage, and file storage for résumés and headshots. Apply `supabase/migrations/*.sql` first, and add `<your-origin>/auth/callback` to the project's redirect URLs. |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Check it
 
-## Learn More
+```bash
+npm run typecheck    # tsc, strict
+npm run lint         # eslint
+npm test             # vitest: the ported engine
+npm run build
+npm run test:e2e     # playwright against a production build (run build first)
+```
 
-To learn more about Next.js, take a look at the following resources:
+In sandboxes without Playwright's own browser, point it at a local Chromium
+with `PLAYWRIGHT_CHROMIUM=/path/to/chrome`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Where things are
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Path | What |
+|---|---|
+| `lib/types.ts` | The domain types everything shares |
+| `lib/engine/` | Pure logic ported from the prototype: listing and résumé readers, matching, the story coach, people lookup, the outreach sequence, research sources, the example |
+| `lib/ai/` | Prompts and schemas, the server-side model helper, request validation, and the browser client with local fallbacks |
+| `lib/data/` | The data-access interface with a local (browser) adapter and a Supabase adapter, plus the Zustand store |
+| `app/api/ai/*` | One route per AI feature; the key never reaches the browser |
+| `app/start` | First login: the journey, résumé, headshot, first listing |
+| `app/(app)/o/[id]` | One opportunity: the six steps as one page |
+| `app/(app)/opportunities` | The CRM view: table and board |
+| `components/flow/` | The six steps and the pieces they share |
+| `supabase/migrations/` | Schema, row-level security and storage policies |
