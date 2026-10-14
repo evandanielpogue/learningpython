@@ -200,6 +200,10 @@ export interface LikelyQuestion {
   why: string;
   answer: string;
   gap: string;
+  /** where the local coach got it: 'gap' | 'strength' | 'win' | 'reported' | 'person' */
+  kind?: string;
+  /** the id of the requirement, proof point, finding or contact it came from */
+  ref?: string;
 }
 
 export interface InterviewQuestions {
