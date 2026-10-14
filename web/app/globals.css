@@ -1,26 +1,269 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+/* ==========================================================================
+   Frontdoor design tokens
+
+   Sea      a light, sunny ocean blue. The bright fill carries buttons and
+            progress with deep-sea ink on top; the deep shade carries every
+            link and any blue text (5.9:1 on white).
+   Sand     warm, reserved for celebrations and finished steps. Never a
+            button, never a link.
+   Night    the rail: the same ocean after dark, so the frame reads as one
+            place rather than a grey box.
+
+   Every colour is a token here. Components use the Tailwind names mapped
+   in @theme below, never a hex.
+   ========================================================================== */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* surfaces */
+  --canvas: #f4f8fa;
+  --panel: #ffffff;
+  --sunk: #eef3f6;
+  --sunk-2: #e3eaef;
+
+  /* ink */
+  --ink: #0e1b24;
+  --ink-2: #4a5a66;
+  --ink-3: #5d6c77;
+  --ink-faint: #b3c0c9; /* separators and dots only, never text */
+
+  /* lines */
+  --line: #e2e9ee;
+  --line-2: #d0dae1;
+  --line-3: #b9c6cf;
+
+  /* sea: the primary */
+  --sea-wash: #eaf6fc;
+  --sea-tint: #d4effa;
+  --sea-line: #a8dcf2;
+  --sea-bright: #38bdf2; /* fills, progress; text on it is --sea-ink */
+  --sea-bright-hover: #22b0ea;
+  --sea-glow: #7cd7f7; /* on the dark rail */
+  --sea: #0a6a99; /* links and blue text, 5.9:1 on white */
+  --sea-deep: #075a84; /* hover, pressed */
+  --sea-ink: #04324a; /* text on a bright sea fill, 6.2:1 */
+
+  /* sand: celebrations and done */
+  --sand-wash: #fbefd5;
+  --sand: #f2cf86;
+  --sand-strong: #e5ad48;
+  --sand-ink: #7a4e0c; /* text on sand, 6.3:1 */
+
+  /* night: the rail */
+  --night: #0b1b27;
+  --night-2: #13283a;
+  --night-3: #1b3449;
+  --night-line: rgba(255, 255, 255, 0.08);
+  --night-ink: #f1f6f9;
+  --night-ink-2: #a9b6bf;
+
+  /* meaning */
+  --pos: #0c6b46;
+  --pos-wash: #e3f4ec;
+  --warn: #6b5a0c;
+  --warn-wash: #f7f1d9;
+  --neg: #be3226;
+  --neg-wash: #fbeae8;
+
+  /* people and companies: assigned, never decorative */
+  --p-peer: #14785c;
+  --p-recruiter: #6b4fc4;
+  --p-manager: #1f5fa8;
+  --p-exec: #3b4b8f;
+  --p-tie: #b03f63;
+  --p-other: #5d6c77;
+
+  /* shape and depth */
+  --radius: 12px;
+  --e-1: 0 1px 2px rgba(11, 27, 39, 0.05);
+  --e-2: 0 1px 2px rgba(11, 27, 39, 0.05), 0 4px 12px rgba(11, 27, 39, 0.05);
+  --e-3: 0 2px 4px rgba(11, 27, 39, 0.06), 0 12px 28px rgba(11, 27, 39, 0.09);
+  --e-4: 0 8px 16px rgba(11, 27, 39, 0.08), 0 24px 56px rgba(11, 27, 39, 0.16);
+
+  /* motion */
+  --ease: cubic-bezier(0.2, 0.8, 0.3, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* shadcn names, so the primitives read the same tokens */
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--panel);
+  --card-foreground: var(--ink);
+  --popover: var(--panel);
+  --popover-foreground: var(--ink);
+  --primary: var(--sea-bright);
+  --primary-foreground: var(--sea-ink);
+  --secondary: var(--panel);
+  --secondary-foreground: var(--ink);
+  --muted: var(--sunk);
+  --muted-foreground: var(--ink-3);
+  --accent: var(--sea-wash);
+  --accent-foreground: var(--sea-deep);
+  --destructive: var(--neg);
+  --border: var(--line);
+  --input: var(--line-2);
+  --ring: var(--sea);
 }
 
 @theme inline {
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+
+  --color-canvas: var(--canvas);
+  --color-panel: var(--panel);
+  --color-sunk: var(--sunk);
+  --color-sunk-2: var(--sunk-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-line-3: var(--line-3);
+
+  --color-sea-wash: var(--sea-wash);
+  --color-sea-tint: var(--sea-tint);
+  --color-sea-line: var(--sea-line);
+  --color-sea-bright: var(--sea-bright);
+  --color-sea-bright-hover: var(--sea-bright-hover);
+  --color-sea-glow: var(--sea-glow);
+  --color-sea: var(--sea);
+  --color-sea-deep: var(--sea-deep);
+  --color-sea-ink: var(--sea-ink);
+
+  --color-sand-wash: var(--sand-wash);
+  --color-sand: var(--sand);
+  --color-sand-strong: var(--sand-strong);
+  --color-sand-ink: var(--sand-ink);
+
+  --color-night: var(--night);
+  --color-night-2: var(--night-2);
+  --color-night-3: var(--night-3);
+  --color-night-line: var(--night-line);
+  --color-night-ink: var(--night-ink);
+  --color-night-ink-2: var(--night-ink-2);
+
+  --color-pos: var(--pos);
+  --color-pos-wash: var(--pos-wash);
+  --color-warn: var(--warn);
+  --color-warn-wash: var(--warn-wash);
+  --color-neg: var(--neg);
+  --color-neg-wash: var(--neg-wash);
+
+  --color-p-peer: var(--p-peer);
+  --color-p-recruiter: var(--p-recruiter);
+  --color-p-manager: var(--p-manager);
+  --color-p-exec: var(--p-exec);
+  --color-p-tie: var(--p-tie);
+  --color-p-other: var(--p-other);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: var(--radius);
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+
+  --shadow-e1: var(--e-1);
+  --shadow-e2: var(--e-2);
+  --shadow-e3: var(--e-3);
+  --shadow-e4: var(--e-4);
+
+  --ease-fd: var(--ease);
+  --ease-spring: var(--spring);
+  --ease-out-long: var(--out);
+
+  --text-2xs: 10.5px;
+  --text-2xs--line-height: 1.35;
+
+  --animate-rise: rise 420ms var(--out) both;
+  --animate-pop: pop 380ms var(--spring) both;
+  --animate-sweep: sweep 900ms var(--out) both;
+  --animate-shimmer: shimmer 2.4s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-wave: wave 7s ease-in-out infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pop {
+  0% { opacity: 0; transform: scale(0.6); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes sweep {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes wave {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-24px); }
+}
+
+@layer base {
+  * { border-color: var(--line); }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    font-feature-settings: "cv11", "ss03";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4 { letter-spacing: -0.02em; font-weight: 640; line-height: 1.2; }
+  ::selection { background: var(--sea-tint); color: var(--ink); }
+  :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+    outline: 2px solid var(--sea);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* the wave line under the journey and the brand mark */
+.surf {
+  background:
+    radial-gradient(120% 80% at 0% 0%, var(--sea-tint) 0%, transparent 55%),
+    radial-gradient(90% 70% at 100% 10%, var(--sand-wash) 0%, transparent 60%),
+    var(--canvas);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
 }

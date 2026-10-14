@@ -46,3 +46,6 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /e2e/.screens/
+
+# copied from pdfjs-dist on install
+/public/pdf.worker.min.mjs
