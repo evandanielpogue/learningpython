@@ -214,6 +214,11 @@ export function parseListing(text: string): ParsedListing {
   /* ---- where ---- */
   out.location = labelled('location|based in|office');
   if (!out.location) {
+    /* "Chicago, hybrid" or "Austin, remote": a city followed by how they work */
+    const how = raw.match(/\b([A-Z][A-Za-z.'\-]+(?:\s+[A-Z][A-Za-z.'\-]+)?),\s*(remote|hybrid|on-?site|in[- ]office)\b/i);
+    if (how && !ROLE.test(how[1])) out.location = clean(how[1]) + ', ' + how[2].toLowerCase();
+  }
+  if (!out.location) {
     const city = CITY(raw);
     if (city) out.location = clean(city[1]);
   }

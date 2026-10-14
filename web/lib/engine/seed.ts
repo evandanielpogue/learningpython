@@ -5,6 +5,7 @@
    touches are fixed so the example is the same every time.
    ========================================================================== */
 import type { Contact, Finding, Opportunity, Profile, Suggestion, TimelineEvent, Touch } from '../types';
+import { buildAgenda } from './agenda';
 import { parseListing } from './listing';
 import { matchLocally, rankProof } from './match';
 import { EXAMPLE_RESUME, parseResume } from './resume';
@@ -178,7 +179,7 @@ export function exampleOpportunity(profile: Profile, now: number = Date.now()): 
     { at: at(1), kind: 'reply', text: 'Dana Koh replied' },
     { at: at(2), kind: 'sent', text: 'Emailed Priya Shah' },
   ];
-  return {
+  const o: Opportunity = {
     id: 'opp_acme',
     company: 'Acme',
     role: 'Mid-Market Account Executive',
@@ -206,4 +207,6 @@ export function exampleOpportunity(profile: Profile, now: number = Date.now()): 
     createdAt,
     updatedAt: now,
   };
+  /* the stories queue is built like any other company's */
+  return { ...o, agenda: buildAgenda(o, profile.proof) };
 }

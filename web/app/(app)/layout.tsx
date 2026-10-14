@@ -1,19 +1,13 @@
-'use client';
+import { Suspense } from 'react';
+import { AppShell } from '@/components/shell/app-shell';
+import { SplashStatic } from '@/components/shell/splash-static';
 
-import { Rail } from '@/components/shell/rail';
-import { TabBar } from '@/components/shell/tab-bar';
-import { Splash, useBoot } from '@/components/shell/boot';
-import { Celebrations } from '@/components/brand/celebrate';
-
+/* Everything inside reads the URL and the browser's workspace, so it renders
+   on the client behind one Suspense boundary. */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { ready, status } = useBoot({ needsOnboarding: true });
-  if (!ready) return <Splash status={status} />;
   return (
-    <div className="flex min-h-dvh">
-      <Rail />
-      <div className="flex min-w-0 flex-1 flex-col pb-20 md:pb-0">{children}</div>
-      <TabBar />
-      <Celebrations />
-    </div>
+    <Suspense fallback={<SplashStatic />}>
+      <AppShell>{children}</AppShell>
+    </Suspense>
   );
 }

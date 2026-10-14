@@ -4,7 +4,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowUp, Check, SkipForward, Sparkles } from 'lucide-react';
 import type { AgendaItem, CoachTurn, Opportunity } from '@/lib/types';
-import { answerAgenda, bankable, fullRequirement, rankProof, skipAgenda } from '@/lib/engine';
+import { answerAgenda, bankable, fullRequirement, rankProof, skipAgenda, turn as localTurn } from '@/lib/engine';
+import type { Proof } from '@/lib/types';
+
+/* the coach's first line is always local: instant, and already specific */
+function openingTurn(item: AgendaItem, proof: Proof | null): string[] {
+  return localTurn(item, [], { proof }).bubbles.filter(Boolean);
+}
 import { coachTurn } from '@/lib/ai/client';
 import { rebuildAgenda } from '@/lib/actions';
 import { useStore } from '@/lib/data/store';
@@ -66,10 +72,10 @@ function Chat({ o, item, onDone }: { o: Opportunity; item: AgendaItem; onDone: (
     if (r.value.complete && r.value.story) setStory(r.value.story);
   }
 
-  /* first open: the coach starts */
+  /* first open: the coach starts. Chat is keyed by item, so this runs once
+     per item and its state starts fresh. */
   useEffect(() => {
-    setStory('');
-    if (!history.length) void ask([]);
+    if (!history.length) append(openingTurn(item, proof).map((text) => ({ role: 'coach' as const, text })));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the item changes
   }, [item.id]);
 

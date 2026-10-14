@@ -1,3 +1,4 @@
+import { ACME_LISTING } from './seed';
 import { describe, expect, it } from 'vitest';
 import { fullRequirement, parseListing } from './listing';
 import { LISTINGS } from './listing.fixtures';
@@ -72,5 +73,12 @@ describe('fullRequirement', () => {
   it('returns the text when the listing cannot help', () => {
     expect(fullRequirement('', 'Clipped…')).toBe('Clipped…');
     expect(fullRequirement(listing, 'Not in there…')).toBe('Not in there…');
+  });
+});
+
+describe('a city with how they work', () => {
+  it('keeps the city in "Chicago, hybrid"', () => {
+    expect(parseListing(ACME_LISTING).location).toBe('Chicago, hybrid');
+    expect(parseListing('Account Executive\nLoom · Austin, remote\n\n- 3+ years selling SaaS').location).toBe('Austin, remote');
   });
 });

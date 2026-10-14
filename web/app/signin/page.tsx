@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Mail } from 'lucide-react';
 import { Wordmark } from '@/components/brand/mark';
 import { Button } from '@/components/ui/button';
@@ -42,7 +43,7 @@ export default function SignIn() {
         <h1 className="mb-5 text-[22px]">Sign in</h1>
         {!supabaseEnabled ? (
           <Button asChild variant="primary" className="w-full">
-            <a href="/">Continue</a>
+            <Link href="/">Continue</Link>
           </Button>
         ) : state === 'sent' ? (
           <div className="flex items-center gap-3 rounded-[12px] bg-sea-wash p-4 text-[14px] text-sea-deep">

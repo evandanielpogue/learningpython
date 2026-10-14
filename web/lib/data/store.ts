@@ -69,24 +69,38 @@ function event(kind: TimelineEvent['kind'], text: string): TimelineEvent {
 }
 
 export const useStore = create<State>((set, get) => {
+  async function flush() {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    const { adapter, ws } = get();
+    if (!adapter) return;
+    const changes = pending;
+    if (!changes.profile && !changes.opportunities.length && !changes.removed.length) return;
+    pending = emptyChanges();
+    set({ saving: true });
+    try {
+      await adapter.save(ws, changes);
+      set({ saving: false, saveError: null });
+    } catch (e) {
+      /* put the changes back so the next write retries them */
+      mark(changes);
+      set({ saving: false, saveError: e instanceof Error ? e.message : 'Could not save.' });
+    }
+  }
+
   function schedule(part: Partial<Changes>) {
     mark(part);
     if (timer) clearTimeout(timer);
-    timer = setTimeout(async () => {
-      const { adapter, ws } = get();
-      if (!adapter) return;
-      const changes = pending;
-      pending = emptyChanges();
-      set({ saving: true });
-      try {
-        await adapter.save(ws, changes);
-        set({ saving: false, saveError: null });
-      } catch (e) {
-        /* put the changes back so the next write retries them */
-        mark(changes);
-        set({ saving: false, saveError: e instanceof Error ? e.message : 'Could not save.' });
-      }
-    }, 350);
+    timer = setTimeout(() => void flush(), 350);
+  }
+
+  /* leaving or hiding the page writes anything still waiting, so a reload
+     straight after a change never loses it */
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', () => void flush());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') void flush();
+    });
   }
 
   return {

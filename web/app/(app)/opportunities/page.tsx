@@ -136,11 +136,10 @@ export default function Opportunities() {
   function head(key: SortKey, label: string, className?: string) {
     const on = sort.key === key;
     return (
-      <th className={cn('px-3 py-2.5 text-left font-semibold', className)}>
+      <th className={cn('px-3 py-2.5 text-left font-semibold', className)} aria-sort={on ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}>
         <button
           className={cn('inline-flex items-center gap-1 rounded px-1 -mx-1 hover:text-ink', on && 'text-ink')}
           onClick={() => setSort({ key, dir: on ? (sort.dir === 1 ? -1 : 1) : key === 'company' ? 1 : -1 })}
-          aria-sort={on ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}
         >
           {label}
           {on && (sort.dir === 1 ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />)}

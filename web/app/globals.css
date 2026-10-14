@@ -267,3 +267,11 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Printing an opportunity prints its one-page brief and nothing else. */
+@media print {
+  body { background: #fff; }
+  body * { visibility: hidden; }
+  .brief-sheet, .brief-sheet * { visibility: visible; }
+  .brief-sheet { position: absolute; inset: 0 auto auto 0; width: 100%; padding: 24px; color: #000; font-size: 12pt; }
+}
